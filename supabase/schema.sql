@@ -31,6 +31,12 @@ create table if not exists public.mensajes (
   creado_en timestamptz not null default now()
 );
 
+-- Desde el 30/10/2026 Supabase no da permisos automáticos a las tablas nuevas de public.
+-- Solo se le dan a authenticated (nunca a anon): el front habla directo y las políticas RLS de abajo acotan el acceso.
+grant select, insert, update on public.perfiles to authenticated;
+grant select, insert, update, delete on public.comidas to authenticated;
+grant select, insert on public.mensajes to authenticated;
+
 -- Seguridad: solo usuarios logueados ven datos, y cada uno solo modifica lo suyo.
 alter table public.perfiles enable row level security;
 alter table public.comidas enable row level security;

@@ -30,7 +30,13 @@ export default function App() {
     if (!sesion) return;
     const u = sesion.user;
     const nombre = u.user_metadata?.nombre || u.email.split("@")[0];
-    supabase.from("perfiles").upsert({ id: u.id, nombre }, { onConflict: "id", ignoreDuplicates: true });
+    // Sin .then() supabase-js no envía la consulta.
+    supabase
+      .from("perfiles")
+      .upsert({ id: u.id, nombre }, { onConflict: "id", ignoreDuplicates: true })
+      .then(({ error }) => {
+        if (error) console.error("No se pudo crear el perfil:", error.message);
+      });
   }, [sesion]);
 
   if (cargando) return <div className="centro">Cargando…</div>;
