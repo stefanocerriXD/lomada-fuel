@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase.js";
-import { recordarContrasena } from "../lib/acceso.js";
 
 const LARGO_MINIMO = 8;
 
 function explicar(error) {
   if (/different from the old/i.test(error.message)) return "Tiene que ser distinta de la anterior.";
   if (/weak|short|at least/i.test(error.message)) return "Elegí una contraseña más larga o difícil.";
-  if (/reauth|recent/i.test(error.message)) return "Por seguridad, cerrá sesión, entrá con el link y volvé a intentar.";
+  if (/reauth|recent/i.test(error.message)) return "Por seguridad, cerrá sesión, volvé a entrar y probá de nuevo.";
   return "No se pudo guardar. Probá de nuevo.";
 }
 
@@ -23,10 +22,9 @@ export function FormularioContrasena({ onListo, textoBoton = "Guardar contraseñ
     if (clave.length < LARGO_MINIMO) return setError(`Usá al menos ${LARGO_MINIMO} caracteres.`);
     if (clave !== repetida) return setError("Las dos contraseñas no coinciden.");
     setGuardando(true);
-    const { error: err } = await supabase.auth.updateUser({ password: clave, data: { tiene_contrasena: true } });
+    const { error: err } = await supabase.auth.updateUser({ password: clave });
     setGuardando(false);
     if (err) return setError(explicar(err));
-    recordarContrasena();
     onListo();
   }
 

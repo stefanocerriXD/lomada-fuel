@@ -159,7 +159,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
 
       <section className="tarjeta ajuste">
         <h2>Cuenta</h2>
-        <p className="ajuste-texto">{usuario.email}</p>
+        <p className="ajuste-texto">Usuario: <strong>{yo.usuario || yo.nombre}</strong><br />Mail de recuperación: {usuario.email}</p>
         <Contrasena avisar={avisar} />
         <button className="boton boton-secundario" onClick={() => supabase.auth.signOut()}>
           <LogOut size={17} /> Cerrar sesión
@@ -304,14 +304,12 @@ function Notificaciones({ avisar }) {
 }
 
 function Contrasena({ avisar }) {
-  const { usuario } = useDatos();
   const [abierto, setAbierto] = useState(false);
-  const tiene = usuario.user_metadata?.tiene_contrasena;
 
   if (!abierto) {
     return (
       <button className="boton boton-secundario" onClick={() => setAbierto(true)}>
-        <KeyRound size={17} /> {tiene ? "Cambiar contraseña" : "Crear contraseña"}
+        <KeyRound size={17} /> Cambiar contraseña
       </button>
     );
   }

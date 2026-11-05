@@ -796,11 +796,8 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 .login-tarjeta label span { display: block; margin-bottom: 4px; color: var(--tinta-2); font-size: 0.86rem; font-weight: 600; }
 .login-tarjeta input:not([type="range"]):not([type="checkbox"]):focus { background: rgb(255 255 255 / 15%); }
 .login-tarjeta .selector { width: 100%; margin-top: 8px; }
-.login-ayuda { color: var(--tinta-2); font-size: 0.82rem; text-align: center; }
+.boton-texto.centrado { align-self: center; }
 .formulario-clave { display: flex; flex-direction: column; gap: 11px; }
-.crear-clave { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-bottom: 6px; }
-.crear-clave > p { align-self: flex-start; color: var(--tinta-2); }
-.crear-clave .formulario-clave { width: 100%; }
 .login-enviado { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 8px; color: var(--tinta-2); }
 .login-enviado svg { color: var(--acento); }
 .login-enviado strong { color: var(--tinta); font-size: 1.1rem; }

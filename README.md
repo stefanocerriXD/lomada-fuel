@@ -8,9 +8,10 @@ Todo corre con cuentas **personales**: GitHub, Supabase y Vercel. Nada de la emp
 
 ### 1. Supabase (cuenta personal)
 1. Crear un proyecto nuevo.
-2. En **SQL Editor**, ejecutar en orden `supabase/schema.sql`, `supabase/002_rediseno.sql`, `supabase/004_personal_y_bot.sql`, `supabase/005_retos_y_habitos.sql` y `supabase/006_mails_permitidos.sql`. Crean las tablas, la seguridad (RLS), el bucket privado `fotos`, el tiempo real y todas las funciones de la app.
-3. En **Authentication → URL Configuration**, cargar la URL de la app (la de Vercel, y `http://localhost:5173` para desarrollo) como *Site URL* y *Redirect URL*. Sin esto, el link del mail no vuelve a la app.
-4. Copiar la URL del proyecto y la clave publicable (Project Settings → API).
+2. En **SQL Editor**, ejecutar en orden `supabase/schema.sql`, `supabase/002_rediseno.sql`, `supabase/004_personal_y_bot.sql`, `supabase/005_retos_y_habitos.sql` y `supabase/006_usuarios_y_codigo.sql`. Después cargar el código del grupo en `grupo_acceso`. Crean las tablas, la seguridad (RLS), el bucket privado `fotos`, el tiempo real y todas las funciones de la app.
+3. En **Authentication → Sign In / Providers → Email**, apagar **Confirm email** para que registrarse no mande mails.
+4. En **Authentication → URL Configuration**, cargar la URL de la app (la de Vercel, y `http://localhost:5173` para desarrollo) como *Site URL* y *Redirect URL*. Sin esto, el link del mail no vuelve a la app.
+5. Copiar la URL del proyecto y la clave publicable (Project Settings → API).
 
 ### 2. Desarrollo local
 ```
@@ -72,10 +73,10 @@ Una app nueva admite hasta 10 miembros de WHOOP.
 La app está pensada para costo cero: no usa IA paga ni servicios con cobro por uso. Corre en los planes gratuitos de Supabase y Vercel, con sus límites, y sin cargar tarjeta. La foto es solo para mostrar en el muro; los macros salen del buscador, del código de barras o de la carga a mano.
 
 ## Acceso
-La primera vez se entra con un link al mail y la app ofrece crear una contraseña. La sesión queda iniciada hasta tocar **Cerrar sesión**. En iPhone, la app instalada en inicio guarda su sesión aparte de Safari: conviene entrar ahí con la contraseña.
+Cada persona crea su cuenta con usuario, contraseña, mail de recuperación y el código del grupo, sin recibir mails. Después entra con usuario y contraseña, y la sesión queda iniciada hasta tocar **Cerrar sesión**. El mail solo se usa para recuperar la contraseña. Tras 5 contraseñas incorrectas seguidas, ese usuario queda bloqueado 10 minutos.
 
 ## Seguridad
-- Solo pueden registrarse los mails cargados en `mails_permitidos` (`supabase/006_mails_permitidos.sql`).
+- Para registrarse hace falta el código del grupo, que se controla dentro de la base y no está en el repositorio.
 - Todas las tablas tienen RLS: solo usuarios logueados ven datos, y cada uno edita o borra solo lo suyo.
 - Las fotos están en un bucket privado y se sirven con links firmados de 1 hora.
 - Las funciones de `/api` verifican que quien llama esté logueado.

@@ -2,13 +2,22 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, MailCheck } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
-import { recordarContrasena, usaContrasena } from "../lib/acceso.js";
+
+const USUARIO_VALIDO = /^[a-z0-9_.]{3,20}$/;
+const LARGO_CLAVE = 8;
+
+const ERRORES_REGISTRO = {
+  codigo: "Ese código del grupo no es correcto.",
+  usuario_invalido: "El usuario lleva de 3 a 20 letras, números, punto o guion bajo.",
+  usuario_ocupado: "Ese usuario ya existe. Probá con otro.",
+};
 
 export default function Login() {
-  const [modo, setModo] = useState(usaContrasena() ? "contrasena" : "link");
-  const [email, setEmail] = useState("");
-  const [nombre, setNombre] = useState("");
+  const [modo, setModo] = useState("entrar");
+  const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
+  const [email, setEmail] = useState("");
+  const [codigo, setCodigo] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
@@ -16,31 +25,59 @@ export default function Login() {
   function cambiarModo(nuevo) {
     setModo(nuevo);
     setError("");
+    setEnviado(false);
   }
 
-  async function entrarConLink(e) {
+  async function correr(e, tarea) {
     e.preventDefault();
     setError("");
     setEnviando(true);
-    // El nombre se guarda en la metadata para crear el perfil al primer ingreso.
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email,
-      options: { data: { nombre }, emailRedirectTo: window.location.origin },
+    try {
+      await tarea();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  const entrar = (e) =>
+    correr(e, async () => {
+      const { data: mail, error: err } = await supabase.rpc("mail_de_ingreso", { p_usuario: usuario, p_clave: clave });
+      if (/demasiados_intentos/.test(err?.message)) throw new Error("Demasiados intentos. Esperá 10 minutos.");
+      if (err) throw new Error("No pudimos conectarnos. Probá de nuevo.");
+      if (!mail) throw new Error("Usuario o contraseña incorrectos.");
+      const { error: errSesion } = await supabase.auth.signInWithPassword({ email: mail, password: clave });
+      if (errSesion) throw new Error("No pudimos iniciar la sesión. Probá de nuevo.");
     });
-    setEnviando(false);
-    if (err) setError(/database error/i.test(err.message) ? "Ese mail todavía no está invitado. Pedile acceso a quien te pasó el link." : err.message);
-    else setEnviado(true);
-  }
 
-  async function entrarConContrasena(e) {
-    e.preventDefault();
-    setError("");
-    setEnviando(true);
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password: clave });
-    setEnviando(false);
-    if (err) setError("Mail o contraseña incorrectos. Si todavía no creaste una, entrá con el link.");
-    else recordarContrasena();
-  }
+  const crearCuenta = (e) =>
+    correr(e, async () => {
+      const nombre = usuario.trim();
+      if (!USUARIO_VALIDO.test(nombre.toLowerCase())) throw new Error(ERRORES_REGISTRO.usuario_invalido);
+      if (clave.length < LARGO_CLAVE) throw new Error(`La contraseña lleva al menos ${LARGO_CLAVE} caracteres.`);
+
+      const { data: estado, error: errEstado } = await supabase.rpc("revisar_registro", { p_usuario: nombre, p_codigo: codigo });
+      if (errEstado) throw new Error("No pudimos conectarnos. Probá de nuevo.");
+      if (estado !== "ok") throw new Error(ERRORES_REGISTRO[estado]);
+
+      const { data, error: err } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: clave,
+        options: { data: { usuario: nombre.toLowerCase(), nombre, codigo_grupo: codigo.trim() } },
+      });
+      if (/already|registered/i.test(err?.message)) throw new Error("Ese mail ya tiene una cuenta.");
+      if (err) throw new Error("No pudimos crear la cuenta. Revisá los datos.");
+      if (!data.session) throw new Error("La cuenta se creó, pero falta activar el registro sin confirmación por mail.");
+    });
+
+  const recuperar = (e) =>
+    correr(e, async () => {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
+      if (/rate limit/i.test(err?.message)) throw new Error("Se mandaron demasiados mails. Probá más tarde.");
+      if (err) throw new Error("No pudimos mandar el mail. Probá de nuevo.");
+      setEnviado(true);
+    });
 
   return (
     <div className="login">
@@ -62,17 +99,29 @@ export default function Login() {
         <h1>Lomada Fuel</h1>
         <p className="login-bajada">Subí tus comidas para bajar de peso, gordito.</p>
 
-        {enviado ? (
-          <motion.div className="login-enviado" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}>
-            <MailCheck size={32} />
-            <strong>Revisá tu mail</strong>
-            <p>Te mandamos un link a {email}. Abrilo en este mismo dispositivo.</p>
-            <button className="boton-texto" onClick={() => setEnviado(false)}>Usar otro mail</button>
-          </motion.div>
+        {modo === "recuperar" ? (
+          enviado ? (
+            <motion.div className="login-enviado" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}>
+              <MailCheck size={32} />
+              <strong>Revisá tu mail</strong>
+              <p>Si {email} tiene una cuenta, te llega un link para crear otra contraseña.</p>
+              <button className="boton-texto" onClick={() => cambiarModo("entrar")}>Volver</button>
+            </motion.div>
+          ) : (
+            <form onSubmit={recuperar}>
+              <label>
+                <span>Tu mail de recuperación</span>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+              </label>
+              {error && <p className="error" role="alert">{error}</p>}
+              <button className="boton boton-grande" type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Mandame el link"}</button>
+              <button className="boton-texto centrado" type="button" onClick={() => cambiarModo("entrar")}>Volver</button>
+            </form>
+          )
         ) : (
           <>
-            <div className="selector" role="tablist" aria-label="Cómo entrar">
-              {[["link", "Link al mail"], ["contrasena", "Contraseña"]].map(([id, texto]) => (
+            <div className="selector" role="tablist" aria-label="Acceso">
+              {[["entrar", "Entrar"], ["crear", "Crear cuenta"]].map(([id, texto]) => (
                 <button key={id} type="button" role="tab" aria-selected={modo === id} className={modo === id ? "activo" : ""} onClick={() => cambiarModo(id)}>
                   {modo === id && <motion.span className="selector-fondo" layoutId="selector-login" />}
                   <span>{texto}</span>
@@ -80,38 +129,35 @@ export default function Login() {
               ))}
             </div>
 
-            {modo === "link" ? (
-              <form onSubmit={entrarConLink}>
-                <label>
-                  <span>Tu nombre</span>
-                  <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="given-name" required />
-                </label>
-                <label>
-                  <span>Tu mail</span>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
-                </label>
-                {error && <p className="error" role="alert">{error}</p>}
-                <button className="boton boton-grande" type="submit" disabled={enviando}>
-                  {enviando ? "Enviando…" : "Mandame el link"} <ArrowRight size={19} />
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={entrarConContrasena}>
-                <label>
-                  <span>Tu mail</span>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
-                </label>
-                <label>
-                  <span>Tu contraseña</span>
-                  <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="current-password" required />
-                </label>
-                {error && <p className="error" role="alert">{error}</p>}
-                <button className="boton boton-grande" type="submit" disabled={enviando}>
-                  {enviando ? "Entrando…" : "Entrar"} <ArrowRight size={19} />
-                </button>
-                <p className="login-ayuda">¿Te la olvidaste? Entrá con el link y cambiala en Ajustes.</p>
-              </form>
-            )}
+            <form onSubmit={modo === "entrar" ? entrar : crearCuenta}>
+              <label>
+                <span>Usuario</span>
+                <input value={usuario} onChange={(e) => setUsuario(e.target.value)} autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck="false" maxLength={20} required />
+              </label>
+              <label>
+                <span>Contraseña</span>
+                <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} autoComplete={modo === "entrar" ? "current-password" : "new-password"} required />
+              </label>
+              {modo === "crear" && (
+                <>
+                  <label>
+                    <span>Mail de recuperación</span>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+                  </label>
+                  <label>
+                    <span>Código del grupo</span>
+                    <input value={codigo} onChange={(e) => setCodigo(e.target.value)} autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck="false" required />
+                  </label>
+                </>
+              )}
+              {error && <p className="error" role="alert">{error}</p>}
+              <button className="boton boton-grande" type="submit" disabled={enviando}>
+                {enviando ? "Un momento…" : modo === "entrar" ? "Entrar" : "Crear cuenta"} <ArrowRight size={19} />
+              </button>
+              {modo === "entrar" && (
+                <button className="boton-texto centrado" type="button" onClick={() => cambiarModo("recuperar")}>Olvidé mi contraseña</button>
+              )}
+            </form>
           </>
         )}
       </motion.div>

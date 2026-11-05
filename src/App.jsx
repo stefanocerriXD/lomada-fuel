@@ -3,7 +3,6 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { CalendarDays, Images, MessageCircle, Plus, Settings, Trophy } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
 import { medalla, medallasGanadas } from "./lib/medallas.js";
-import { contrasenaOmitida, omitirContrasena } from "./lib/acceso.js";
 import { DatosProvider, useDatos } from "./lib/datos.jsx";
 import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
@@ -30,13 +29,17 @@ const VISTAS_VALIDAS = VISTAS.map((v) => v.id);
 export default function App() {
   const [sesion, setSesion] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [recuperando, setRecuperando] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSesion(data.session);
       setCargando(false);
     });
-    const { data } = supabase.auth.onAuthStateChange((_evento, nueva) => setSesion(nueva));
+    const { data } = supabase.auth.onAuthStateChange((evento, nueva) => {
+      if (evento === "PASSWORD_RECOVERY") setRecuperando(true);
+      setSesion(nueva);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 
@@ -46,7 +49,7 @@ export default function App() {
         <Cargando />
       ) : sesion ? (
         <DatosProvider usuario={sesion.user}>
-          <Principal />
+          <Principal recuperando={recuperando} onRecuperado={() => setRecuperando(false)} />
         </DatosProvider>
       ) : (
         <Login />
@@ -70,14 +73,13 @@ function Cargando() {
   );
 }
 
-function Principal() {
+function Principal({ recuperando, onRecuperado }) {
   const { usuario, yo, estado, salud, pesos, comidas, perfiles, reacciones, extras, cargarExtras } = useDatos();
   const [vista, setVista] = useState(() => {
     const pedida = new URLSearchParams(location.search).get("vista");
     return VISTAS_VALIDAS.includes(pedida) ? pedida : "resumen";
   });
   const entregando = useRef(false);
-  const [sinPedirClave, setSinPedirClave] = useState(contrasenaOmitida);
   const [carga, setCarga] = useState(null);
   const [festejo, setFestejo] = useState(0);
   const [aviso, setAviso] = useState("");
@@ -192,13 +194,6 @@ function Principal() {
     );
   }
 
-  // Después del primer ingreso por link se ofrece crear contraseña, antes de armar el plan.
-  const pedirClave = !usuario.user_metadata?.tiene_contrasena && !sinPedirClave;
-  const dejarParaDespues = () => {
-    omitirContrasena();
-    setSinPedirClave(true);
-  };
-
   return (
     <div className="marco">
       <aside className="lateral">
@@ -270,7 +265,7 @@ function Principal() {
 
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} />
       <Bienvenida
-        abierta={editarCuerpo || (salud === null && !bienvenidaVista && !pedirClave)}
+        abierta={editarCuerpo || (salud === null && !bienvenidaVista && !recuperando)}
         onCerrar={cerrarCuerpo}
         onGuardar={() => {
           cerrarCuerpo();
@@ -278,12 +273,13 @@ function Principal() {
           avisar("¡Plan listo!");
         }}
       />
-      <Hoja abierta={pedirClave} onCerrar={dejarParaDespues} titulo="Creá tu contraseña">
-        <div className="crear-clave">
-          <p>Así la próxima vez entrás directo, sin esperar un mail.</p>
-          <FormularioContrasena onListo={() => avisar("Contraseña creada")} textoBoton="Crear contraseña" />
-          <button className="boton-texto" onClick={dejarParaDespues}>Ahora no</button>
-        </div>
+      <Hoja abierta={recuperando} onCerrar={onRecuperado} titulo="Creá tu nueva contraseña">
+        <FormularioContrasena
+          onListo={() => {
+            onRecuperado();
+            avisar("Contraseña actualizada");
+          }}
+        />
       </Hoja>
       <Festejo key={festejo} activo={festejo > 0} />
       <Aviso texto={aviso} />
