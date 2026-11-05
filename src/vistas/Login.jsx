@@ -42,7 +42,7 @@ export default function Login() {
       <motion.div className="login-tarjeta" initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}>
         <img className="login-icono" src="/icono.svg" alt="" width="52" height="52" />
         <h1>Lomada Fuel</h1>
-        <p className="login-bajada">Subí lo que comés, mirá lo de los demás y bardeá en el chat.</p>
+        <p className="login-bajada">Subí tus comidas para bajar de peso, gordito.</p>
 
         {enviado ? (
           <motion.div className="login-enviado" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}>
