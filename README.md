@@ -71,6 +71,9 @@ Una app nueva admite hasta 10 miembros de WHOOP.
 ## Costo
 La app está pensada para costo cero: no usa IA paga ni servicios con cobro por uso. Corre en los planes gratuitos de Supabase y Vercel, con sus límites, y sin cargar tarjeta. La foto es solo para mostrar en el muro; los macros salen del buscador, del código de barras o de la carga a mano.
 
+## Acceso
+La primera vez se entra con un link al mail y la app ofrece crear una contraseña. La sesión queda iniciada hasta tocar **Cerrar sesión**. En iPhone, la app instalada en inicio guarda su sesión aparte de Safari: conviene entrar ahí con la contraseña.
+
 ## Seguridad
 - Solo pueden registrarse los mails cargados en `mails_permitidos` (`supabase/006_mails_permitidos.sql`).
 - Todas las tablas tienen RLS: solo usuarios logueados ven datos, y cada uno edita o borra solo lo suyo.

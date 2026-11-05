@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Bell, BellOff, Check, LogOut, Monitor, Moon, RefreshCw, Sun, Target, Unplug, Watch } from "lucide-react";
+import { Bell, BellOff, Check, KeyRound, LogOut, Monitor, Moon, RefreshCw, Sun, Target, Unplug, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
 import { accionWhoop } from "../lib/api.js";
 import { calcularPlan } from "../lib/cuerpo.js";
+import { FormularioContrasena } from "../componentes/Contrasena.jsx";
 import { activarAvisos, avisosActivos, desactivarAvisos, estadoAvisos } from "../lib/avisos.js";
 import { Avatar } from "../componentes/Base.jsx";
 
@@ -159,6 +160,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
       <section className="tarjeta ajuste">
         <h2>Cuenta</h2>
         <p className="ajuste-texto">{usuario.email}</p>
+        <Contrasena avisar={avisar} />
         <button className="boton boton-secundario" onClick={() => supabase.auth.signOut()}>
           <LogOut size={17} /> Cerrar sesión
         </button>
@@ -298,5 +300,28 @@ function Notificaciones({ avisar }) {
         <p className="ajuste-texto">{textos[estado]}</p>
       )}
     </section>
+  );
+}
+
+function Contrasena({ avisar }) {
+  const { usuario } = useDatos();
+  const [abierto, setAbierto] = useState(false);
+  const tiene = usuario.user_metadata?.tiene_contrasena;
+
+  if (!abierto) {
+    return (
+      <button className="boton boton-secundario" onClick={() => setAbierto(true)}>
+        <KeyRound size={17} /> {tiene ? "Cambiar contraseña" : "Crear contraseña"}
+      </button>
+    );
+  }
+
+  return (
+    <FormularioContrasena
+      onListo={() => {
+        setAbierto(false);
+        avisar("Contraseña guardada");
+      }}
+    />
   );
 }

@@ -3,8 +3,10 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { CalendarDays, Images, MessageCircle, Plus, Settings, Trophy } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
 import { medalla, medallasGanadas } from "./lib/medallas.js";
+import { contrasenaOmitida, omitirContrasena } from "./lib/acceso.js";
 import { DatosProvider, useDatos } from "./lib/datos.jsx";
-import { Aviso, Avatar, Esqueleto, Festejo, resorte, vibrar } from "./componentes/Base.jsx";
+import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
+import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Muro from "./vistas/Muro.jsx";
@@ -75,6 +77,7 @@ function Principal() {
     return VISTAS_VALIDAS.includes(pedida) ? pedida : "resumen";
   });
   const entregando = useRef(false);
+  const [sinPedirClave, setSinPedirClave] = useState(contrasenaOmitida);
   const [carga, setCarga] = useState(null);
   const [festejo, setFestejo] = useState(0);
   const [aviso, setAviso] = useState("");
@@ -189,6 +192,13 @@ function Principal() {
     );
   }
 
+  // Después del primer ingreso por link se ofrece crear contraseña, antes de armar el plan.
+  const pedirClave = !usuario.user_metadata?.tiene_contrasena && !sinPedirClave;
+  const dejarParaDespues = () => {
+    omitirContrasena();
+    setSinPedirClave(true);
+  };
+
   return (
     <div className="marco">
       <aside className="lateral">
@@ -260,7 +270,7 @@ function Principal() {
 
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} />
       <Bienvenida
-        abierta={editarCuerpo || (salud === null && !bienvenidaVista)}
+        abierta={editarCuerpo || (salud === null && !bienvenidaVista && !pedirClave)}
         onCerrar={cerrarCuerpo}
         onGuardar={() => {
           cerrarCuerpo();
@@ -268,6 +278,13 @@ function Principal() {
           avisar("¡Plan listo!");
         }}
       />
+      <Hoja abierta={pedirClave} onCerrar={dejarParaDespues} titulo="Creá tu contraseña">
+        <div className="crear-clave">
+          <p>Así la próxima vez entrás directo, sin esperar un mail.</p>
+          <FormularioContrasena onListo={() => avisar("Contraseña creada")} textoBoton="Crear contraseña" />
+          <button className="boton-texto" onClick={dejarParaDespues}>Ahora no</button>
+        </div>
+      </Hoja>
       <Festejo key={festejo} activo={festejo > 0} />
       <Aviso texto={aviso} />
     </div>
