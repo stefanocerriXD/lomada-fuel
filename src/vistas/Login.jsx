@@ -20,7 +20,7 @@ export default function Login() {
       options: { data: { nombre }, emailRedirectTo: window.location.origin },
     });
     setEnviando(false);
-    if (err) setError(err.message);
+    if (err) setError(/database error/i.test(err.message) ? "Ese mail todavía no está invitado. Pedile acceso a quien te pasó el link." : err.message);
     else setEnviado(true);
   }
 
