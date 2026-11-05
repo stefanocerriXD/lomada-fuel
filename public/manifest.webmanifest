@@ -1,0 +1,14 @@
+{
+  "name": "Lomada Fuel",
+  "short_name": "Lomada Fuel",
+  "description": "Subí tus comidas, mirá las del grupo y seguí tus macros.",
+  "lang": "es-AR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F2E9",
+  "theme_color": "#C43D15",
+  "icons": [
+    { "src": "/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icono-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

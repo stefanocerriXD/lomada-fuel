@@ -1,4 +1,4 @@
-// Reduce la foto en el navegador antes de subirla: menos peso para Supabase y para la IA.
+// Reduce la foto en el navegador antes de subirla: menos peso para Supabase.
 export function comprimirImagen(archivo, maxLado = 1280, calidad = 0.82) {
   return new Promise((resolver, rechazar) => {
     const img = new Image();
@@ -18,14 +18,5 @@ export function comprimirImagen(archivo, maxLado = 1280, calidad = 0.82) {
     };
     img.onerror = () => rechazar(new Error("No se pudo leer la foto"));
     img.src = url;
-  });
-}
-
-export function blobABase64(blob) {
-  return new Promise((resolver, rechazar) => {
-    const lector = new FileReader();
-    lector.onload = () => resolver(lector.result.split(",")[1]);
-    lector.onerror = () => rechazar(new Error("No se pudo leer la foto"));
-    lector.readAsDataURL(blob);
   });
 }
