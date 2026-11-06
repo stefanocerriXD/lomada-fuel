@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { CalendarDays, Images, MessageCircle, Plus, Settings, Trophy } from "lucide-react";
+import { CalendarDays, MessageCircle, Plus, Settings, Trophy } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
 import { medalla, medallasGanadas } from "./lib/medallas.js";
 import { DatosProvider, useDatos } from "./lib/datos.jsx";
@@ -8,7 +8,6 @@ import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./comp
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
-import Muro from "./vistas/Muro.jsx";
 import Chat from "./vistas/Chat.jsx";
 import Retos from "./vistas/Retos.jsx";
 import Ajustes from "./vistas/Ajustes.jsx";
@@ -18,13 +17,11 @@ import Importar from "./vistas/Importar.jsx";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
-  { id: "muro", texto: "Muro", icono: Images },
   { id: "chat", texto: "Chat", icono: MessageCircle },
   { id: "retos", texto: "Retos", icono: Trophy },
   { id: "ajustes", texto: "Ajustes", icono: Settings },
 ];
 
-const VISTAS_CELULAR = VISTAS.filter((v) => v.id !== "ajustes");
 const VISTAS_VALIDAS = VISTAS.map((v) => v.id);
 
 export default function App() {
@@ -222,9 +219,8 @@ function Principal({ recuperando, onRecuperado }) {
           <img src="/icono.svg" alt="" width="30" height="30" />
           <span>Lomada Fuel</span>
         </div>
-        <button className="boton-avatar" onClick={() => setVista("ajustes")} aria-label="Ajustes">
-          <Settings size={19} />
-          <Avatar perfil={yo} tam={34} />
+        <button className="boton-avatar" onClick={() => setVista("ajustes")} aria-label="Tu perfil">
+          <Avatar perfil={yo} tam={36} />
         </button>
       </header>
 
@@ -238,8 +234,7 @@ function Principal({ recuperando, onRecuperado }) {
             transition={{ duration: 0.16, ease: "easeOut" }}
           >
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={setImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
-            {vista === "muro" && <Muro onCargar={abrirCarga} avisar={avisar} />}
-            {vista === "chat" && <Chat />}
+            {vista === "chat" && <Chat onCargar={abrirCarga} avisar={avisar} />}
             {vista === "retos" && <Retos avisar={avisar} />}
             {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
           </motion.div>
@@ -247,7 +242,7 @@ function Principal({ recuperando, onRecuperado }) {
       </main>
 
       <nav className="barra-inferior" aria-label="Menú principal">
-        {VISTAS_CELULAR.slice(0, 2).map((v) => (
+        {VISTAS.slice(0, 2).map((v) => (
           <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
         ))}
         <motion.button
@@ -260,7 +255,7 @@ function Principal({ recuperando, onRecuperado }) {
         >
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
-        {VISTAS_CELULAR.slice(2).map((v) => (
+        {VISTAS.slice(2).map((v) => (
           <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
         ))}
       </nav>

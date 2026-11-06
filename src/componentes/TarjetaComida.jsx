@@ -1,75 +1,12 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Lock, MessageCircle, Pencil, PenLine, SendHorizontal, Star, Trash2, X } from "lucide-react";
+import { Lock, MessageCircle, Pencil, PenLine, SendHorizontal, Star, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
-import { Avatar, Vacio, vibrar } from "../componentes/Base.jsx";
-
-export default function Muro({ onCargar, avisar }) {
-  const { usuario, perfiles, comidas, fotos } = useDatos();
-  const [filtro, setFiltro] = useState("todos");
-  const [zoom, setZoom] = useState(null);
-
-  const visibles = comidas.filter((c) => c.tipo !== "resumen" && (filtro === "todos" || c.usuario_id === filtro)).slice(0, 60);
-
-  return (
-    <>
-      <header className="titulo-vista">
-        <div>
-          <p className="sobretitulo">Lo que comió el grupo</p>
-          <h1>Muro</h1>
-        </div>
-      </header>
-
-      <div className="fichas-personas" role="group" aria-label="Filtrar por persona">
-        <button className={filtro === "todos" ? "ficha activa" : "ficha"} onClick={() => setFiltro("todos")} aria-pressed={filtro === "todos"}>
-          Todos
-        </button>
-        {Object.values(perfiles).map((p) => (
-          <button key={p.id} className={filtro === p.id ? "ficha activa" : "ficha"} onClick={() => setFiltro(p.id)} aria-pressed={filtro === p.id}>
-            <Avatar perfil={p} tam={26} /> {p.id === usuario.id ? "Vos" : p.nombre}
-          </button>
-        ))}
-      </div>
-
-      {visibles.length === 0 ? (
-        <Vacio emoji="📸" titulo="El muro está vacío" texto="Subí la primera foto y arrancá la competencia.">
-          <button className="boton" onClick={() => onCargar()}>Subir comida</button>
-        </Vacio>
-      ) : (
-        <div className="muro">
-          <AnimatePresence initial={false}>
-            {visibles.map((c, i) => (
-              <TarjetaComida
-                key={c.id}
-                comida={c}
-                perfil={perfiles[c.usuario_id]}
-                foto={fotos[c.foto_path]}
-                propia={c.usuario_id === usuario.id}
-                indice={i}
-                onZoom={setZoom}
-                onEditar={() => onCargar({ comida: c })}
-                avisar={avisar}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
-
-      <AnimatePresence>
-        {zoom && (
-          <motion.div className="lupa" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setZoom(null)}>
-            <button className="boton-icono" aria-label="Cerrar foto"><X size={22} /></button>
-            <motion.img src={zoom.src} alt={zoom.alt} initial={{ scale: 0.92 }} animate={{ scale: 1 }} exit={{ scale: 0.92 }} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
+import { Avatar, vibrar } from "./Base.jsx";
 
 const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷"];
 
@@ -147,7 +84,7 @@ function Comentarios({ comidaId, lista }) {
   );
 }
 
-function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
+export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
   const { usuario, cargarComidas, extras, cargarExtras } = useDatos();
   const [confirmar, setConfirmar] = useState(false);
   const [charla, setCharla] = useState(false);

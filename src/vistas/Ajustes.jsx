@@ -250,7 +250,7 @@ function Privacidad({ avisar }) {
         <input type="checkbox" checked={!!yo.comidas_privadas} onChange={cambiar} />
         <span>Mis comidas nuevas arrancan como privadas</span>
       </label>
-      <p className="nota">Una comida privada no aparece en el muro, ni en los desafíos, ni en los premios del bot. También podés elegirlo en cada comida.</p>
+      <p className="nota">Una comida privada no aparece en el chat, ni en los desafíos, ni en los premios del bot. También podés elegirlo en cada comida.</p>
     </section>
   );
 }

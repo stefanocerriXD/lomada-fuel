@@ -100,6 +100,42 @@ const FILAS = [
   ["Azúcar", 400, 0, 100, 0, "1 cucharadita", 5],
   ["Miel", 304, 0.3, 82, 0, "1 cucharada", 15],
   ["Proteína en polvo", 390, 75, 10, 5, "1 medida", 30, "whey"],
+  ["Kiwi", 61, 1.1, 14.7, 0.5, "1 unidad", 75],
+  ["Pera", 57, 0.4, 15, 0.1, "1 unidad", 170],
+  ["Durazno", 39, 0.9, 9.5, 0.3, "1 unidad", 130],
+  ["Ciruela", 46, 0.7, 11.4, 0.3, "1 unidad", 70],
+  ["Frutillas", 32, 0.7, 7.7, 0.3, "1 taza", 150],
+  ["Arándanos", 57, 0.7, 14.5, 0.3, "1 puñado", 40],
+  ["Uvas", 69, 0.7, 18, 0.2, "1 racimo chico", 100],
+  ["Ananá", 50, 0.5, 13, 0.1, "1 rodaja", 85],
+  ["Sandía", 30, 0.6, 7.6, 0.2, "1 tajada", 280],
+  ["Melón", 34, 0.8, 8.2, 0.2, "1 tajada", 150],
+  ["Mango", 60, 0.8, 15, 0.4, "1 unidad", 200],
+  ["Pomelo", 42, 0.8, 10.7, 0.1, "1 mitad", 125],
+  ["Zanahoria", 41, 0.9, 9.6, 0.2, "1 unidad", 80],
+  ["Lechuga", 15, 1.4, 2.9, 0.2, "1 plato", 60],
+  ["Cebolla", 40, 1.1, 9.3, 0.1, "1 unidad", 110],
+  ["Morrón", 31, 1, 6, 0.3, "1 unidad", 150],
+  ["Brócoli cocido", 35, 2.4, 7.2, 0.4, "1 taza", 155],
+  ["Zapallito cocido", 17, 1.2, 3.1, 0.3, "1 unidad", 150],
+  ["Pepino", 15, 0.7, 3.6, 0.1, "1 unidad", 200],
+  ["Choclo cocido", 96, 3.4, 21, 1.5, "1 unidad", 120],
+  ["Tostada", 310, 10, 58, 4, "1 unidad", 20],
+  ["Galletita de agua", 430, 9, 70, 12, "1 unidad", 7],
+  ["Galleta de arroz", 387, 8, 81, 2.8, "1 unidad", 9],
+  ["Jamón cocido", 110, 18, 1.5, 3.5, "1 feta", 20],
+  ["Pechuga de pavo", 105, 18, 2, 2.5, "1 feta", 20],
+  ["Queso rallado", 420, 35, 3, 30, "1 cucharada", 8],
+  ["Ricota", 174, 11, 3, 13, "1 cucharada", 30],
+  ["Crema de leche", 340, 2, 3, 36, "1 cucharada", 15],
+  ["Mayonesa", 680, 1, 1, 75, "1 cucharada", 15],
+  ["Ketchup", 110, 1.2, 26, 0.1, "1 cucharada", 15],
+  ["Salsa de tomate", 40, 1.5, 8, 0.3, "1 cucharada", 15],
+  ["Pasta de maní", 600, 25, 20, 50, "1 cucharada", 20],
+  ["Almendras", 590, 21, 22, 50, "1 puñado", 30],
+  ["Café solo", 2, 0.1, 0, 0, "1 taza", 200],
+  ["Jugo de naranja", 45, 0.7, 10.4, 0.2, "1 vaso", 200],
+  ["Agua", 0, 0, 0, 0, "1 vaso", 200],
 ];
 
 const normalizar = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -115,11 +151,15 @@ const BASE = FILAS.map(([nombre, kcal, p, c, g, porcionNombre, porcionG, otros =
 }));
 
 export function buscarTipicos(texto) {
-  const partes = normalizar(texto).split(/\s+/).filter(Boolean);
+  // "Kiwis" tiene que encontrar "Kiwi".
+  const partes = normalizar(texto).split(/\s+/).filter((p) => p && p !== "de").map((p) => (p.length > 3 ? p.replace(/e?s$/, "") : p));
   if (!partes.length) return [];
   // Por inicio de palabra: "coto" no tiene que traer "chocotorta".
-  return BASE.filter((a) => {
+  const hallados = BASE.filter((a) => {
     const palabras = a.indice.split(" ");
     return partes.every((p) => palabras.some((w) => w.startsWith(p)));
-  }).slice(0, 8);
+  });
+  // Primero lo que empieza con lo escrito: "dulce" trae antes el dulce de leche que una factura rellena.
+  const empieza = (a) => (a.indice.startsWith(partes[0]) ? 0 : 1);
+  return hallados.sort((a, b) => empieza(a) - empieza(b)).slice(0, 8);
 }

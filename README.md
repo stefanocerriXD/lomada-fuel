@@ -8,7 +8,7 @@ Todo corre con cuentas **personales**: GitHub, Supabase y Vercel. Nada de la emp
 
 ### 1. Supabase (cuenta personal)
 1. Crear un proyecto nuevo.
-2. En **SQL Editor**, ejecutar en orden `supabase/schema.sql`, `supabase/002_rediseno.sql`, `supabase/004_personal_y_bot.sql`, `supabase/005_retos_y_habitos.sql`, `supabase/006_usuarios_y_codigo.sql` y `supabase/007_importar_y_salud.sql`. Después cargar el código del grupo en `grupo_acceso`. Crean las tablas, la seguridad (RLS), el bucket privado `fotos`, el tiempo real y todas las funciones de la app.
+2. En **SQL Editor**, ejecutar en orden `supabase/schema.sql`, `supabase/002_rediseno.sql`, `supabase/004_personal_y_bot.sql`, `supabase/005_retos_y_habitos.sql`, `supabase/006_usuarios_y_codigo.sql`, `supabase/007_importar_y_salud.sql` y `supabase/008_avisos.sql`. Después cargar el código del grupo en `grupo_acceso`. Crean las tablas, la seguridad (RLS), el bucket privado `fotos`, el tiempo real y todas las funciones de la app.
 3. En **Authentication → Sign In / Providers → Email**, apagar **Confirm email** para que registrarse no mande mails.
 4. En **Authentication → URL Configuration**, cargar la URL de la app (la de Vercel, y `http://localhost:5173` para desarrollo) como *Site URL* y *Redirect URL*. Sin esto, el link del mail no vuelve a la app.
 5. Copiar la URL del proyecto y la clave publicable (Project Settings → API).
@@ -58,8 +58,8 @@ Compara lo cargado en el día con tu meta, reparte lo que falta entre las comida
 
 ## Notificaciones
 1. Generar las claves con `npx web-push generate-vapid-keys`.
-2. Cargar en Vercel `VITE_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `SUPABASE_SECRET_KEY` y `APP_URL`.
-3. Cada persona las activa desde Ajustes. En iPhone hace falta agregar la app a la pantalla de inicio.
+2. Cargar en Vercel `VITE_VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY`, y volver a publicar.
+3. Cada persona las activa desde el chat o Ajustes. En iPhone hace falta agregar la app a la pantalla de inicio.
 
 ## Instalar en el celular
 Con la app publicada, abrir el link y elegir **Agregar a pantalla de inicio** desde el navegador. Abre a pantalla completa, como una app.

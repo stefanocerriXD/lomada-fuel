@@ -6,14 +6,14 @@ self.addEventListener("push", (evento) => {
       body: datos.cuerpo || "",
       icon: "/icono-192.png",
       badge: "/icono-192.png",
-      data: { vista: datos.vista || "resumen" },
+      data: { vista: datos.vista || "chat" },
     }),
   );
 });
 
 self.addEventListener("notificationclick", (evento) => {
   evento.notification.close();
-  const url = `/?vista=${encodeURIComponent(evento.notification.data?.vista || "resumen")}`;
+  const url = `/?vista=${encodeURIComponent(evento.notification.data?.vista || "chat")}`;
   evento.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
       const abierta = ventanas.find((v) => "focus" in v);

@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Camera, LoaderCircle, Minus, Plus, Search, Star, Trash2, X } from "lucide-react";
+import { Camera, LoaderCircle, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { fechaLocal, tipoSegunHora } from "../lib/fechas.js";
 import { macrosDeItem, sumarItems, TIPOS } from "../lib/macros.js";
+import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
 import { Hoja, Numero, vibrar } from "../componentes/Base.jsx";
 import Escaner from "./Escaner.jsx";
 
-const RESULTADOS_INICIALES = 6;
-const PESTANAS = [["buscar", "Buscar"], ["mano", "A mano"], ["codigo", "Código"]];
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
+const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 
 export default function NuevaComida({ carga, onCerrar, onGuardar }) {
   const editando = carga?.comida;
@@ -31,19 +31,21 @@ function Formulario({ carga, onGuardar }) {
   const [tipo, setTipo] = useState(original?.tipo || carga.tipo || tipoSegunHora());
   const [descripcion, setDescripcion] = useState(original?.descripcion || carga.receta?.descripcion || "");
   const [items, setItems] = useState(() => {
-    if (!original) return (carga.receta?.items || []).map((i) => ({ ...i, id: crypto.randomUUID() }));
-    if (original.alimentos?.length) return original.alimentos.map((a) => ({ ...a, id: a.id || crypto.randomUUID() }));
+    if (!original) return (carga.receta?.items || []).map((i) => ({ ...prepararItem(i), id: crypto.randomUUID() }));
+    if (original.alimentos?.length) return original.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: a.id || crypto.randomUUID() }));
     return [{ id: "base", nombre: original.descripcion || "Comida", fuente: "manual", kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas }];
   });
   const [foto, setFoto] = useState(null);
   const [vistaFoto, setVistaFoto] = useState(original ? fotos[original.foto_path] : null);
-  const [pestana, setPestana] = useState("buscar");
+  const [texto, setTexto] = useState("");
+  const [panel, setPanel] = useState(null);
   const [ajuste, setAjuste] = useState(
     original?.macros_editados ? { kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas } : null,
   );
   const [privada, setPrivada] = useState(original?.privada ?? yo.comidas_privadas ?? false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const campo = useRef(null);
 
   const calculado = useMemo(() => sumarItems(items), [items]);
   const total = ajuste ? { kcal: Number(ajuste.kcal) || 0, p: Number(ajuste.p) || 0, c: Number(ajuste.c) || 0, g: Number(ajuste.g) || 0 } : calculado;
@@ -61,22 +63,22 @@ function Formulario({ carga, onGuardar }) {
   useEffect(() => () => { if (vistaFoto?.startsWith("blob:")) URL.revokeObjectURL(vistaFoto); }, [vistaFoto]);
 
   function agregar(alimento) {
-    const gramos = alimento.gramos || alimento.porcion?.g || 100;
-    setItems((prev) => [...prev, { ...alimento, id: crypto.randomUUID(), gramos }]);
+    setItems((prev) => [...prev, { ...prepararItem(alimento), id: crypto.randomUUID() }]);
+    setTexto("");
+    setPanel(null);
     setError("");
+    campo.current?.blur(); // Baja el teclado para ver lo agregado y elegir la medida.
     vibrar(8);
   }
 
   function usarFavorita(favorita) {
-    setItems((prev) => [...prev, ...favorita.alimentos.map((a) => ({ ...a, id: crypto.randomUUID() }))]);
+    setItems((prev) => [...prev, ...favorita.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() }))]);
     setDescripcion((d) => d || favorita.nombre);
     setError("");
     vibrar(8);
   }
 
-  function cambiarGramos(id, gramos) {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, gramos: Math.max(0, gramos) } : i)));
-  }
+  const cambiarItem = (id, nuevo) => setItems((prev) => prev.map((i) => (i.id === id ? nuevo : i)));
 
   async function elegirFoto(e) {
     const archivo = e.target.files[0];
@@ -131,87 +133,115 @@ function Formulario({ carga, onGuardar }) {
     }
   }
 
+  const buscando = texto.trim().length > 0;
+
   return (
     <div className="carga">
-      <div className="tipos" role="radiogroup" aria-label="Tipo de comida">
-        {TIPOS.map((t) => (
-          <button key={t.id} role="radio" aria-checked={tipo === t.id} className={tipo === t.id ? "activo" : ""} onClick={() => setTipo(t.id)}>
-            <span aria-hidden="true">{t.emoji}</span> {t.texto}
-          </button>
-        ))}
+      {!buscando && (
+        <div className="tipos" role="radiogroup" aria-label="Tipo de comida">
+          {TIPOS.map((t) => (
+            <button key={t.id} role="radio" aria-checked={tipo === t.id} className={tipo === t.id ? "activo" : ""} onClick={() => setTipo(t.id)}>
+              <span aria-hidden="true">{t.emoji}</span> {t.texto}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="fila-busqueda">
+        <div className="buscador-campo">
+          <Search size={19} />
+          <input ref={campo} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="¿Qué comiste?" aria-label="Buscar alimento o producto" enterKeyHint="search" autoComplete="off" />
+          {texto && <button className="limpiar" onClick={() => setTexto("")} aria-label="Borrar búsqueda"><X size={17} /></button>}
+        </div>
+        {!buscando && (
+          <>
+            <button className={panel === "codigo" ? "boton-icono activo" : "boton-icono"} onClick={() => setPanel(panel === "codigo" ? null : "codigo")} aria-label="Escanear código" aria-pressed={panel === "codigo"}><ScanBarcode size={20} /></button>
+            <button className={panel === "mano" ? "boton-icono activo" : "boton-icono"} onClick={() => setPanel(panel === "mano" ? null : "mano")} aria-label="Cargar a mano" aria-pressed={panel === "mano"}><PenLine size={19} /></button>
+          </>
+        )}
       </div>
 
-      <div className="foto-y-nota">
-        <label className={vistaFoto ? "miniatura con-foto" : "miniatura"}>
-          <input type="file" accept="image/*" onChange={elegirFoto} aria-label="Foto de la comida" />
-          {vistaFoto ? <img src={vistaFoto} alt="Foto de la comida" /> : <Camera size={24} />}
-        </label>
-        <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Qué comiste (opcional)" aria-label="Qué comiste" maxLength={200} />
-      </div>
+      {buscando ? (
+        <Resultados texto={texto} onElegir={agregar} />
+      ) : (
+        <>
+          {panel === "codigo" && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
+          {panel === "mano" && <CargaManual onAgregar={agregar} />}
 
-      <AnimatePresence initial={false}>
-        {items.map((i) => (
-          <FilaItem key={i.id} item={i} onGramos={(g) => cambiarGramos(i.id, g)} onQuitar={() => setItems((prev) => prev.filter((x) => x.id !== i.id))} />
-        ))}
-      </AnimatePresence>
+          <AnimatePresence initial={false}>
+            {items.map((i) => (
+              <FilaItem key={i.id} item={i} onCambiar={(n) => cambiarItem(i.id, n)} onQuitar={() => setItems((prev) => prev.filter((x) => x.id !== i.id))} />
+            ))}
+          </AnimatePresence>
 
-      <div className="selector tres" role="tablist" aria-label="Cómo agregar">
-        {PESTANAS.map(([id, texto]) => (
-          <button key={id} role="tab" aria-selected={pestana === id} className={pestana === id ? "activo" : ""} onClick={() => setPestana(id)}>
-            {pestana === id && <motion.span className="selector-fondo" layoutId="selector-carga" />}
-            <span>{texto}</span>
-          </button>
-        ))}
-      </div>
-
-      {pestana === "buscar" && <Buscador onElegir={agregar} favoritas={extras.favoritas} usarFavorita={usarFavorita} recientes={recientes} />}
-      {pestana === "mano" && <CargaManual onAgregar={agregar} />}
-      {pestana === "codigo" && <Escaner onAlimento={(a) => { agregar(a); setPestana("buscar"); }} buscar={buscarCodigo} />}
-
-      <details className="mas-opciones">
-        <summary>Más opciones</summary>
-        <div className="mas-opciones-cuerpo">
-          <button className={ajuste ? "boton-chico activo" : "boton-chico"} onClick={() => setAjuste(ajuste ? null : { kcal: Math.round(calculado.kcal), p: Math.round(calculado.p), c: Math.round(calculado.c), g: Math.round(calculado.g) })}>
-            {ajuste ? "Volver al cálculo" : "Ajustar totales"}
-          </button>
-          {ajuste && (
-            <div className="ajuste-macros">
-              {CAMPOS.map(([k, texto]) => (
-                <label key={k}>
-                  <span>{texto}</span>
-                  <input type="number" min="0" inputMode="decimal" value={ajuste[k]} onChange={(e) => setAjuste({ ...ajuste, [k]: e.target.value })} />
-                </label>
+          {!items.length && !panel && (extras.favoritas.length > 0 || recientes.length > 0) && (
+            <ul className="resultados">
+              {extras.favoritas.slice(0, 4).map((f) => (
+                <li key={f.id}>
+                  <button className="favorita-chip" onClick={() => usarFavorita(f)}>
+                    <Star size={15} fill="currentColor" />
+                    <span className="resultado-datos"><strong>{f.nombre}</strong></span>
+                    <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
+                  </button>
+                </li>
               ))}
-            </div>
+              {recientes.map((a) => <FilaResultado key={a.nombre} alimento={a} onElegir={agregar} />)}
+            </ul>
           )}
-          {extras.disponible && (
-            <label className="interruptor">
-              <input type="checkbox" checked={privada} onChange={(e) => setPrivada(e.target.checked)} />
-              <span>Solo para mí, no la ve el grupo</span>
-            </label>
-          )}
-        </div>
-      </details>
 
-      <div className="pie-publicar">
-        {error && <p className="error" role="alert">{error}</p>}
-        <div className="pie-fila">
-          <div className="pie-total">
-            <strong><Numero valor={Math.round(total.kcal)} /> kcal</strong>
-            <span>P {Math.round(total.p)} · C {Math.round(total.c)} · G {Math.round(total.g)}</span>
+          <div className="foto-y-nota">
+            <label className={vistaFoto ? "miniatura con-foto" : "miniatura"}>
+              <input type="file" accept="image/*" onChange={elegirFoto} aria-label="Foto de la comida" />
+              {vistaFoto ? <img src={vistaFoto} alt="Foto de la comida" /> : <Camera size={24} />}
+            </label>
+            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Agregá una foto o una nota" aria-label="Nota de la comida" maxLength={200} />
           </div>
-          <button className="boton" onClick={guardar} disabled={guardando} aria-label={original ? "Guardar cambios" : "Publicar comida"}>
-            {guardando ? "Guardando…" : original ? "Guardar" : "Publicar"}
-          </button>
-        </div>
-      </div>
+
+          <details className="mas-opciones">
+            <summary>Más opciones</summary>
+            <div className="mas-opciones-cuerpo">
+              <button className={ajuste ? "boton-chico activo" : "boton-chico"} onClick={() => setAjuste(ajuste ? null : { kcal: Math.round(calculado.kcal), p: Math.round(calculado.p), c: Math.round(calculado.c), g: Math.round(calculado.g) })}>
+                {ajuste ? "Volver al cálculo" : "Ajustar totales"}
+              </button>
+              {ajuste && (
+                <div className="ajuste-macros">
+                  {CAMPOS.map(([k, nombre]) => (
+                    <label key={k}>
+                      <span>{nombre}</span>
+                      <input type="number" min="0" inputMode="decimal" value={ajuste[k]} onChange={(e) => setAjuste({ ...ajuste, [k]: e.target.value })} />
+                    </label>
+                  ))}
+                </div>
+              )}
+              {extras.disponible && (
+                <label className="interruptor">
+                  <input type="checkbox" checked={privada} onChange={(e) => setPrivada(e.target.checked)} />
+                  <span>Solo para mí, no la ve el grupo</span>
+                </label>
+              )}
+            </div>
+          </details>
+
+          <div className="pie-publicar">
+            {error && <p className="error" role="alert">{error}</p>}
+            <div className="pie-fila">
+              <div className="pie-total">
+                <strong><Numero valor={Math.round(total.kcal)} /> kcal</strong>
+                <span>P {Math.round(total.p)} · C {Math.round(total.c)} · G {Math.round(total.g)}</span>
+              </div>
+              <button className="boton" onClick={guardar} disabled={guardando} aria-label={original ? "Guardar cambios" : "Publicar comida"}>
+                {guardando ? "Guardando…" : original ? "Guardar" : "Publicar"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function FilaItem({ item, onGramos, onQuitar }) {
+function FilaItem({ item, onCambiar, onQuitar }) {
   const m = macrosDeItem(item);
-  const paso = item.porcion?.g || 25;
   return (
     <motion.div className="fila-item" layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
       <div className="fila-datos">
@@ -220,13 +250,15 @@ function FilaItem({ item, onGramos, onQuitar }) {
       </div>
       <button className="boton-icono chico" onClick={onQuitar} aria-label={`Quitar ${item.nombre}`}><Trash2 size={16} /></button>
       {item.por100 && (
-        <div className="gramos">
-          <button onClick={() => onGramos((Number(item.gramos) || 0) - paso)} aria-label="Restar porción"><Minus size={16} /></button>
-          <label>
-            <input type="number" min="0" inputMode="numeric" value={item.gramos} onChange={(e) => onGramos(Number(e.target.value))} aria-label={`Gramos de ${item.nombre}`} />
-            <span>g</span>
-          </label>
-          <button onClick={() => onGramos((Number(item.gramos) || 0) + paso)} aria-label="Sumar porción"><Plus size={16} /></button>
+        <div className="medida">
+          <div className="gramos">
+            <button onClick={() => onCambiar(conCantidad(item, restar(item)))} aria-label="Restar"><Minus size={17} /></button>
+            <input type="number" min="0" step="any" inputMode="decimal" value={item.cantidad} onChange={(e) => onCambiar(conCantidad(item, Number(e.target.value)))} aria-label={`Cantidad de ${item.nombre}`} />
+            <button onClick={() => onCambiar(conCantidad(item, sumar(item)))} aria-label="Sumar"><Plus size={17} /></button>
+          </div>
+          <select value={item.unidad.nombre} onChange={(e) => onCambiar(conUnidad(item, unidadesDe(item).find((u) => u.nombre === e.target.value)))} aria-label={`Medida de ${item.nombre}`}>
+            {unidadesDe(item).map((u) => <option key={u.nombre} value={u.nombre}>{textoMedida(u)}</option>)}
+          </select>
         </div>
       )}
     </motion.div>
@@ -234,15 +266,15 @@ function FilaItem({ item, onGramos, onQuitar }) {
 }
 
 function FilaResultado({ alimento, onElegir }) {
-  const gramos = alimento.gramos || alimento.porcion?.g || 100;
-  const kcal = Math.round((alimento.por100.kcal * gramos) / 100);
-  const porcion = alimento.porcion?.nombre || `${gramos} g`;
+  const inicial = prepararItem(alimento);
+  const kcal = Math.round((alimento.por100.kcal * inicial.gramos) / 100);
+  const medida = inicial.unidad.g === 1 ? `${inicial.cantidad} g` : `${inicial.cantidad} ${inicial.unidad.nombre}`;
   return (
     <li>
       <button onClick={() => onElegir(alimento)}>
         <span className="resultado-datos">
-          <strong>{alimento.nombre}{alimento.marca ? ` · ${alimento.marca}` : ""}</strong>
-          <span>{kcal} kcal · {porcion}</span>
+          <strong>{alimento.nombre}</strong>
+          <span>{alimento.marca ? `${alimento.marca} · ` : ""}{medida} · {kcal} kcal</span>
         </span>
         <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
       </button>
@@ -250,101 +282,77 @@ function FilaResultado({ alimento, onElegir }) {
   );
 }
 
-function Buscador({ onElegir, favoritas, usarFavorita, recientes }) {
-  const [texto, setTexto] = useState("");
-  const [remotos, setRemotos] = useState([]);
+function Resultados({ texto, onElegir }) {
+  const locales = useMemo(() => buscarTipicos(texto), [texto]);
+  const [productos, setProductos] = useState([]);
   const [buscando, setBuscando] = useState(false);
-  const [falla, setFalla] = useState("");
-  const [todos, setTodos] = useState(false);
-  const campo = useRef(null);
-
-  const tipicos = useMemo(() => buscarTipicos(texto), [texto]);
+  const [pedidos, setPedidos] = useState(false);
+  const [falla, setFalla] = useState(false);
+  const limpio = texto.trim();
+  const automatico = locales.length === 0 && limpio.length >= 2;
+  const conMarcas = pedidos || automatico;
 
   useEffect(() => {
-    const limpio = texto.trim();
-    setRemotos([]);
-    setFalla("");
-    setTodos(false);
-    if (limpio.length < 2) return setBuscando(false);
+    setProductos([]);
+    setFalla(false);
+    setPedidos(false);
+  }, [limpio]);
 
+  useEffect(() => {
+    if (!conMarcas || limpio.length < 2) return setBuscando(false);
     const control = new AbortController();
     setBuscando(true);
     const espera = setTimeout(async () => {
       try {
         const { resultados } = await buscarAlimentos(limpio, control.signal);
-        setRemotos(resultados || []);
+        setProductos([...(resultados || [])].sort((a, b) => (ORDEN_FUENTE[a.fuente] ?? 3) - (ORDEN_FUENTE[b.fuente] ?? 3)).slice(0, 12));
       } catch (err) {
-        if (err.name !== "AbortError") setFalla("No pudimos buscar productos. Probá de nuevo.");
+        if (err.name !== "AbortError") setFalla(true);
       } finally {
         if (!control.signal.aborted) setBuscando(false);
       }
     }, 400);
-
     return () => {
       clearTimeout(espera);
       control.abort();
     };
-  }, [texto]);
-
-  const resultados = [...tipicos, ...remotos];
-  const visibles = todos ? resultados : resultados.slice(0, RESULTADOS_INICIALES);
-  const elegir = (a) => {
-    onElegir(a);
-    setTexto("");
-    campo.current?.focus();
-  };
+  }, [conMarcas, limpio]);
 
   return (
     <div className="buscador">
-      <div className="buscador-campo">
-        <Search size={18} />
-        <input ref={campo} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Milanesa, yogur, Oreo…" aria-label="Buscar alimento o producto" enterKeyHint="search" />
-        {buscando && (
-          <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}>
-            <LoaderCircle size={18} />
-          </motion.span>
-        )}
-        {texto && !buscando && (
-          <button className="limpiar" onClick={() => setTexto("")} aria-label="Borrar búsqueda"><X size={16} /></button>
-        )}
-      </div>
-
-      {!texto && (favoritas.length > 0 || recientes.length > 0) && (
+      {locales.length > 0 && (
         <ul className="resultados">
-          {favoritas.slice(0, 4).map((f) => (
-            <li key={f.id}>
-              <button className="favorita-chip" onClick={() => usarFavorita(f)}>
-                <Star size={15} fill="currentColor" />
-                <span className="resultado-datos"><strong>{f.nombre}</strong></span>
-                <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
-              </button>
-            </li>
-          ))}
-          {recientes.map((a) => <FilaResultado key={a.nombre} alimento={a} onElegir={elegir} />)}
+          {locales.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} />)}
         </ul>
       )}
 
-      {falla && <p className="nota">{falla}</p>}
+      {locales.length > 0 && !pedidos && limpio.length >= 2 && (
+        <button className="boton boton-secundario" onClick={() => setPedidos(true)}>Buscar en productos de supermercado</button>
+      )}
 
-      {visibles.length > 0 && (
+      {buscando && (
+        <p className="buscando">
+          <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}><LoaderCircle size={17} /></motion.span>
+          Buscando productos…
+        </p>
+      )}
+
+      {productos.length > 0 && (
         <ul className="resultados">
-          {visibles.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={elegir} />)}
+          {productos.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} />)}
         </ul>
       )}
-      {!todos && resultados.length > RESULTADOS_INICIALES && (
-        <button className="boton-texto centrado" onClick={() => setTodos(true)}>Ver {resultados.length - RESULTADOS_INICIALES} más</button>
-      )}
 
-      {texto.trim().length >= 2 && !buscando && resultados.length === 0 && !falla && (
-        <p className="nota">Sin resultados. Probá en "A mano" o por código.</p>
+      {falla && <p className="nota">No pudimos buscar productos. Probá de nuevo.</p>}
+      {conMarcas && !buscando && !falla && !productos.length && locales.length === 0 && limpio.length >= 2 && (
+        <p className="nota">Sin resultados. Probá con otra palabra o cargalo a mano.</p>
       )}
     </div>
   );
 }
 
 function CargaManual({ onAgregar }) {
-  const VACIO = { nombre: "", kcal: "", p: "", c: "", g: "" };
-  const [v, setV] = useState(VACIO);
+  const [v, setV] = useState({ nombre: "", kcal: "", p: "", c: "", g: "" });
 
   function agregar(e) {
     e.preventDefault();
@@ -356,16 +364,15 @@ function CargaManual({ onAgregar }) {
       c: Number(v.c) || 0,
       g: Number(v.g) || 0,
     });
-    setV(VACIO);
   }
 
   return (
     <form className="tarjeta-interna" onSubmit={agregar}>
       <input value={v.nombre} onChange={(e) => setV({ ...v, nombre: e.target.value })} placeholder="Nombre (opcional)" aria-label="Nombre" />
       <div className="ajuste-macros">
-        {CAMPOS.map(([k, texto]) => (
+        {CAMPOS.map(([k, nombre]) => (
           <label key={k}>
-            <span>{texto}</span>
+            <span>{nombre}</span>
             <input type="number" min="0" inputMode="decimal" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} required={k === "kcal"} />
           </label>
         ))}
