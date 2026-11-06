@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Check, ChevronDown, Flame, Moon, Plus, Zap } from "lucide-react";
+import { Activity, Check, ChevronDown, ClipboardPaste, Flame, Moon, Plus, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { aFecha, diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -10,7 +10,7 @@ import Habitos from "../componentes/Habitos.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 
-export default function Resumen({ onCargar, onEditarCuerpo, avisar }) {
+export default function Resumen({ onCargar, onImportar, onEditarCuerpo, avisar }) {
   const [modo, setModo] = useState("dia");
   return (
     <>
@@ -22,14 +22,14 @@ export default function Resumen({ onCargar, onEditarCuerpo, avisar }) {
           </button>
         ))}
       </div>
-      {modo === "dia" && <ResumenDia onCargar={onCargar} />}
+      {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} />}
       {modo === "semana" && <ResumenSemana />}
       {modo === "progreso" && <Progreso onEditarCuerpo={onEditarCuerpo} avisar={avisar} />}
     </>
   );
 }
 
-function ResumenDia({ onCargar }) {
+function ResumenDia({ onCargar, onImportar }) {
   const { usuario, yo, perfiles, comidas, fotos, whoop, salud } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
@@ -38,6 +38,7 @@ function ResumenDia({ onCargar }) {
   const mias = delDia.filter((c) => c.usuario_id === usuario.id);
   const total = sumarComidas(mias);
   const restante = yo.meta_calorias - Math.round(total.kcal);
+  const resumenDia = mias.find((c) => c.tipo === "resumen");
   const racha = calcularRacha(comidas.filter((c) => c.usuario_id === usuario.id).map((c) => c.fecha));
 
   const amigos = Object.values(perfiles)
@@ -50,12 +51,7 @@ function ResumenDia({ onCargar }) {
 
   return (
     <>
-      <header className="titulo-vista">
-        <div>
-          <p className="sobretitulo">{saludo()}, {yo.nombre}</p>
-          <h1>{fecha === hoy ? "Tu día" : nombreDia(fecha)}</h1>
-        </div>
-      </header>
+      <p className="dia-titulo">{fecha === hoy ? `${saludo()}, ${yo.nombre}` : nombreDia(fecha)}</p>
 
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
 
@@ -66,9 +62,9 @@ function ResumenDia({ onCargar }) {
           </span>
         )}
         <div className="heroe-principal">
-          <Anillo valor={total.kcal} meta={yo.meta_calorias}>
+          <Anillo valor={total.kcal} meta={yo.meta_calorias} tam={124}>
             <strong className="heroe-numero"><Numero valor={Math.round(total.kcal)} /></strong>
-            <span>de {yo.meta_calorias.toLocaleString("es-AR")} kcal</span>
+            <span>de {yo.meta_calorias.toLocaleString("es-AR")}</span>
           </Anillo>
           <div className="heroe-detalle">
             <p className="heroe-restante">
@@ -78,7 +74,7 @@ function ResumenDia({ onCargar }) {
                 <><strong>{Math.abs(restante).toLocaleString("es-AR")}</strong> kcal sobre la meta</>
               )}
             </p>
-            <BarraMacros total={total} />
+            <BarraMacros total={total} compacta />
             {plan && (
               <div className="proteina-meta">
                 <span>Proteína <strong>{Math.round(total.p)}</strong> de {plan.proteinas} g</span>
@@ -113,7 +109,20 @@ function ResumenDia({ onCargar }) {
         </ul>
       </section>
 
-      {fecha === hoy && <Recomendador yo={yo} salud={salud} total={total} cargadas={mias.map((c) => c.tipo)} fecha={fecha} onCargar={onCargar} />}
+      {resumenDia && (
+        <button className="tarjeta resumen-importado" onClick={() => onCargar({ comida: resumenDia })}>
+          <span aria-hidden="true">📋</span>
+          <span><strong>{resumenDia.descripcion || "Resumen importado"}</strong><small>{(resumenDia.calorias || 0).toLocaleString("es-AR")} kcal</small></span>
+        </button>
+      )}
+
+      <div className="acciones-rapidas">
+        {fecha === hoy && <Recomendador yo={yo} salud={salud} total={total} cargadas={mias.map((c) => c.tipo)} fecha={fecha} onCargar={onCargar} />}
+        <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => onImportar(fecha)}>
+          <ClipboardPaste size={22} />
+          <span><strong>Importar</strong><small>Captura o texto</small></span>
+        </motion.button>
+      </div>
 
       <Habitos fecha={fecha} />
 

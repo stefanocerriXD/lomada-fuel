@@ -13,7 +13,7 @@ export default function Muro({ onCargar, avisar }) {
   const [filtro, setFiltro] = useState("todos");
   const [zoom, setZoom] = useState(null);
 
-  const visibles = comidas.filter((c) => filtro === "todos" || c.usuario_id === filtro).slice(0, 60);
+  const visibles = comidas.filter((c) => c.tipo !== "resumen" && (filtro === "todos" || c.usuario_id === filtro)).slice(0, 60);
 
   return (
     <>

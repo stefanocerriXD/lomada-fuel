@@ -30,6 +30,8 @@ export async function avisarGrupo(tipo, id) {
   }
 }
 
+export const URL_SALUD = `${window.location.origin}/api/salud`;
+
 const memoria = new Map();
 
 export async function buscarAlimentos(texto, signal) {

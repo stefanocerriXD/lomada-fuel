@@ -7,7 +7,9 @@ export const TIPOS = [
   { id: "cena", texto: "Cena", emoji: "🌙" },
 ];
 
-export const tipoInfo = (id) => TIPOS.find((t) => t.id === id) || TIPOS[0];
+export const TIPOS_TODOS = [{ id: "resumen", texto: "Todo el día", emoji: "📋" }, ...TIPOS];
+
+export const tipoInfo = (id) => TIPOS_TODOS.find((t) => t.id === id) || TIPOS[0];
 
 export const VACIO = { kcal: 0, p: 0, c: 0, g: 0 };
 

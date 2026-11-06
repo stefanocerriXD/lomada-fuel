@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChefHat, Clock, RefreshCw } from "lucide-react";
-import { TIPOS, tipoInfo } from "../lib/macros.js";
+import { TIPOS } from "../lib/macros.js";
 import { comidaSugerida, comoItems, macrosFaltantes, metasDelDia, queFalta, recomendar, textoCantidad } from "../lib/recomendar.js";
 import { Hoja, vibrar } from "./Base.jsx";
 
@@ -17,19 +17,13 @@ export default function Recomendador({ yo, salud, total, cargadas, fecha, onCarg
 
   return (
     <>
-      <section className="tarjeta recomendador">
-        <div className="recomendador-texto">
-          <h2><ChefHat size={18} /> ¿Qué como?</h2>
-          {faltan.kcal >= 150 ? (
-            <p>Te faltan <strong>{numero(faltan.kcal)} kcal</strong>{texto ? `, sobre todo ${texto}` : ""}.</p>
-          ) : (
-            <p>Ya casi cerraste el día. Si tenés hambre, hay opciones livianas.</p>
-          )}
-        </div>
-        <motion.button className="boton" whileTap={{ scale: 0.96 }} onClick={() => { setAbierto(true); vibrar(8); }}>
-          Recomendar {tipoInfo(sugerida).texto.toLowerCase()}
-        </motion.button>
-      </section>
+      <motion.button className="tarjeta accion accion-recomendar" whileTap={{ scale: 0.97 }} onClick={() => { setAbierto(true); vibrar(8); }}>
+        <ChefHat size={22} />
+        <span>
+          <strong>¿Qué como?</strong>
+          <small>{faltan.kcal >= 150 ? `Faltan ${numero(faltan.kcal)} kcal${texto ? `, sobre todo ${texto.split(" y ")[0]}` : ""}` : "Opciones livianas"}</small>
+        </span>
+      </motion.button>
 
       <Hoja abierta={abierto} onCerrar={() => setAbierto(false)} titulo="Qué comer" ancha>
         {abierto && (

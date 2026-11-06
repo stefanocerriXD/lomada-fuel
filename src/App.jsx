@@ -14,6 +14,7 @@ import Retos from "./vistas/Retos.jsx";
 import Ajustes from "./vistas/Ajustes.jsx";
 import NuevaComida from "./vistas/NuevaComida.jsx";
 import Bienvenida from "./vistas/Bienvenida.jsx";
+import Importar from "./vistas/Importar.jsx";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -84,6 +85,7 @@ function Principal({ recuperando, onRecuperado }) {
   const [festejo, setFestejo] = useState(0);
   const [aviso, setAviso] = useState("");
   const [editarCuerpo, setEditarCuerpo] = useState(false);
+  const [importar, setImportar] = useState(null);
   const [bienvenidaVista, setBienvenidaVista] = useState(() => {
     try {
       return localStorage.getItem("comidas-bienvenida") === "vista";
@@ -235,7 +237,7 @@ function Principal({ recuperando, onRecuperado }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
           >
-            {vista === "resumen" && <Resumen onCargar={abrirCarga} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
+            {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={setImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
             {vista === "muro" && <Muro onCargar={abrirCarga} avisar={avisar} />}
             {vista === "chat" && <Chat />}
             {vista === "retos" && <Retos avisar={avisar} />}
@@ -264,6 +266,15 @@ function Principal({ recuperando, onRecuperado }) {
       </nav>
 
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} />
+      <Importar
+        fecha={importar}
+        onCerrar={() => setImportar(null)}
+        onGuardar={() => {
+          setImportar(null);
+          avisar("Resumen importado");
+          setFestejo((n) => n + 1);
+        }}
+      />
       <Bienvenida
         abierta={editarCuerpo || (salud === null && !bienvenidaVista && !recuperando)}
         onCerrar={cerrarCuerpo}

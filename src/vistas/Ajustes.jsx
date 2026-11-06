@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Bell, BellOff, Check, KeyRound, LogOut, Monitor, Moon, RefreshCw, Sun, Target, Unplug, Watch } from "lucide-react";
+import { Bell, BellOff, Check, Copy, HeartPulse, KeyRound, LogOut, Monitor, Moon, RefreshCw, Sun, Target, Unplug, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
-import { accionWhoop } from "../lib/api.js";
+import { accionWhoop, URL_SALUD } from "../lib/api.js";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { FormularioContrasena } from "../componentes/Contrasena.jsx";
 import { activarAvisos, avisosActivos, desactivarAvisos, estadoAvisos } from "../lib/avisos.js";
@@ -136,6 +136,8 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
       <Privacidad avisar={avisar} />
 
       <Notificaciones avisar={avisar} />
+
+      <AppleSalud avisar={avisar} />
 
       <ConexionWhoop avisar={avisar} />
 
@@ -321,5 +323,62 @@ function Contrasena({ avisar }) {
         avisar("Contraseña guardada");
       }}
     />
+  );
+}
+
+function AppleSalud({ avisar }) {
+  const { usuario, extras } = useDatos();
+  const [conectado, setConectado] = useState(null);
+  const [token, setToken] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+
+  useEffect(() => {
+    if (!extras.disponible) return;
+    supabase.from("tokens_salud").select("usuario_id").eq("usuario_id", usuario.id).maybeSingle()
+      .then(({ data, error }) => setConectado(error ? null : Boolean(data)));
+  }, [extras.disponible, usuario.id]);
+
+  if (conectado === null) return null;
+
+  async function crear() {
+    setOcupado(true);
+    const { data, error } = await supabase.rpc("crear_token_salud");
+    setOcupado(false);
+    if (error) return avisar("No se pudo crear la llave");
+    setToken(data);
+    setConectado(true);
+  }
+
+  async function copiar(texto, nombre) {
+    try {
+      await navigator.clipboard.writeText(texto);
+      avisar(`${nombre} copiada`);
+    } catch {
+      avisar("Mantené apretado el texto para copiarlo");
+    }
+  }
+
+  return (
+    <section className="tarjeta ajuste">
+      <h2>Apple Salud</h2>
+      <p className="ajuste-texto">Solo en iPhone. Un Atajo manda a la app las calorías, macros y peso que tengas en Salud.</p>
+      {token ? (
+        <>
+          <p className="ajuste-texto"><strong>Guardá esta llave ahora:</strong> no se vuelve a mostrar.</p>
+          <div className="dato-copiable"><code>{token}</code><button className="boton-icono" onClick={() => copiar(token, "Llave")} aria-label="Copiar llave"><Copy size={17} /></button></div>
+          <div className="dato-copiable"><code>{URL_SALUD}</code><button className="boton-icono" onClick={() => copiar(URL_SALUD, "Dirección")} aria-label="Copiar dirección"><Copy size={17} /></button></div>
+          <ol className="pasos-atajo">
+            <li>Abrí <strong>Atajos</strong> y creá uno nuevo.</li>
+            <li>Agregá una búsqueda de muestras de Salud por cada dato: energía de la dieta, proteína, carbohidratos y grasas de hoy, agrupadas por día.</li>
+            <li>Agregá <strong>Obtener contenido de URL</strong> con esa dirección, método POST y cuerpo JSON: token, calorias, proteinas, carbohidratos y grasas.</li>
+            <li>En <strong>Automatización</strong>, hacé que corra todas las noches.</li>
+          </ol>
+        </>
+      ) : (
+        <button className={conectado ? "boton boton-secundario" : "boton"} onClick={crear} disabled={ocupado}>
+          <HeartPulse size={17} /> {conectado ? "Crear otra llave" : "Conectar Apple Salud"}
+        </button>
+      )}
+    </section>
   );
 }
