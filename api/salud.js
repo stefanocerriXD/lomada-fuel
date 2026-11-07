@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     signal: AbortSignal.timeout(10000),
   });
 
-  if (resp.ok) return res.status(200).json({ ok: true, fecha, guardado: valores, recibido });
+  if (resp.ok) return res.status(200).json({ ok: true, fecha, guardado: valores });
   const cuerpo = await resp.json().catch(() => ({}));
   const codigo = Object.keys(ERRORES).find((c) => cuerpo.message?.includes(c));
   if (!codigo) console.error("Apple Salud no se pudo guardar:", cuerpo);

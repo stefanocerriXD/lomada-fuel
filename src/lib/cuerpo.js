@@ -1,5 +1,6 @@
 // Gasto y objetivo calórico estimados. Son una guía: el metabolismo real varía de persona a persona.
 import { aFecha, haceDias } from "./fechas.js";
+import { sumarComidas } from "./macros.js";
 
 const KCAL_POR_KILO = 7700;
 const MINIMO_KCAL = 1200;
@@ -81,10 +82,12 @@ export function analizarGastoReal(pesos, comidas, plan) {
   const porDia = {};
   for (const c of comidas) {
     if (c.fecha < desde) continue;
-    const dia = (porDia[c.fecha] ??= { kcal: 0, comidas: 0 });
-    dia.kcal += Number(c.calorias) || 0;
-    dia.comidas += 1;
+    const dia = (porDia[c.fecha] ??= { lista: [], comidas: 0 });
+    dia.lista.push(c);
+    // Un resumen trae el día entero, aunque sea un solo registro.
+    dia.comidas += c.tipo === "resumen" ? 2 : 1;
   }
+  for (const dia of Object.values(porDia)) dia.kcal = sumarComidas(dia.lista).kcal;
   // Un día con una sola comida cargada casi siempre está incompleto.
   const completos = Object.values(porDia).filter((d) => d.comidas >= 2);
 

@@ -30,15 +30,24 @@ begin
   if exists (select 1 from mensajes where bot_semana = inicio) then return null; end if;
 
   create temporary table semana on commit drop as
+    with por_dia as (
+      select c.usuario_id, c.fecha,
+             greatest(sum(coalesce(c.calorias, 0)) filter (where c.tipo <> 'resumen'), sum(coalesce(c.calorias, 0)) filter (where c.tipo = 'resumen')) as kcal,
+             greatest(sum(coalesce(c.proteinas, 0)) filter (where c.tipo <> 'resumen'), sum(coalesce(c.proteinas, 0)) filter (where c.tipo = 'resumen')) as proteinas,
+             count(*) filter (where c.tipo <> 'resumen') as comidas,
+             count(c.foto_path) as fotos
+      from comidas c
+      where c.fecha between inicio and fin and not c.privada
+      group by c.usuario_id, c.fecha
+    )
     select p.nombre,
-           sum(coalesce(c.calorias, 0))::integer as kcal,
-           round(sum(coalesce(c.proteinas, 0)))::integer as proteinas,
-           count(*) filter (where c.tipo <> 'resumen')::integer as comidas,
-           count(c.foto_path)::integer as fotos,
-           count(distinct c.fecha)::integer as dias
-    from comidas c
-    join perfiles p on p.id = c.usuario_id
-    where c.fecha between inicio and fin and not c.privada
+           sum(d.kcal)::integer as kcal,
+           round(sum(d.proteinas))::integer as proteinas,
+           sum(d.comidas)::integer as comidas,
+           sum(d.fotos)::integer as fotos,
+           count(*)::integer as dias
+    from por_dia d
+    join perfiles p on p.id = d.usuario_id
     group by p.id, p.nombre;
 
   select sum(comidas), sum(fotos) into grupo_comidas, grupo_fotos from semana;

@@ -5,6 +5,7 @@ import {
 import { calcularPlan } from "./cuerpo.js";
 import { desafioTerminado, puntajes } from "./desafios.js";
 import { aFecha, fechaLocal } from "./fechas.js";
+import { sumarComidas } from "./macros.js";
 import { comidasFavoritas } from "./perfil.js";
 
 const logro = (codigo, grupo, icono, unidad, niveles) => ({
@@ -128,9 +129,8 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
 
   if (salud) {
     const plan = calcularPlan(salud);
-    const porDia = {};
-    propias.forEach((c) => (porDia[c.fecha] = (porDia[c.fecha] || 0) + Number(c.proteinas || 0)));
-    total.proteina = Object.values(porDia).filter((g) => g >= plan.proteinas).length;
+    const fechas = [...new Set(propias.map((c) => c.fecha))];
+    total.proteina = fechas.filter((f) => sumarComidas(propias.filter((c) => c.fecha === f)).p >= plan.proteinas).length;
     const inicial = Number(pesos[0]?.peso_kg ?? salud.peso_kg);
     const direccion = inicial >= Number(salud.peso_objetivo) ? 1 : -1;
     total.peso = Math.max(0, Math.floor((inicial - Number(salud.peso_kg)) * direccion));

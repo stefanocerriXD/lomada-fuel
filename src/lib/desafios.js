@@ -1,5 +1,6 @@
 import { CalendarCheck, Camera, Droplets, Dumbbell } from "lucide-react";
 import { aFecha, fechaLocal } from "./fechas.js";
+import { sumarComidas } from "./macros.js";
 
 export const TIPOS_DESAFIO = [
   { id: "proteina", titulo: "Reto de proteína", icono: Dumbbell, meta: 120, unidad: "g", etiqueta: "Proteína por día (g)", regla: (m) => `Llegar a ${m} g de proteína por día` },
@@ -33,7 +34,7 @@ export function puntajes(desafio, perfiles, comidas, agua) {
       const propias = publicas.filter((c) => c.usuario_id === perfil.id);
       const delDia = (d) => propias.filter((c) => c.fecha === d);
       let puntos = 0;
-      if (desafio.tipo === "proteina") puntos = dias.filter((d) => delDia(d).reduce((t, c) => t + Number(c.proteinas || 0), 0) >= meta).length;
+      if (desafio.tipo === "proteina") puntos = dias.filter((d) => sumarComidas(delDia(d)).p >= meta).length;
       if (desafio.tipo === "constancia") puntos = dias.filter((d) => delDia(d).length >= meta).length;
       if (desafio.tipo === "agua") puntos = dias.filter((d) => (agua.find((a) => a.usuario_id === perfil.id && a.fecha === d)?.ml || 0) >= meta).length;
       if (desafio.tipo === "fotos") puntos = propias.filter((c) => c.foto_path).length;

@@ -13,16 +13,26 @@ export const tipoInfo = (id) => TIPOS_TODOS.find((t) => t.id === id) || TIPOS[0]
 
 export const VACIO = { kcal: 0, p: 0, c: 0, g: 0 };
 
+const macrosDe = (c) => ({ kcal: Number(c.calorias) || 0, p: Number(c.proteinas) || 0, c: Number(c.carbohidratos) || 0, g: Number(c.grasas) || 0 });
+const CLAVES = ["kcal", "p", "c", "g"];
+const sumar = (a, b) => Object.fromEntries(CLAVES.map((k) => [k, a[k] + b[k]]));
+
+// Un total del día (Apple Salud o importado) y las comidas cargadas suelen ser lo mismo:
+// se usa el mayor de cada dato en vez de sumarlos. Nada de lo guardado se modifica.
 export function sumarComidas(lista) {
-  return lista.reduce(
-    (t, c) => ({
-      kcal: t.kcal + (Number(c.calorias) || 0),
-      p: t.p + (Number(c.proteinas) || 0),
-      c: t.c + (Number(c.carbohidratos) || 0),
-      g: t.g + (Number(c.grasas) || 0),
-    }),
-    VACIO,
-  );
+  const dias = new Map();
+  for (const c of lista) {
+    const clave = `${c.usuario_id}|${c.fecha}`;
+    const dia = dias.get(clave) || { cargado: VACIO, total: VACIO };
+    if (c.tipo === "resumen") dia.total = sumar(dia.total, macrosDe(c));
+    else dia.cargado = sumar(dia.cargado, macrosDe(c));
+    dias.set(clave, dia);
+  }
+  let total = VACIO;
+  for (const { cargado, total: delDia } of dias.values()) {
+    total = sumar(total, Object.fromEntries(CLAVES.map((k) => [k, Math.max(cargado[k], delDia[k])])));
+  }
+  return total;
 }
 
 export function macrosDeItem(item) {

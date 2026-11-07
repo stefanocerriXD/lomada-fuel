@@ -19,7 +19,7 @@ const SECCIONES = [
       ["¿Cómo importo todo el día?", "En Resumen tocá Importar el día, o Todo el día dentro de Subir comida. Si la captura separa las comidas, se cargan una por una. Al guardar te ofrece subir las fotos."],
       ["¿Las fotos del día suman calorías?", "No. Las calorías ya entraron con lo importado: la foto solo se publica en Imágenes."],
       ["Leyó mal un número. ¿Lo puedo corregir?", "Sí. Siempre podés revisar antes de guardar. Si tenés la opción, pegar el texto es más preciso que una captura. Para las capturas conviene una imagen nítida, sin recortar los números."],
-      ["Si importo dos veces el mismo día, ¿se duplica?", "No. Lo importado antes para ese día o esa comida se reemplaza. Lo que cargaste a mano sí se suma, así que no registres lo mismo en los dos lados."],
+      ["Si importo dos veces el mismo día, ¿se duplica?", "No. Lo importado antes para ese día o esa comida se reemplaza."],
       ["¿Mi captura se sube a algún lado?", "No. Se lee dentro de tu celular y no se guarda. La primera vez puede tardar porque baja el lector."],
     ],
   },
@@ -67,7 +67,7 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo traigo lo que tengo en Apple Salud?", "Conectalo en Ajustes, en Apple Salud. Un Atajo del iPhone manda tus calorías y macros de cada día."],
       ["¿Por qué WHOOP no me pasa lo que comí?", "WHOOP no ofrece esos datos a otras apps. Solo entrega recuperación, sueño, esfuerzo y calorías quemadas. Lo que comés se toma de Apple Salud."],
-      ["¿Se suma con lo que cargo en la app?", "Sí. Si registrás lo mismo en Apple Salud y en Lomada Fuel, cuenta doble."],
+      ["¿Se suma con lo que cargo en la app?", "No. Lo de Apple Salud y lo que cargás acá quedan guardados por separado. Para el total del día se usa el valor mayor de cada dato, así no cuenta doble."],
     ],
   },
   {
