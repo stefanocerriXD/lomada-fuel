@@ -2,15 +2,32 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { supabase } from "./supabase.js";
 import { accionWhoop } from "./api.js";
 import { haceDias } from "./fechas.js";
+import { cantidades } from "./medallas.js";
 
 const Contexto = createContext(null);
 export const useDatos = () => useContext(Contexto);
 
 export const VENTANA_DIAS = 30;
-const HISTORIAL_MAXIMO = 1500;
+const HISTORIAL_MAXIMO = 10000;
 const RENOVAR_FOTOS_MS = 50 * 60 * 1000; // Los links firmados duran 1 hora.
+const REINTENTO_MS = 3000;
+const SIN_CONEXION_MS = 15000; // Si el canal se cae, se sigue actualizando por pedidos.
+const RESPALDO_MS = 120000;
+const AUSENCIA_MS = 15000; // En el iPhone la conexión muere al pasar a segundo plano.
+const PAGINA = 1000;
 
 export const AVATAR_BASE = { color: "#E4572E", meta_calorias: 2000 };
+
+// Supabase entrega hasta mil filas por pedido.
+async function traerTodo(armar) {
+  const filas = [];
+  for (;;) {
+    const { data, error } = await armar().range(filas.length, filas.length + PAGINA - 1);
+    if (error) throw error;
+    filas.push(...data);
+    if (data.length < PAGINA || filas.length >= HISTORIAL_MAXIMO) return filas;
+  }
+}
 
 export function DatosProvider({ usuario, children }) {
   const [perfiles, setPerfiles] = useState({});
@@ -23,8 +40,13 @@ export function DatosProvider({ usuario, children }) {
   const [pesos, setPesos] = useState([]);
   const [reacciones, setReacciones] = useState([]);
   const [perfilId, abrirPerfil] = useState(null);
+  const [mensajes, setMensajes] = useState([]);
+  const [mensajesListos, setMensajesListos] = useState(false);
+  const [historial, setHistorial] = useState(null);
+  const firmas = useRef({});
+  const perfilesRef = useRef(perfiles);
+  perfilesRef.current = perfiles;
   const [extras, setExtras] = useState({ disponible: false, comentarios: [], favoritas: [], agua: [], ayuno: null, desafios: [], medallas: [] });
-  const espera = useRef(null);
 
   const cargarPerfiles = useCallback(async () => {
     const { data, error } = await supabase.from("perfiles").select("*");
@@ -33,11 +55,15 @@ export function DatosProvider({ usuario, children }) {
   }, []);
 
   const firmarFotos = useCallback(async (lista) => {
-    const rutas = lista.filter((c) => c.foto_path).map((c) => c.foto_path);
+    // Solo se firma lo nuevo o lo vencido: firmar de nuevo cambia el link y la foto parpadea.
+    const ahora = Date.now();
+    const rutas = [...new Set(lista.filter((c) => c.foto_path).map((c) => c.foto_path))].filter((r) => !(ahora - firmas.current[r] < RENOVAR_FOTOS_MS));
     if (!rutas.length) return;
     const { data } = await supabase.storage.from("fotos").createSignedUrls(rutas, 3600);
     // Se suman a las que ya están: el perfil y los días viejos traen fotos fuera de la ventana.
-    setFotos((prev) => ({ ...prev, ...Object.fromEntries((data || []).filter((u) => u.signedUrl).map((u) => [u.path, u.signedUrl])) }));
+    const nuevas = (data || []).filter((u) => u.signedUrl);
+    nuevas.forEach((u) => { firmas.current[u.path] = ahora; });
+    setFotos((prev) => ({ ...prev, ...Object.fromEntries(nuevas.map((u) => [u.path, u.signedUrl])) }));
   }, []);
 
   const cargarComidas = useCallback(async () => {
@@ -53,17 +79,36 @@ export function DatosProvider({ usuario, children }) {
     return data;
   }, [firmarFotos]);
 
+  const traerComidasDe = useCallback(
+    (id) => traerTodo(() => supabase.from("comidas").select("*").eq("usuario_id", id).order("fecha", { ascending: false }).order("id")),
+    [],
+  );
+
   const cargarHistorial = useCallback(async (id) => {
-    const { data, error } = await supabase
-      .from("comidas")
-      .select("*")
-      .eq("usuario_id", id)
-      .order("fecha", { ascending: false })
-      .limit(HISTORIAL_MAXIMO);
-    if (error) throw error;
+    const data = await traerComidasDe(id);
     await firmarFotos(data);
     return data;
-  }, [firmarFotos]);
+  }, [firmarFotos, traerComidasDe]);
+
+  // Los logros cuentan toda la historia, no solo los últimos días.
+  const cargarLogros = useCallback(async () => {
+    const [propias, agua] = await Promise.all([
+      traerComidasDe(usuario.id),
+      traerTodo(() => supabase.from("agua").select("*").eq("usuario_id", usuario.id).order("fecha")),
+    ]);
+    setHistorial({ comidas: propias, agua });
+  }, [traerComidasDe, usuario.id]);
+
+  const cargarMensajes = useCallback(async () => {
+    const { data, error } = await supabase.from("mensajes").select("*").order("creado_en", { ascending: false }).limit(200);
+    if (error) throw error;
+    setMensajes(data.reverse());
+    setMensajesListos(true);
+  }, []);
+
+  const agregarMensaje = useCallback((nuevo) => {
+    setMensajes((prev) => (prev.some((m) => m.id === nuevo.id) ? prev : [...prev, nuevo]));
+  }, []);
 
   const cargarDia = useCallback(async (fecha) => {
     const { data, error } = await supabase.from("comidas").select("*").eq("fecha", fecha).limit(200);
@@ -166,7 +211,8 @@ export function DatosProvider({ usuario, children }) {
     cargarExtras().catch(() => {});
     // El bot publica una sola vez por semana, sin importar cuántas veces se llame.
     supabase.rpc("publicar_resumen_semanal").then(() => {}, () => {});
-  }, [cargarSalud, cargarReacciones, cargarExtras]);
+    cargarLogros().catch(() => {});
+  }, [cargarSalud, cargarReacciones, cargarExtras, cargarLogros]);
 
   useEffect(() => {
     let activo = true;
@@ -185,29 +231,128 @@ export function DatosProvider({ usuario, children }) {
       }
     })();
 
-    const canal = supabase
-      .channel("comidas-grupo")
-      .on("postgres_changes", { event: "*", schema: "public", table: "comidas" }, () => {
-        clearTimeout(espera.current);
-        espera.current = setTimeout(() => cargarComidas().catch(() => {}), 300);
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "reacciones" }, () => {
-        cargarReacciones().catch(() => {});
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "comentarios" }, () => {
-        cargarExtras().catch(() => {});
-      })
-      .subscribe();
-
-    const renovar = setInterval(() => cargarComidas().catch(() => {}), RENOVAR_FOTOS_MS);
-
     return () => {
       activo = false;
-      clearTimeout(espera.current);
-      clearInterval(renovar);
-      supabase.removeChannel(canal);
     };
-  }, [usuario.id, cargarPerfiles, cargarComidas, cargarReacciones, cargarExtras]); // El objeto usuario cambia en cada renovación de sesión.
+  }, [usuario.id, cargarPerfiles, cargarComidas]); // El objeto usuario cambia en cada renovación de sesión.
+
+  // Trae lo que pudo haber pasado mientras no se escuchaba.
+  const ultimoRefresco = useRef(0);
+  const refrescar = useCallback(async (forzar = false) => {
+    if (!forzar && Date.now() - ultimoRefresco.current < 2000) return;
+    ultimoRefresco.current = Date.now();
+    await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarExtras()]);
+  }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarExtras]);
+
+  const canalRef = useRef(null);
+  const estadoCanal = useRef("");
+  const reintento = useRef(null);
+  const yaConecto = useRef(false);
+  const tiempos = useRef({});
+
+  const conectar = useCallback(() => {
+    clearTimeout(reintento.current);
+    const anterior = canalRef.current;
+    canalRef.current = null;
+    if (anterior) supabase.removeChannel(anterior);
+
+    const tandas = tiempos.current;
+    const enTanda = (clave, tarea) => {
+      clearTimeout(tandas[clave]);
+      tandas[clave] = setTimeout(() => tarea().catch(() => {}), 250);
+    };
+    const tabla = (canal, nombre, alCambiar) => canal.on("postgres_changes", { event: "*", schema: "public", table: nombre }, alCambiar);
+
+    let canal = supabase.channel(`grupo-${Date.now()}`);
+    canal = tabla(canal, "comidas", () => enTanda("comidas", cargarComidas));
+    canal = tabla(canal, "reacciones", () => enTanda("reacciones", cargarReacciones));
+    canal = tabla(canal, "perfiles", () => enTanda("perfiles", cargarPerfiles));
+    for (const nombre of ["comentarios", "medallas", "desafios", "agua"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
+    canal = tabla(canal, "mensajes", ({ eventType, new: nuevo }) => {
+      if (eventType !== "INSERT") return enTanda("mensajes", cargarMensajes);
+      agregarMensaje(nuevo);
+      if (nuevo.usuario_id && !perfilesRef.current[nuevo.usuario_id]) cargarPerfiles().catch(() => {});
+    });
+
+    canalRef.current = canal;
+    canal.subscribe((estado) => {
+      if (canalRef.current !== canal) return;
+      estadoCanal.current = estado;
+      if (estado === "SUBSCRIBED") {
+        // Lo que pasó mientras se conectaba no llegó por el canal.
+        if (yaConecto.current) refrescar(true);
+        yaConecto.current = true;
+      } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(estado)) {
+        clearTimeout(reintento.current);
+        reintento.current = setTimeout(conectar, REINTENTO_MS);
+      }
+    });
+  }, [agregarMensaje, cargarComidas, cargarExtras, cargarMensajes, cargarPerfiles, cargarReacciones, refrescar]);
+
+  useEffect(() => {
+    cargarMensajes().catch(() => setMensajesListos(true));
+    conectar();
+
+    let ocultaDesde = document.visibilityState === "hidden" ? Date.now() : null;
+    const volver = async () => {
+      if (document.visibilityState !== "visible") return;
+      const ausencia = ocultaDesde ? Date.now() - ocultaDesde : 0;
+      ocultaDesde = null;
+      // Renueva la sesión antes de pedir nada: puede haber vencido en segundo plano.
+      await supabase.auth.getSession().catch(() => {});
+      refrescar();
+      if (ausencia > AUSENCIA_MS || estadoCanal.current !== "SUBSCRIBED") conectar();
+    };
+    const alCambiar = () => {
+      if (document.visibilityState === "hidden") ocultaDesde = Date.now();
+      else volver();
+    };
+    document.addEventListener("visibilitychange", alCambiar);
+    window.addEventListener("focus", volver);
+    window.addEventListener("pageshow", volver);
+    window.addEventListener("online", volver);
+
+    const sinCanal = setInterval(() => {
+      if (document.visibilityState === "visible" && estadoCanal.current !== "SUBSCRIBED") refrescar();
+    }, SIN_CONEXION_MS);
+    const respaldo = setInterval(() => {
+      if (document.visibilityState === "visible") refrescar();
+    }, RESPALDO_MS);
+
+    const tandas = tiempos.current;
+    return () => {
+      document.removeEventListener("visibilitychange", alCambiar);
+      window.removeEventListener("focus", volver);
+      window.removeEventListener("pageshow", volver);
+      window.removeEventListener("online", volver);
+      clearInterval(sinCanal);
+      clearInterval(respaldo);
+      clearTimeout(reintento.current);
+      Object.values(tandas).forEach(clearTimeout);
+      const canal = canalRef.current;
+      canalRef.current = null;
+      if (canal) supabase.removeChannel(canal);
+    };
+  }, [cargarMensajes, conectar, refrescar]);
+
+  // Lo reciente manda: incluye lo que se acaba de cargar, editar o borrar.
+  const comidasLogros = useMemo(() => {
+    if (!historial) return null;
+    const recientes = new Set(comidas.map((c) => c.id));
+    return [...comidas, ...historial.comidas.filter((c) => !recientes.has(c.id) && c.fecha < haceDias(VENTANA_DIAS))];
+  }, [comidas, historial]);
+
+  const aguaLogros = useMemo(() => {
+    if (!historial) return [];
+    const recientes = extras.agua.filter((a) => a.usuario_id === usuario.id);
+    return [...recientes, ...historial.agua.filter((a) => !recientes.some((r) => r.fecha === a.fecha))];
+  }, [extras.agua, historial, usuario.id]);
+
+  const progreso = useMemo(() => {
+    if (!comidasLogros) return null;
+    const victorias = extras.medallas.filter((m) => m.usuario_id === usuario.id && m.codigo.startsWith("victoria:")).length;
+    return cantidades({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, perfiles, salud: salud || null, pesos, victorias });
+  }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, salud, usuario.id]);
 
   const valor = useMemo(
     () => ({
@@ -219,6 +364,12 @@ export function DatosProvider({ usuario, children }) {
       estado,
       cargarComidas,
       cargarHistorial,
+      mensajes,
+      mensajesListos,
+      agregarMensaje,
+      comidasLogros,
+      aguaLogros,
+      progreso,
       cargarDia,
       perfilId,
       abrirPerfil,
@@ -234,7 +385,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarDia, perfilId, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarDia, perfilId, mensajes, mensajesListos, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

@@ -4,10 +4,11 @@ import { Award, Camera, Pencil, UtensilsCrossed } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
-import { MEDALLAS } from "../lib/medallas.js";
+import { LOGROS, nivelesGuardados } from "../lib/medallas.js";
 import { comidasFavoritas, estadisticas, porDia } from "../lib/perfil.js";
 import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
+import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 import Visor from "../componentes/Visor.jsx";
 
 const SECCIONES = [["dias", "Días"], ["fotos", "Fotos"], ["logros", "Logros"]];
@@ -43,8 +44,8 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
   const favoritas = useMemo(() => comidasFavoritas(lista || []), [lista]);
   const conFoto = useMemo(() => (lista || []).filter((c) => c.foto_path && fotos[c.foto_path]), [lista, fotos]);
   const logros = useMemo(() => {
-    const ganadas = new Set(extras.medallas.filter((m) => m.usuario_id === perfil.id).map((m) => m.codigo));
-    return MEDALLAS.filter((m) => ganadas.has(m.codigo));
+    const niveles = nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === perfil.id).map((m) => m.codigo));
+    return LOGROS.filter((l) => niveles[l.codigo]).map((l) => ({ logro: l, nivel: niveles[l.codigo] }));
   }, [extras.medallas, perfil.id]);
 
   const abrirFoto = (comida) => setVisor({ lista: conFoto, inicio: Math.max(conFoto.findIndex((c) => c.id === comida.id), 0) });
@@ -152,13 +153,7 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
             <h3 className="perfil-subtitulo">Logros</h3>
             {logros.length ? (
               <ul className="medallas">
-                {logros.map((m) => (
-                  <li key={m.codigo} className="tarjeta medalla ganada">
-                    <span className="medalla-icono" aria-hidden="true"><m.icono size={24} /></span>
-                    <strong>{m.nombre}</strong>
-                    <small>{m.detalle}</small>
-                  </li>
-                ))}
+                {logros.map(({ logro, nivel }) => <TarjetaLogro key={logro.codigo} logro={logro} nivel={nivel} />)}
               </ul>
             ) : <Vacio icono={Award} titulo="Todavía sin logros" />}
           </section>

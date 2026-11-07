@@ -77,16 +77,9 @@ function ResumenDia({ onCargar, onImportar }) {
               )}
             </p>
             <BarraMacros total={total} compacta />
-            {plan && (
-              <div className="proteina-meta">
-                <span>Proteína <strong>{Math.round(total.p)}</strong> de {plan.proteinas} g</span>
-                <span className="pista-progreso">
-                  <motion.span initial={{ scaleX: 0 }} animate={{ scaleX: Math.min(total.p / plan.proteinas, 1) }} transition={{ duration: 0.8 }} />
-                </span>
-              </div>
-            )}
           </div>
         </div>
+        {plan && <MacrosRestantes total={total} plan={plan} meta={yo.meta_calorias} />}
         <ul className="ranuras">
           {TIPOS.map((t) => {
             const lista = mias.filter((c) => c.tipo === t.id);
@@ -143,6 +136,29 @@ function ResumenDia({ onCargar, onImportar }) {
         )}
       </section>
     </>
+  );
+}
+
+function MacrosRestantes({ total, plan, meta }) {
+  // Los carbos completan la meta de calorías que se ve en el anillo.
+  const carbos = Math.max(0, Math.round((meta - plan.proteinas * 4 - plan.grasas * 9) / 4));
+  const filas = [["Proteínas", "p", plan.proteinas], ["Carbos", "c", carbos], ["Grasas", "g", plan.grasas]];
+  return (
+    <ul className="macros-faltan" aria-label="Lo que falta de cada macro">
+      {filas.map(([texto, clave, objetivo]) => {
+        const falta = Math.round(objetivo - total[clave]);
+        return (
+          <li key={clave}>
+            <span className="macro-nombre"><span className={`punto s-${clave}`} /> {texto}</span>
+            <strong>{falta >= 0 ? `${falta} g` : `+${Math.abs(falta)} g`}</strong>
+            <small>{falta >= 0 ? `faltan de ${objetivo} g` : `de más sobre ${objetivo} g`}</small>
+            <span className="pista-progreso">
+              <motion.span className={`s-${clave}`} initial={{ scaleX: 0 }} animate={{ scaleX: objetivo ? Math.min(total[clave] / objetivo, 1) : 1 }} transition={{ duration: 0.8 }} />
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

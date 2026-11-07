@@ -3,7 +3,7 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { CalendarDays, Plus, Settings, Trophy, Users } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
 import { avisarGrupo } from "./lib/api.js";
-import { medalla, medallasGanadas } from "./lib/medallas.js";
+import { medallasGanadas, nombreDeCodigo } from "./lib/medallas.js";
 import { DatosProvider, useDatos } from "./lib/datos.jsx";
 import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
@@ -78,7 +78,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, yo, estado, salud, pesos, comidas, perfiles, reacciones, extras, cargarExtras, abrirPerfil } = useDatos();
+  const { usuario, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil } = useDatos();
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
@@ -166,9 +166,9 @@ function Principal({ recuperando, onRecuperado }) {
 
   // Las medallas se revisan cada vez que cambian los datos que las habilitan.
   useEffect(() => {
-    if (!estado.listo || !extras.disponible || entregando.current) return;
+    if (!estado.listo || !extras.disponible || !comidasLogros || entregando.current) return;
     const yaGanadas = extras.medallas.filter((m) => m.usuario_id === usuario.id).map((m) => m.codigo);
-    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas, agua: extras.agua, reacciones, desafios: extras.desafios, perfiles, salud, pesos, yaGanadas });
+    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, desafios: extras.desafios, perfiles, salud, pesos, yaGanadas });
     if (!nuevas.length) return;
     entregando.current = true;
     supabase
@@ -177,14 +177,17 @@ function Principal({ recuperando, onRecuperado }) {
       .then(async ({ error }) => {
         if (!error) {
           await cargarExtras();
-          avisar(`Logro nuevo: ${medalla(nuevas[0]).nombre}`);
-          avisarGrupo("medalla", nuevas[0]);
+          const nivel = [...nuevas].reverse().find((c) => nombreDeCodigo(c));
+          if (nivel) {
+            avisar(`Nuevo logro: ${nombreDeCodigo(nivel)}`);
+            avisarGrupo("medalla", nivel, nombreDeCodigo(nivel));
+          }
           setFestejo((n) => n + 1);
           vibrar(30);
         }
         entregando.current = false;
       });
-  }, [estado.listo, extras, comidas, reacciones, perfiles, salud, pesos, usuario.id, cargarExtras, avisar]);
+  }, [estado.listo, extras, comidasLogros, aguaLogros, reacciones, perfiles, salud, pesos, usuario.id, cargarExtras, avisar]);
 
   // Resultado de la autorización de WHOOP, que vuelve a la app con un parámetro en la dirección.
   useEffect(() => {

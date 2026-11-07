@@ -18,12 +18,12 @@ export async function accionWhoop(accion, forzar = false) {
 }
 
 // Una notificación que no sale no debe frenar lo que hizo la persona.
-export async function avisarGrupo(tipo, id) {
+export async function avisarGrupo(tipo, id, nombre) {
   try {
     await fetch("/api/notificar", {
       method: "POST",
       headers: { "content-type": "application/json", ...(await encabezados()) },
-      body: JSON.stringify({ tipo, id }),
+      body: JSON.stringify({ tipo, id, nombre }),
     });
   } catch {
     // Sin conexión no hay aviso.

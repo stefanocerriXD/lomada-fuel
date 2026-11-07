@@ -76,44 +76,11 @@ function CitaFoto({ id, onZoom }) {
 }
 
 export default function Chat({ avisar, cabecera }) {
-  const { usuario, perfiles, cargarPerfiles, abrirPerfil } = useDatos();
-  const [mensajes, setMensajes] = useState([]);
+  const { usuario, perfiles, mensajes, mensajesListos: cargado, agregarMensaje, abrirPerfil } = useDatos();
   const [texto, setTexto] = useState("");
   const [error, setError] = useState("");
-  const [cargado, setCargado] = useState(false);
   const [zoom, setZoom] = useState(null);
   const fondo = useRef(null);
-  const perfilesRef = useRef(perfiles);
-  perfilesRef.current = perfiles;
-
-  useEffect(() => {
-    let activo = true;
-    supabase
-      .from("mensajes")
-      .select("*")
-      .order("creado_en", { ascending: false })
-      .limit(200)
-      .then(({ data, error: err }) => {
-        if (!activo) return;
-        if (err) setError(err.message);
-        else setMensajes(data.reverse());
-        setCargado(true);
-      });
-
-    // Mensajes nuevos en vivo, de cualquier amigo.
-    const canal = supabase
-      .channel("mensajes-grupo")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "mensajes" }, ({ new: nuevo }) => {
-        setMensajes((prev) => (prev.some((m) => m.id === nuevo.id) ? prev : [...prev, nuevo]));
-        if (nuevo.usuario_id && !perfilesRef.current[nuevo.usuario_id]) cargarPerfiles().catch(() => {});
-      })
-      .subscribe();
-
-    return () => {
-      activo = false;
-      supabase.removeChannel(canal);
-    };
-  }, [cargarPerfiles]);
 
   const linea = mensajes.slice(-MAXIMO_EN_PANTALLA);
 
@@ -138,7 +105,7 @@ export default function Chat({ avisar, cabecera }) {
       return;
     }
     // Se suma enseguida aunque el tiempo real tarde o esté caído.
-    setMensajes((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]));
+    agregarMensaje(data);
     avisarGrupo("mensaje", data.id);
   }
 

@@ -13,7 +13,7 @@ import { Reacciones } from "./TarjetaComida.jsx";
 
 // Foto a pantalla completa, con sus datos y una respuesta que cae en el chat del grupo.
 export default function Visor({ lista, inicio = 0, onCerrar }) {
-  const { usuario, perfiles, fotos, abrirPerfil } = useDatos();
+  const { usuario, perfiles, fotos, abrirPerfil, agregarMensaje } = useDatos();
   const [indice, setIndice] = useState(inicio);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -55,6 +55,7 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
       .single();
     setEnviando(false);
     if (error) return setEstado("No se pudo enviar");
+    agregarMensaje(data);
     setTexto("");
     setEstado("Enviado al chat");
     vibrar(10);

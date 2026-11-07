@@ -38,6 +38,7 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo calcula cuánto quemo?", "Usa tu edad, altura, peso y actividad para estimarlo. Con el tiempo lo ajusta según tus pesajes y lo que registrás."],
       ["¿Cómo actualizo mi plan?", "Entrá a Resumen, pestaña Progreso, y tocá Editar plan."],
+      ["¿Qué significa lo que falta de cada macro?", "En Resumen ves cuántos gramos de proteínas, carbos y grasas te quedan para llegar a tu plan de hoy. Si aparece con un +, ya te pasaste por esa cantidad."],
       ["¿Qué hace ¿Qué como?", "Mira lo que te falta para tu meta del día y te propone recetas simples, con cantidades ajustadas. Tocá una para cargarla."],
     ],
   },
@@ -45,7 +46,9 @@ const SECCIONES = [
     titulo: "Retos y logros",
     preguntas: [
       ["¿Cómo armo un reto?", "En Retos tocá Nuevo, elegí el tipo y los días. Participa todo el grupo."],
-      ["¿Cómo se ganan los logros?", "Solos, a medida que usás la app. Las comidas privadas no cuentan para los logros de Alimentación, porque esos logros los ve el grupo."],
+      ["¿Cómo se ganan los logros?", "Solos, a medida que usás la app. Cada logro tiene 5 niveles y cada nivel da un título mejor: por ejemplo, con 5 milanesas sos Bebé de la milanesa y con 250, Rey de la milanesa."],
+      ["¿Dónde veo cuánto me falta?", "En Retos, debajo de cada logro: ahí está tu avance y el título que sigue."],
+      ["¿Las comidas privadas cuentan?", "No para los logros de Alimentación, porque esos los ve el grupo."],
     ],
   },
   {

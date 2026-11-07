@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: "Falta iniciar sesión" });
   if (!configurado()) return res.status(200).json({ enviadas: 0 });
 
-  const { tipo, id } = req.body || {};
+  const { tipo, id, nombre } = req.body || {};
   if (!tipo || !id) return res.status(400).json({ error: "Pedido no válido" });
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     });
 
   try {
-    const resp = await (tipo === "medalla" ? rpc("aviso_medalla", { p_codigo: id }) : rpc("destinos_aviso", { p_tipo: tipo, p_id: id }));
+    const resp = await (tipo === "medalla" ? rpc("aviso_medalla", { p_codigo: id, p_nombre: nombre || null }) : rpc("destinos_aviso", { p_tipo: tipo, p_id: id }));
     if (!resp.ok) return res.status(resp.status === 401 ? 401 : 400).json({ error: "No autorizado" });
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });

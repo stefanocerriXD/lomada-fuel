@@ -1,12 +1,13 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
-import { Lock, Plus, Swords, Trash2, Trophy } from "lucide-react";
+import { Plus, Swords, Trash2, Trophy } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal, haceDias } from "../lib/fechas.js";
 import { desafioTerminado, diasRestantes, objetivoDesafio, puntajes, tipoDesafio, TIPOS_DESAFIO } from "../lib/desafios.js";
-import { MEDALLAS } from "../lib/medallas.js";
+import { LOGROS, nivelesGuardados } from "../lib/medallas.js";
 import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
+import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 
 function DesafioIcono({ tipo, size = 18 }) {
   const Icono = tipo.icono;
@@ -126,8 +127,7 @@ function TarjetaDesafio({ desafio, ranking, propio, onBorrar }) {
 }
 
 function Medallas() {
-  const { usuario, extras, perfiles, abrirPerfil } = useDatos();
-  const mias = useMemo(() => new Set(extras.medallas.filter((m) => m.usuario_id === usuario.id).map((m) => m.codigo)), [extras.medallas, usuario.id]);
+  const { usuario, extras, perfiles, progreso, abrirPerfil } = useDatos();
 
   return (
     <>
@@ -135,16 +135,7 @@ function Medallas() {
         <div key={grupo} className="grupo-medallas">
           <h3 className="perfil-subtitulo">{titulo}</h3>
           <ul className="medallas">
-            {MEDALLAS.filter((m) => m.grupo === grupo).map((m) => {
-              const ganada = mias.has(m.codigo);
-              return (
-                <li key={m.codigo} className={ganada ? "tarjeta medalla ganada" : "tarjeta medalla"}>
-                  <span className="medalla-icono" aria-hidden="true">{ganada ? <m.icono size={24} /> : <Lock size={20} />}</span>
-                  <strong>{m.nombre}</strong>
-                  <small>{m.detalle}</small>
-                </li>
-              );
-            })}
+            {LOGROS.filter((l) => l.grupo === grupo).map((l) => <TarjetaLogro key={l.codigo} logro={l} cantidad={progreso?.[l.codigo] || 0} />)}
           </ul>
         </div>
       ))}
@@ -153,7 +144,7 @@ function Medallas() {
           <h3>El grupo</h3>
           <ul>
             {Object.values(perfiles).filter((p) => p.id !== usuario.id).map((p) => {
-              const cantidad = extras.medallas.filter((m) => m.usuario_id === p.id).length;
+              const cantidad = Object.keys(nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === p.id).map((m) => m.codigo))).length;
               return (
                 <li key={p.id}><button onClick={() => abrirPerfil(p.id)}><Avatar perfil={p} tam={28} /> <span>{p.nombre}</span> <strong>{cantidad}</strong></button></li>
               );
