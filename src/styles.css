@@ -930,6 +930,88 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .lista-mejoras small { color: var(--tinta-2); font-size: 0.74rem; }
 .lista-mejoras li.hecha p { color: var(--tinta-2); text-decoration: line-through; }
 
+/* Sin cuadros: el contenido va directo sobre el fondo, separado por aire y líneas finas */
+.tarjeta { background: transparent; border-radius: 0; box-shadow: none; }
+.tarjeta-heroe { padding: 4px 0 0; }
+.ajuste { padding: 18px 0; border-top: 1px solid var(--borde); }
+.ajustes > .ajuste:first-child, .vista > .ajuste:first-of-type { border-top: 0; }
+.tarjeta-amigo, .integrante, .perfil-dia, .grupo-fotos, .resumen-importado { border-bottom: 1px solid var(--borde); }
+.integrantes, .perfil-dias, .lista-amigos { gap: 0; }
+.integrante, .amigo-cabecera { padding-left: 0; padding-right: 0; }
+.perfil-dia summary, .perfil-comidas, .grupo-fotos-cabecera { padding-left: 0; padding-right: 0; }
+.accion { padding: 8px 0; }
+.acciones-rapidas { gap: 14px; }
+.ranura { background: transparent; box-shadow: none; }
+.ranura.llena { background: transparent; color: var(--sobre-acento-suave); }
+.ranura-icono { height: 30px; }
+.macros-faltan { gap: 14px; }
+.macros-faltan li { padding: 0; background: transparent; }
+.perfil-stats li, .detalle-logro-avance, .perfil-favoritas li, .niveles-logro li, .lista-mejoras li, .tutorial-pregunta { background: transparent; border-radius: 0; }
+.perfil-stats { gap: 12px 6px; }
+.perfil-stats li { padding: 2px; }
+.perfil-favoritas li, .niveles-logro li, .lista-mejoras li, .tutorial-pregunta { padding-left: 0; padding-right: 0; border-bottom: 1px solid var(--borde); }
+.tutorial-pregunta > summary, .tutorial-pregunta p { padding-left: 0; padding-right: 0; }
+.detalle-logro-avance { padding: 0; }
+.niveles-logro li.hecho { background: transparent; }
+.niveles-logro li.proximo { box-shadow: none; color: var(--sobre-acento-suave); }
+.niveles-logro li.proximo strong { color: var(--sobre-acento-suave); }
+.nivel-propio { padding: 4px 0 10px; }
+.grupo-fotos-icono, .entrada-logro { width: 30px; height: 30px; background: transparent; }
+.fotos-lista { padding: 0; gap: 18px; }
+.fotos-lista .comida { border: 0; }
+.fotos-lista .comida-foto { border-radius: 16px; }
+.comida-sinfoto { background: transparent; }
+.dia, .tira-dias .dia { background: transparent; box-shadow: none; }
+.tipos button { background: transparent; }
+.boton-icono, .fila-busqueda .boton-icono, .dia-selector .boton-icono, .grupo-barra .boton-icono { background: transparent; box-shadow: none; }
+
+/* Pestañas subrayadas: la línea se desliza a la opción elegida */
+.selector { padding: 0; background: transparent; border-bottom: 1px solid var(--borde); border-radius: 0; }
+.selector button { border-radius: 0; }
+.selector-fondo { inset: auto 0 -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--acento); box-shadow: none; }
+.grupo-barra { background: color-mix(in srgb, var(--fondo) 92%, transparent); backdrop-filter: blur(12px); }
+
+/* Logros en lista */
+.medallas { grid-template-columns: 1fr; gap: 0; }
+.medalla { display: grid; grid-template-columns: 40px 1fr; align-items: center; justify-items: start; gap: 2px 10px; padding: 11px 0; border-bottom: 1px solid var(--borde); text-align: left; }
+.medalla > * { grid-column: 2; }
+.medalla .medalla-icono { grid-column: 1; grid-row: 1 / span 4; height: auto; align-self: center; justify-self: center; }
+.medalla.ganada { background: transparent; }
+.medalla.ganada .medalla-icono { color: var(--acento); }
+.medalla.ganada strong { color: var(--tinta); }
+.medalla.ganada small { color: var(--tinta-2); }
+
+/* Animación general */
+@keyframes aparecer { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.lista-amigos > *, .integrantes > li, .medallas > li, .perfil-dias > li, .galeria > li, .grupo-fotos, .niveles-logro > li, .perfil-stats > li, .macros-faltan > li, .ranuras > li {
+  animation: aparecer 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.lista-amigos > :nth-child(2), .integrantes > :nth-child(2), .medallas > :nth-child(2), .perfil-dias > :nth-child(2), .galeria > :nth-child(2), .grupo-fotos:nth-of-type(2), .niveles-logro > :nth-child(2), .perfil-stats > :nth-child(2), .macros-faltan > :nth-child(2), .ranuras > :nth-child(2) { animation-delay: 0.05s; }
+.lista-amigos > :nth-child(3), .integrantes > :nth-child(3), .medallas > :nth-child(3), .perfil-dias > :nth-child(3), .galeria > :nth-child(3), .grupo-fotos:nth-of-type(3), .niveles-logro > :nth-child(3), .perfil-stats > :nth-child(3), .macros-faltan > :nth-child(3), .ranuras > :nth-child(3) { animation-delay: 0.1s; }
+.lista-amigos > :nth-child(n + 4), .integrantes > :nth-child(n + 4), .medallas > :nth-child(n + 4), .perfil-dias > :nth-child(n + 4), .galeria > :nth-child(n + 4), .grupo-fotos:nth-of-type(n + 4), .niveles-logro > :nth-child(n + 4), .perfil-stats > :nth-child(n + 4), .ranuras > :nth-child(n + 4) { animation-delay: 0.15s; }
+.boton:active, .ranura:active, .integrante:active, .medalla:active { transform: scale(0.97); transition: transform 0.12s; }
+.visor-imagen img { touch-action: none; cursor: grab; user-select: none; -webkit-user-drag: none; }
+
+/* Festejo de un logro nuevo */
+.nuevo-logro { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 24px; pointer-events: none; background: rgb(10 6 3 / 72%); color: #fff; text-align: center; }
+.nuevo-logro-icono { position: relative; display: grid; place-items: center; width: 110px; height: 110px; margin-bottom: 22px; }
+.nuevo-logro-icono span { position: relative; display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%; background: var(--acento); color: var(--sobre-acento); }
+.nuevo-logro-icono i { position: absolute; inset: 4px; border: 3px solid var(--acento); border-radius: 50%; }
+.nuevo-logro small { color: rgb(255 255 255 / 80%); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.nuevo-logro strong { font-family: var(--titulo); font-size: 1.7rem; font-weight: 800; line-height: 1.15; }
+
+/* Podios del bot */
+.burbuja-bot .bot-seccion { margin-top: 9px; font-weight: 700; }
+.bot-podio { display: flex; align-items: center; gap: 8px; }
+.bot-podio b { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; font-size: 0.74rem; font-weight: 800; color: #241a12; }
+.puesto-1 { background: #e9b949; }
+.puesto-2 { background: #cfd3d8; }
+.puesto-3 { background: #d59a6a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lista-amigos > *, .integrantes > li, .medallas > li, .perfil-dias > li, .galeria > li, .grupo-fotos, .niveles-logro > li, .perfil-stats > li, .macros-faltan > li, .ranuras > li { animation: none; }
+}
+
 /* Apple Salud */
 .dato-copiable { display: flex; align-items: center; gap: 8px; }
 .dato-copiable code { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 11px; background: var(--superficie-2); font-size: 0.76rem; overflow-wrap: anywhere; }

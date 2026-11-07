@@ -27,6 +27,7 @@ const SECCIONES = [
     titulo: "Grupo",
     preguntas: [
       ["¿Dónde están las fotos del grupo?", "En Grupo, arriba, elegí Imágenes. Están separadas por desayuno, almuerzo, merienda y cena. Tocá una comida para abrirla."],
+      ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Retos y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
       ["¿Cómo veo otro día?", "En Imágenes, usá la tira de días o las flechas. Con las flechas podés ir tan atrás como quieras."],
       ["¿Cómo veo qué comió cada uno?", "Tocá Ver alimentos debajo de la foto: aparece cada alimento con su cantidad y sus macros."],
       ["¿Cómo respondo una foto?", "Tocá Responder en el chat, debajo de la foto o al abrirla. Te lleva al chat con la foto citada: escribí y enviá."],
@@ -57,6 +58,7 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo las activo en iPhone?", "Abrí la app en Safari, tocá Compartir y Agregar a inicio. Después entrá desde ese ícono y activalas en Notificaciones, acá en Ajustes."],
       ["¿Cómo las activo en Android?", "Abrí la app en Chrome y activalas en Notificaciones, acá en Ajustes."],
+      ["¿Qué avisos automáticos hay?", "A las 21 te recuerda cargar tus comidas si todavía no cargaste el día. Cada lunes a las 9 llegan los podios de la semana, que quedan en el chat."],
       ["No me llegan. ¿Qué reviso?", "Fijate que el permiso esté activo en tu celular y que no estés en modo No molestar. En iPhone, usá siempre el ícono de inicio."],
     ],
   },

@@ -13,7 +13,21 @@ import { Reacciones } from "./TarjetaComida.jsx";
 export default function Visor({ lista, inicio = 0, onCerrar }) {
   const { perfiles, fotos, abrirPerfil, responder } = useDatos();
   const [indice, setIndice] = useState(inicio);
+  const [paso, setPaso] = useState(0);
   const comida = lista[indice];
+
+  function mover(sentido) {
+    const proxima = indice + sentido;
+    if (proxima < 0 || proxima >= lista.length) return;
+    setPaso(sentido);
+    setIndice(proxima);
+  }
+
+  // De costado cambia de foto; hacia abajo cierra.
+  function alSoltar(_, gesto) {
+    if (Math.abs(gesto.offset.x) > 70) mover(gesto.offset.x < 0 ? 1 : -1);
+    else if (gesto.offset.y > 110) onCerrar();
+  }
 
   useEffect(() => {
     const tecla = (e) => {
@@ -51,10 +65,23 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
 
       <div className="visor-imagen">
         <AnimatePresence mode="popLayout" initial={false}>
-          <motion.img key={comida.id} src={fotos[comida.foto_path]} alt={titulo} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }} />
+          <motion.img
+            key={comida.id}
+            src={fotos[comida.foto_path]}
+            alt={titulo}
+            drag
+            dragDirectionLock
+            dragSnapToOrigin
+            dragElastic={0.7}
+            onDragEnd={alSoltar}
+            initial={{ opacity: 0, x: paso * 70 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: "spring", stiffness: 340, damping: 32 }}
+          />
         </AnimatePresence>
-        {indice > 0 && <button className="visor-flecha izquierda" onClick={() => setIndice(indice - 1)} aria-label="Foto anterior"><ChevronLeft size={24} /></button>}
-        {indice < lista.length - 1 && <button className="visor-flecha derecha" onClick={() => setIndice(indice + 1)} aria-label="Foto siguiente"><ChevronRight size={24} /></button>}
+        {indice > 0 && <button className="visor-flecha izquierda" onClick={() => mover(-1)} aria-label="Foto anterior"><ChevronLeft size={24} /></button>}
+        {indice < lista.length - 1 && <button className="visor-flecha derecha" onClick={() => mover(1)} aria-label="Foto siguiente"><ChevronRight size={24} /></button>}
       </div>
 
       <footer className="visor-pie">

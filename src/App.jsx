@@ -7,6 +7,7 @@ import { medallasGanadas, nombreDeCodigo } from "./lib/medallas.js";
 import { DatosProvider, useDatos } from "./lib/datos.jsx";
 import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
+import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Grupo from "./vistas/Grupo.jsx";
@@ -26,6 +27,21 @@ const VISTAS = [
 
 const VISTAS_VALIDAS = VISTAS.map((v) => v.id);
 const SECCIONES_GRUPO = ["chat", "imagenes"];
+// Al deslizar se recorren en este orden.
+const PAGINAS = [["resumen"], ["grupo", "chat"], ["grupo", "imagenes"], ["retos"], ["ajustes"]];
+const paginaDe = (vista, seccion) => PAGINAS.findIndex(([v, s]) => v === vista && (!s || s === seccion));
+const BORDE_PX = 20;
+const DISTANCIA_PX = 70;
+const GESTO_MS = 700;
+
+// Una tira que se mueve de costado, como la de días, tiene prioridad sobre cambiar de sección.
+function seMueveDeCostado(elemento) {
+  for (let el = elemento; el && el !== document.body; el = el.parentElement) {
+    if (el.matches("input, textarea, select")) return true;
+    if (el.scrollWidth > el.clientWidth + 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowX)) return true;
+  }
+  return false;
+}
 
 const FRASES_COMIDA = ["¡Comida subida!", "Arriba. Quedó publicada", "Anotado. Sin juzgar", "Publicada. Que tiemble el grupo", "Listo, gordito"];
 const frase = () => FRASES_COMIDA[Math.floor(Math.random() * FRASES_COMIDA.length)];
@@ -85,6 +101,42 @@ function Principal({ recuperando, onRecuperado }) {
     return VISTAS_VALIDAS.includes(pedida) ? pedida : "resumen";
   });
   const [seccion, setSeccion] = useState(SECCIONES_GRUPO.includes(pedida) ? pedida : "chat");
+  const [sentido, setSentido] = useState(0);
+  const [logroNuevo, setLogroNuevo] = useState(null);
+  const toque = useRef(null);
+  const terminarLogro = useCallback(() => setLogroNuevo(null), []);
+
+  // La animación entra por el lado hacia el que se va.
+  const irA = useCallback((proxima, proximaSeccion) => {
+    setSeccion((actual) => {
+      const nueva = proximaSeccion || actual;
+      setVista((v) => {
+        setSentido(Math.sign(paginaDe(proxima, nueva) - paginaDe(v, actual)));
+        return proxima;
+      });
+      return nueva;
+    });
+  }, []);
+
+  function alEmpezarToque(e) {
+    const t = e.touches[0];
+    const enElBorde = t.clientX < BORDE_PX || t.clientX > innerWidth - BORDE_PX;
+    toque.current = e.touches.length > 1 || enElBorde || seMueveDeCostado(e.target) ? null : { x: t.clientX, y: t.clientY, cuando: Date.now() };
+  }
+
+  function alTerminarToque(e) {
+    const inicio = toque.current;
+    toque.current = null;
+    if (!inicio) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - inicio.x;
+    const dy = t.clientY - inicio.y;
+    if (Math.abs(dx) < DISTANCIA_PX || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - inicio.cuando > GESTO_MS) return;
+    const destino = PAGINAS[paginaDe(vista, seccion) + (dx < 0 ? 1 : -1)];
+    if (!destino) return;
+    vibrar(6);
+    irA(destino[0], destino[1]);
+  }
   const entregando = useRef(false);
   const [carga, setCarga] = useState(null);
   const [festejo, setFestejo] = useState(0);
@@ -197,7 +249,7 @@ function Principal({ recuperando, onRecuperado }) {
           await cargarExtras();
           const nivel = [...nuevas].reverse().find((c) => nombreDeCodigo(c));
           if (nivel) {
-            avisar(`Nuevo logro: ${nombreDeCodigo(nivel)}`);
+            setLogroNuevo(nivel);
             avisarGrupo("medalla", nivel, nombreDeCodigo(nivel));
           }
           setFestejo((n) => n + 1);
@@ -246,7 +298,7 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
         <nav aria-label="Menú principal">
           {VISTAS.map((v) => (
-            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="lateral" />
+            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" />
           ))}
         </nav>
         <button className="perfil-lateral" onClick={() => abrirPerfil(yo.id)}>
@@ -265,17 +317,17 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
       </header>
 
-      <main className={vista === "grupo" && seccion === "chat" ? "contenido contenido-chat" : "contenido"}>
+      <main className={vista === "grupo" && seccion === "chat" ? "contenido contenido-chat" : "contenido"} onTouchStart={alEmpezarToque} onTouchEnd={alTerminarToque}>
         <AnimatePresence initial={false}>
           <motion.div
-            key={vista}
+            key={vista === "grupo" ? seccion : vista}
             className="vista"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
+            initial={{ opacity: 0, x: sentido * 44 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 34 }}
           >
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
-            {vista === "grupo" && <Grupo seccion={seccion} onSeccion={setSeccion} onCargar={abrirCarga} avisar={avisar} />}
+            {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} />}
             {vista === "retos" && <Retos avisar={avisar} />}
             {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
           </motion.div>
@@ -284,7 +336,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <nav className="barra-inferior" aria-label="Menú principal">
         {VISTAS.slice(0, 2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
         ))}
         <motion.button
           className="boton-subir"
@@ -297,7 +349,7 @@ function Principal({ recuperando, onRecuperado }) {
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
         {VISTAS.slice(2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
         ))}
       </nav>
 
@@ -330,6 +382,7 @@ function Principal({ recuperando, onRecuperado }) {
         />
       </Hoja>
       <Festejo key={festejo} activo={festejo > 0} />
+      <NuevoLogro codigo={logroNuevo} onTerminar={terminarLogro} />
       <Aviso texto={aviso} />
     </div>
   );

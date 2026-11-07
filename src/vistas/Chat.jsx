@@ -149,7 +149,11 @@ export default function Chat({ avisar, cabecera }) {
                 {separador}
                 <motion.article className="burbuja-bot" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
                   <header><Bot size={17} aria-hidden="true" /> <strong>Bot del grupo</strong></header>
-                  {sinEmojis(m.texto).split("\n").filter(Boolean).map((l) => <p key={l}>{l}</p>)}
+                  {sinEmojis(m.texto).split("\n").filter(Boolean).map((l, n) => {
+                    const podio = l.match(/^([123])\. (.*)$/);
+                    if (podio) return <p key={n} className="bot-podio"><b className={`puesto-${podio[1]}`}>{podio[1]}</b> {podio[2]}</p>;
+                    return <p key={n} className={n > 1 && !l.includes(":") ? "bot-seccion" : undefined}>{l}</p>;
+                  })}
                 </motion.article>
               </div>
             );
