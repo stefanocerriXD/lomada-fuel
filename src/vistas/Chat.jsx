@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Bot, Camera, MessageCircle, SendHorizontal, X } from "lucide-react";
+import { Bell, Bot, MessageCircle, SendHorizontal, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
@@ -9,8 +9,6 @@ import { fechaLocal, hora, nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Avatar, Vacio } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
-import TarjetaComida from "../componentes/TarjetaComida.jsx";
-import Volver from "../componentes/Volver.jsx";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
@@ -77,9 +75,8 @@ function CitaFoto({ id, onZoom }) {
   );
 }
 
-export default function Chat({ onCargar, avisar, onVolver }) {
-  const { usuario, perfiles, comidas, fotos, cargarPerfiles, abrirPerfil } = useDatos();
-  const [respuesta, setRespuesta] = useState(null);
+export default function Chat({ avisar, cabecera }) {
+  const { usuario, perfiles, cargarPerfiles, abrirPerfil } = useDatos();
   const [mensajes, setMensajes] = useState([]);
   const [texto, setTexto] = useState("");
   const [error, setError] = useState("");
@@ -118,14 +115,7 @@ export default function Chat({ onCargar, avisar, onVolver }) {
     };
   }, [cargarPerfiles]);
 
-  // Mensajes y comidas van en una sola línea de tiempo.
-  const linea = useMemo(() => {
-    const todo = [
-      ...mensajes.map((m) => ({ ...m, clase: "mensaje" })),
-      ...comidas.filter((c) => c.tipo !== "resumen").map((c) => ({ ...c, clase: "comida" })),
-    ];
-    return todo.sort((a, b) => new Date(a.creado_en) - new Date(b.creado_en)).slice(-MAXIMO_EN_PANTALLA);
-  }, [mensajes, comidas]);
+  const linea = mensajes.slice(-MAXIMO_EN_PANTALLA);
 
   useEffect(() => {
     fondo.current?.scrollIntoView({ behavior: cargado ? "smooth" : "auto", block: "end" });
@@ -139,7 +129,7 @@ export default function Chat({ onCargar, avisar, onVolver }) {
     setError("");
     const { data, error: err } = await supabase
       .from("mensajes")
-      .insert({ usuario_id: usuario.id, texto: limpio, ...(respuesta ? { respuesta_comida: respuesta.id } : {}) })
+      .insert({ usuario_id: usuario.id, texto: limpio })
       .select()
       .single();
     if (err) {
@@ -147,7 +137,6 @@ export default function Chat({ onCargar, avisar, onVolver }) {
       setError(err.message);
       return;
     }
-    setRespuesta(null);
     // Se suma enseguida aunque el tiempo real tarde o esté caído.
     setMensajes((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]));
     avisarGrupo("mensaje", data.id);
@@ -155,12 +144,12 @@ export default function Chat({ onCargar, avisar, onVolver }) {
 
   return (
     <section className="chat">
-      <Volver titulo="Chat" onVolver={onVolver} />
+      {cabecera}
       <AvisoNotificaciones avisar={avisar} />
 
       <div className="chat-mensajes" role="log" aria-live="polite">
         {cargado && linea.length === 0 && (
-          <Vacio icono={MessageCircle} titulo="Todavía no hay nada" texto="Subí tu primera comida o mandá un mensaje." />
+          <Vacio icono={MessageCircle} titulo="Todavía no hay mensajes" texto="Mandá el primero." />
         )}
         {linea.map((m, i) => {
           const previo = linea[i - 1];
@@ -169,27 +158,6 @@ export default function Chat({ onCargar, avisar, onVolver }) {
           const nuevoDia = !previo || fechaLocal(new Date(previo.creado_en)) !== dia;
           const propio = m.usuario_id === usuario.id;
           const separador = nuevoDia && <p className="chat-dia"><span>{nombreDia(dia)}</span></p>;
-
-          if (m.clase === "comida") {
-            return (
-              <div key={`c-${m.id}`} className="chat-grupo">
-                {separador}
-                <div className={propio ? "chat-comida propia" : "chat-comida"}>
-                  <TarjetaComida
-                    comida={m}
-                    perfil={perfiles[m.usuario_id]}
-                    foto={fotos[m.foto_path]}
-                    propia={propio}
-                    indice={0}
-                    onZoom={setZoom}
-                    onEditar={() => onCargar({ comida: m })}
-                    onResponder={setRespuesta}
-                    avisar={avisar}
-                  />
-                </div>
-              </div>
-            );
-          }
 
           if (!m.usuario_id) {
             return (
@@ -203,7 +171,7 @@ export default function Chat({ onCargar, avisar, onVolver }) {
             );
           }
 
-          const mismoAutor = (x) => x && x.clase === "mensaje" && x.usuario_id === m.usuario_id;
+          const mismoAutor = (x) => x && x.usuario_id === m.usuario_id;
           const inicio = nuevoDia || !mismoAutor(previo);
           const fin = !mismoAutor(siguiente);
           const perfil = perfiles[m.usuario_id];
@@ -231,15 +199,7 @@ export default function Chat({ onCargar, avisar, onVolver }) {
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
-      {respuesta && (
-        <div className="chat-respondiendo">
-          {fotos[respuesta.foto_path] ? <img src={fotos[respuesta.foto_path]} alt="" /> : <IconoComida tipo={respuesta.tipo} />}
-          <span>Respondiendo a <strong>{perfiles[respuesta.usuario_id]?.nombre || "Amigo"}</strong></span>
-          <button className="boton-icono chico" onClick={() => setRespuesta(null)} aria-label="Cancelar respuesta"><X size={16} /></button>
-        </div>
-      )}
       <form className="chat-enviar" onSubmit={enviar}>
-        <button type="button" className="boton-icono" onClick={() => onCargar()} aria-label="Subir foto de comida"><Camera size={20} /></button>
         <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí algo…" aria-label="Mensaje" maxLength={1000} />
         <motion.button className="boton-enviar" type="submit" disabled={!texto.trim()} whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} aria-label="Enviar">
           <SendHorizontal size={20} />

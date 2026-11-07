@@ -4,15 +4,30 @@ import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
 import { comprimirImagen } from "../lib/imagen.js";
-import { ranurasDeFotos } from "../lib/importar.js";
+import { itemImportado, ranurasDeFotos } from "../lib/importar.js";
+import { macrosDeItem } from "../lib/macros.js";
+import { prepararItem } from "../lib/unidades.js";
 import { nombreDia } from "../lib/fechas.js";
 import { TIPOS, TIPOS_TODOS, tipoInfo } from "../lib/macros.js";
 import { Hoja, vibrar } from "../componentes/Base.jsx";
+import DetalleAlimentos from "../componentes/DetalleAlimentos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import Lector from "../componentes/Lector.jsx";
 
 const CAMPOS = [["kcal", "kcal"], ["p", "Prote"], ["c", "Carbos"], ["g", "Grasas"]];
 const FILA_VACIA = { tipo: "resumen", kcal: 0, p: 0, c: 0, g: 0 };
+
+function alimentosParaGuardar(fila) {
+  return fila.alimentos.map((a) => {
+    const item = itemImportado(a);
+    if (!item.por100) return item;
+    const preparado = prepararItem(item);
+    return { ...preparado, ...macrosDeItem(preparado) };
+  });
+}
+
+const redondo = (v) => Math.round((Number(v) || 0) * 10) / 10;
+const tocada = (f) => f.alimentos?.length && ["kcal", "p", "c", "g"].some((k) => Math.abs(redondo(f[k]) - redondo(f.alimentos.reduce((t, a) => t + a[k], 0))) > 1);
 
 export default function Importar({ pedido, onCerrar, onGuardar }) {
   return (
@@ -71,8 +86,8 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
           proteinas: macros.p,
           carbohidratos: macros.c,
           grasas: macros.g,
-          macros_editados: false,
-          alimentos: [{ nombre: "Importado", fuente: "importado", ...macros }],
+          macros_editados: Boolean(tocada(f)),
+          alimentos: f.alimentos?.length ? alimentosParaGuardar(f) : [{ nombre: "Importado", fuente: "importado", ...macros }],
           ...(extras.disponible ? { privada: yo.comidas_privadas ?? false } : {}),
         };
         // Importar de nuevo el mismo día reemplaza lo importado antes, no lo duplica.
@@ -113,6 +128,7 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
               </label>
             ))}
           </div>
+          {f.alimentos?.length > 0 && <DetalleAlimentos alimentos={f.alimentos} />}
         </section>
       ))}
       {error && <p className="error" role="alert">{error}</p>}

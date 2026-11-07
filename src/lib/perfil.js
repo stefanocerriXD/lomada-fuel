@@ -1,6 +1,6 @@
 import { calcularRacha, sumarComidas } from "./macros.js";
 
-const IGNORADOS = new Set(["importado", "foto"]);
+const generico = (a) => a.fuente === "foto" || /^importado$|\simportado$/i.test(a.nombre || "");
 
 // Un día por entrada, del más nuevo al más viejo.
 export function porDia(comidas) {
@@ -28,9 +28,9 @@ export function estadisticas(comidas) {
 }
 
 function nombresDe(comida) {
-  const alimentos = (comida.alimentos || []).filter((a) => !IGNORADOS.has(a.fuente) && a.nombre);
+  const alimentos = (comida.alimentos || []).filter((a) => a.nombre && !generico(a));
   if (alimentos.length) return alimentos.map((a) => a.nombre);
-  const importada = (comida.alimentos || []).some((a) => IGNORADOS.has(a.fuente));
+  const importada = (comida.alimentos || []).some(generico);
   return !importada && comida.tipo !== "resumen" && comida.descripcion ? [comida.descripcion] : [];
 }
 

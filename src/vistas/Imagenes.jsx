@@ -4,11 +4,11 @@ import { ChevronDown, ChevronLeft, ChevronRight, Images } from "lucide-react";
 import { useDatos, VENTANA_DIAS } from "../lib/datos.jsx";
 import { aFecha, fechaLocal, haceDias, nombreDia } from "../lib/fechas.js";
 import { TIPOS } from "../lib/macros.js";
-import { Avatar, Vacio } from "../componentes/Base.jsx";
+import { Vacio } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
+import TarjetaComida from "../componentes/TarjetaComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
 import Visor from "../componentes/Visor.jsx";
-import Volver from "../componentes/Volver.jsx";
 
 const moverDia = (fecha, dias) => {
   const d = aFecha(fecha);
@@ -16,8 +16,8 @@ const moverDia = (fecha, dias) => {
   return fechaLocal(d);
 };
 
-export default function Imagenes({ onVolver }) {
-  const { comidas, fotos, perfiles, cargarDia } = useDatos();
+export default function Imagenes({ cabecera, onCargar, avisar }) {
+  const { usuario, comidas, fotos, perfiles, cargarDia } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
   const [viejos, setViejos] = useState({});
@@ -52,7 +52,7 @@ export default function Imagenes({ onVolver }) {
 
   return (
     <>
-      <Volver titulo="Imágenes" onVolver={onVolver} />
+      {cabecera}
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={conFotos} grupo="dia-imagenes" />
 
       <div className="dia-selector">
@@ -90,19 +90,22 @@ export default function Imagenes({ onVolver }) {
                 </button>
                 <AnimatePresence initial={false}>
                   {abierto && (
-                    <motion.ul className="fotos-grilla" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-                      {g.lista.map((c, i) => {
-                        const perfil = perfiles[c.usuario_id];
-                        return (
-                          <li key={c.id}>
-                            <button onClick={() => setVisor({ lista: g.lista, inicio: i })} aria-label={`Foto de ${perfil?.nombre || "Amigo"}: ${c.descripcion || g.texto}`}>
-                              <img src={fotos[c.foto_path]} alt="" loading="lazy" />
-                              <span className="foto-autor"><Avatar perfil={perfil} tam={22} /> {perfil?.nombre || "Amigo"}</span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </motion.ul>
+                    <motion.div className="fotos-lista" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
+                      {g.lista.map((c, i) => (
+                        <TarjetaComida
+                          key={c.id}
+                          comida={c}
+                          perfil={perfiles[c.usuario_id]}
+                          foto={fotos[c.foto_path]}
+                          propia={c.usuario_id === usuario.id}
+                          indice={0}
+                          onZoom={() => setVisor({ lista: g.lista, inicio: i })}
+                          onResponder={() => setVisor({ lista: g.lista, inicio: i })}
+                          onEditar={() => onCargar({ comida: c })}
+                          avisar={avisar}
+                        />
+                      ))}
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </section>

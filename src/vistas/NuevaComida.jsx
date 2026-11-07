@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
 import { comprimirImagen } from "../lib/imagen.js";
-import { filaDeComida } from "../lib/importar.js";
+import { filaDeComida, itemImportado } from "../lib/importar.js";
 import { fechaLocal, tipoSegunHora } from "../lib/fechas.js";
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
@@ -43,6 +43,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   const [texto, setTexto] = useState("");
   const [panel, setPanel] = useState(null);
   const [importado, setImportado] = useState(null);
+  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [ajuste, setAjuste] = useState(
     original?.macros_editados ? { kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas } : null,
   );
@@ -92,6 +93,17 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   function alLeer(filas) {
     const fila = filaDeComida(filas, tipo);
     if (!fila && filas.length) return onImportarDia(carga.fecha || fechaLocal(), filas);
+    if (fila?.alimentos?.length) {
+      setItems((prev) => [...prev, ...fila.alimentos.map((a) => {
+        const item = itemImportado(a);
+        return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID() };
+      })]);
+      setPanel(null);
+      setImportado(null);
+      setError("");
+      vibrar(12);
+      return;
+    }
     setImportado({
       clave: Date.now(),
       nombre: `${tipoInfo(tipo).texto} importado`,
@@ -100,6 +112,20 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
       ...(fila ? { kcal: fila.kcal, p: fila.p, c: fila.c, g: fila.g } : {}),
     });
     setPanel("mano");
+  }
+
+  async function borrar() {
+    if (!confirmarBorrado) return setConfirmarBorrado(true);
+    setGuardando(true);
+    const { error: err } = await supabase.from("comidas").delete().eq("id", original.id);
+    if (err) {
+      setError(err.message);
+      setGuardando(false);
+      return;
+    }
+    if (original.foto_path) await supabase.storage.from("fotos").remove([original.foto_path]);
+    await cargarComidas();
+    onGuardar("borrada");
   }
 
   const cambiarItem = (id, nuevo) => setItems((prev) => prev.map((i) => (i.id === id ? nuevo : i)));
@@ -257,6 +283,11 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
                   <span>Solo para mí, no la ve el grupo</span>
                 </label>
               )}
+              {original && (
+                <button className={confirmarBorrado ? "boton-texto peligro" : "boton-texto"} onClick={borrar} onBlur={() => setConfirmarBorrado(false)} disabled={guardando}>
+                  <Trash2 size={15} /> {confirmarBorrado ? "¿Seguro? Tocá de nuevo" : "Borrar comida"}
+                </button>
+              )}
             </div>
           </details>
 
@@ -284,7 +315,7 @@ function FilaItem({ item, onCambiar, onQuitar }) {
     <motion.div className="fila-item" layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
       <div className="fila-datos">
         <strong>{item.nombre}</strong>
-        <span>{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}</span>
+        <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}</span>
       </div>
       <button className="boton-icono chico" onClick={onQuitar} aria-label={`Quitar ${item.nombre}`}><Trash2 size={16} /></button>
       {item.por100 && (

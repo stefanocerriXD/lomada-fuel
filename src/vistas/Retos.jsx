@@ -131,7 +131,7 @@ function Medallas() {
 
   return (
     <>
-      {[["constancia", "Constancia"], ["divertidos", "Divertidos"]].map(([grupo, titulo]) => (
+      {[["objetivos", "Objetivos"], ["alimentacion", "Alimentación"]].map(([grupo, titulo]) => (
         <div key={grupo} className="grupo-medallas">
           <h3 className="perfil-subtitulo">{titulo}</h3>
           <ul className="medallas">

@@ -84,7 +84,7 @@ function Principal({ recuperando, onRecuperado }) {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
     return VISTAS_VALIDAS.includes(pedida) ? pedida : "resumen";
   });
-  const [seccion, setSeccion] = useState(SECCIONES_GRUPO.includes(pedida) ? pedida : null);
+  const [seccion, setSeccion] = useState(SECCIONES_GRUPO.includes(pedida) ? pedida : "chat");
   const entregando = useRef(false);
   const [carga, setCarga] = useState(null);
   const [festejo, setFestejo] = useState(0);
@@ -107,10 +107,6 @@ function Principal({ recuperando, onRecuperado }) {
   }, []);
 
   const abrirCarga = useCallback((datos = {}) => setCarga(datos), []);
-  const irA = useCallback((id) => {
-    setVista(id);
-    setSeccion(null);
-  }, []);
   const abrirImportar = useCallback((fecha, filas) => {
     setCarga(null);
     setImportar({ fecha, filas });
@@ -119,8 +115,8 @@ function Principal({ recuperando, onRecuperado }) {
   const alGuardar = useCallback(
     (nueva) => {
       setCarga(null);
-      avisar(nueva ? frase() : "Cambios guardados");
-      if (nueva) {
+      avisar(nueva === "borrada" ? "Comida borrada" : nueva ? frase() : "Cambios guardados");
+      if (nueva === true) {
         setFestejo((n) => n + 1);
         vibrar(25);
       }
@@ -229,7 +225,7 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
         <nav aria-label="Menú principal">
           {VISTAS.map((v) => (
-            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" />
+            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="lateral" />
           ))}
         </nav>
         <button className="perfil-lateral" onClick={() => abrirPerfil(yo.id)}>
@@ -267,7 +263,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <nav className="barra-inferior" aria-label="Menú principal">
         {VISTAS.slice(0, 2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
         ))}
         <motion.button
           className="boton-subir"
@@ -280,11 +276,11 @@ function Principal({ recuperando, onRecuperado }) {
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
         {VISTAS.slice(2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
         ))}
       </nav>
 
-      <Perfil onEditar={() => { abrirPerfil(null); irA("ajustes"); }} />
+      <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} />
       <Importar
         pedido={importar}

@@ -1,4 +1,6 @@
 // Entiende resúmenes de otras apps: texto copiado, CSV o lo que se lee de una captura.
+import { buscarTipicos } from "../data/alimentos-ar.js";
+
 const ETIQUETAS = {
   kcal: /calor[ií]as?|calories?|energ[ií]a|energy|kcal|\bcal\b|ingeridas|consumidas|consumed/i,
   p: /prote[ií]nas?|proteins?|\bprot\b/i,
@@ -101,7 +103,7 @@ function dividirCSV(linea) {
 function leerCSV(lineas) {
   const titulos = dividirCSV(lineas[0]).map((t) => t.toLowerCase());
   const indice = (re) => titulos.findIndex((t) => re.test(t));
-  const col = { kcal: indice(/energy|kcal|calor/), p: indice(/protein/), c: indice(/^carbs|carbohydrate|hidratos/), g: indice(/^fat|grasa|lipid/), grupo: indice(/group|grupo|meal|comida/), dia: indice(/^day$|^date$|fecha|^dia$/) };
+  const col = { kcal: indice(/energy|kcal|calor/), p: indice(/protein/), c: indice(/^carbs|carbohydrate|hidratos/), g: indice(/^fat|grasa|lipid/), grupo: indice(/group|grupo|meal|comida/), dia: indice(/^day$|^date$|fecha|^dia$/), nombre: indice(/food name|alimento|^food$|^nombre$/), cantidad: indice(/amount|cantidad/) };
   if (col.kcal < 0 || titulos.length < 3) return null;
 
   const filas = lineas.slice(1).map(dividirCSV).filter((f) => f.length >= titulos.length - 1);
@@ -113,11 +115,17 @@ function leerCSV(lineas) {
   for (const f of delDia) {
     const nombre = col.grupo >= 0 ? f[col.grupo] : "";
     const tipo = COMIDAS.find(([, re]) => re.test(nombre))?.[0] || "resumen";
-    const t = grupos.get(tipo) || { kcal: 0, p: 0, c: 0, g: 0 };
-    for (const k of ["kcal", "p", "c", "g"]) if (col[k] >= 0) t[k] += Number(String(f[col[k]]).replace(",", ".")) || 0;
+    const t = grupos.get(tipo) || { kcal: 0, p: 0, c: 0, g: 0, alimentos: [] };
+    const fila = { kcal: 0, p: 0, c: 0, g: 0 };
+    for (const k of ["kcal", "p", "c", "g"]) if (col[k] >= 0) fila[k] = Number(String(f[col[k]]).replace(",", ".")) || 0;
+    for (const k of ["kcal", "p", "c", "g"]) t[k] += fila[k];
+    if (col.nombre >= 0 && f[col.nombre]) {
+      const medida = col.cantidad >= 0 ? datosDeLinea(f[col.cantidad]) : {};
+      t.alimentos.push({ nombre: f[col.nombre], ...(medida.medida ? { medida: medida.medida } : {}), ...(medida.gramos ? { gramos: medida.gramos } : {}), ...fila, kcal: Math.round(fila.kcal) });
+    }
     grupos.set(tipo, t);
   }
-  return [...grupos].map(([tipo, v]) => ({ tipo, ...completar(v) }));
+  return [...grupos].map(([tipo, { alimentos, ...v }]) => ({ tipo, ...completar(v), ...(alimentos.length ? { alimentos } : {}) }));
 }
 
 // En las capturas la "g" de gramos a veces se lee como "9": "Grasas 629" era "62 g".
@@ -128,6 +136,146 @@ export function corregirCaptura(texto) {
     .split("\n")
     .map((linea) => (macros.test(linea) && !/\dg\b|\d\s+g\b/i.test(linea) ? linea.replace(/(\d{2,3})9\s*$/, "$1 g") : linea))
     .join("\n");
+}
+
+// ---------- Alimentos uno por uno ----------
+const UNIDADES = "gramos?|grs?|g|ml|mi|oz|tazas?|cups?|unidad(?:es)?|units?|cucharadas?|cucharaditas?|tbsp|tsp|rebanadas?|slices?|fetas?|porci[oó]n(?:es)?|servings?|vasos?|potes?|scoops?|medidas?";
+const MEDIDA = new RegExp(`(\\d+(?:[.,]\\d+)?|\\d+/\\d+)\\s*(${UNIDADES})(?![\\p{L}])`, "iu");
+const KCAL = /(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*k?cal(?:or[ií]as?)?(?![\p{L}])/iu;
+const NUMERO_SUELTO = /\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?(?!\s*%)/g;
+
+// Lo que aparece en cualquier pantalla y no es un alimento.
+const NO_ES_ALIMENTO = /^\W*(total(es)?|resumen|summary|daily|hoy|today|ayer|yesterday|ma[nñ]ana|agregar|a[nñ]adir|add|buscar|search|diario|diary|fecha|date|consumidas|ingeridas|consumed|eaten|comidas|meals|nutrici[oó]n|nutrition|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/i;
+const ES_DATO = /^\W*(calor|prote|prot\b|carbo|carbs|hidrat|grasa|l[ií]pido|\bfat|kcal|cal\b|energ|fibra|fiber|sodio|sodium|az[uú]car|sugar|colesterol)/i;
+
+const UNA_DE = (texto, re) => {
+  const m = texto.match(re);
+  return m ? { valor: leerNumero(m[1]), resto: texto.replace(m[0], " ") } : null;
+};
+
+function datosDeLinea(linea) {
+  const d = {};
+  let resto = ` ${linea} `;
+  const kcal = UNA_DE(resto, KCAL);
+  if (kcal) {
+    d.kcal = kcal.valor;
+    resto = kcal.resto;
+  }
+  for (const k of ["p", "c", "g"]) {
+    const conNombre = new RegExp(`(?:${ETIQUETAS[k].source})\\s*[:=]?\\s*(\\d+(?:[.,]\\d+)?)\\s*g?(?![\\p{L}])`, "iu");
+    const conNombreAtras = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*g?\\s*(?:de\\s+)?(?:${ETIQUETAS[k].source})`, "iu");
+    const hallado = UNA_DE(resto, conNombre) || UNA_DE(resto, conNombreAtras) || UNA_DE(resto, LETRAS[k]);
+    if (hallado) {
+      d[k] = hallado.valor;
+      resto = hallado.resto;
+    }
+  }
+  const medida = resto.match(MEDIDA);
+  if (medida) {
+    d.medida = `${medida[1]} ${medida[2].toLowerCase().replace(/^mi$/, "ml")}`;
+    const cantidad = medida[1].includes("/") ? Number(medida[1].split("/")[0]) / Number(medida[1].split("/")[1]) : leerNumero(medida[1]);
+    const unidad = medida[2].toLowerCase();
+    if (/^(g|gr|grs|gramos?|ml|mi)$/.test(unidad)) d.gramos = cantidad;
+    else if (unidad === "oz") d.gramos = Math.round(cantidad * 28.35);
+    else d.cantidad = cantidad;
+    resto = resto.replace(medida[0], " ");
+  }
+
+  // Las tablas traen los números sin unidad: "Avena 40 g 150 5 27 3".
+  const sueltos = [...resto.matchAll(NUMERO_SUELTO)].map((m) => leerNumero(m[0]));
+  const sinNumeros = resto.replace(NUMERO_SUELTO, (n, i, t) => (t.slice(i + n.length).trimStart().startsWith("%") ? n : " "));
+  d.nombre = sinNumeros.replace(/[·•|;:()[\]_=]+/g, " ").replace(/\s+/g, " ").replace(/^[\s,.\-–—/]+|[\s,.\-–—/]+$/g, "").trim();
+  if (d.kcal === undefined && sueltos.length) {
+    if (sueltos.length >= 4) Object.assign(d, ordenarColumnas(sueltos.slice(-4)));
+    else if (sueltos[sueltos.length - 1] >= 10 && sueltos[sueltos.length - 1] <= 4000) d.kcal = sueltos[sueltos.length - 1];
+  }
+  return d;
+}
+
+// Cada app ordena las columnas distinto. Se elige el orden que cierra con las calorías.
+function ordenarColumnas([kcal, a, b, c]) {
+  const opciones = [{ p: a, c: b, g: c }, { c: a, g: b, p: c }, { c: a, p: b, g: c }];
+  const error = (o) => Math.abs(o.p * 4 + o.c * 4 + o.g * 9 - kcal);
+  return { kcal, ...opciones.reduce((mejor, o) => (error(o) < error(mejor) ? o : mejor)) };
+}
+
+const esNombre = (linea, nombre) =>
+  /^\W{0,3}\p{L}/u.test(linea) && nombre.replace(/[^\p{L}]/gu, "").length >= 3 && !NO_ES_ALIMENTO.test(linea) && !ES_DATO.test(linea) && !IGNORAR.test(linea);
+
+const conDatos = (a) => a.kcal !== undefined || a.p !== undefined || a.c !== undefined || a.g !== undefined || a.gramos !== undefined || a.cantidad !== undefined;
+
+// Varias apps muestran los alimentos en inglés y la lista propia está en español.
+const EN_INGLES = [
+  [/\boats?\b|oatmeal/i, "avena"], [/\beggs?\b/i, "huevo"], [/chicken/i, "pollo"], [/\brice\b/i, "arroz"], [/\bmilk\b/i, "leche"],
+  [/\bbread\b|toast/i, "pan"], [/\bbeef\b|steak/i, "bife"], [/\bapple/i, "manzana"], [/\byogh?urt/i, "yogur"], [/cheese/i, "queso"],
+  [/\btuna\b/i, "atun"], [/potato/i, "papa"], [/\bpasta\b|noodles|spaghetti/i, "fideos"], [/\bsalmon\b/i, "salmon"], [/\bbutter\b/i, "manteca"],
+  [/\bavocado/i, "palta"], [/\bbanana/i, "banana"], [/\bcoffee\b/i, "cafe"], [/peanut/i, "mani"],
+];
+
+function enLaLista(nombre) {
+  const directo = buscarTipicos(nombre)[0] || buscarTipicos(nombre.split(/[\s,]+/)[0])[0];
+  if (directo) return directo;
+  const traducido = EN_INGLES.find(([re]) => re.test(nombre))?.[1];
+  return traducido ? buscarTipicos(traducido)[0] : undefined;
+}
+
+// Si la otra app no muestra los macros de un alimento, se estiman con la lista propia.
+function completarAlimento(a) {
+  const tieneMacros = a.p !== undefined || a.c !== undefined || a.g !== undefined;
+  const base = tieneMacros ? null : enLaLista(a.nombre);
+  const gramos = a.gramos ?? (base?.porcion && a.cantidad ? a.cantidad * Number(base.porcion.g) : undefined);
+  let factor = 0;
+  if (base) factor = a.kcal ? a.kcal / base.por100.kcal : (gramos || 0) / 100;
+  const macro = (k) => Math.round((a[k] ?? (base ? base.por100[k] * factor : 0)) * 10) / 10;
+  const p = macro("p");
+  const c = macro("c");
+  const g = macro("g");
+  const kcal = Math.round(a.kcal ?? (base && factor ? base.por100.kcal * factor : p * 4 + c * 4 + g * 9));
+  return {
+    nombre: a.nombre,
+    ...(a.medida ? { medida: a.medida } : {}),
+    ...(gramos ? { gramos: Math.round(gramos * 10) / 10 } : {}),
+    kcal, p, c, g,
+    ...(base && factor ? { estimado: true } : {}),
+  };
+}
+
+export function leerAlimentos(lineas) {
+  const hallados = [];
+  let actual = null;
+  let agregadas = 0;
+  for (const linea of lineas) {
+    if (COMIDAS.some(([, re]) => re.test(linea)) || NO_ES_ALIMENTO.test(linea) || IGNORAR.test(linea)) {
+      actual = null;
+      continue;
+    }
+    const d = datosDeLinea(linea);
+    if (esNombre(linea, d.nombre)) {
+      actual = { ...d };
+      hallados.push(actual);
+      agregadas = 0;
+    } else if (actual && agregadas < 4 && conDatos(d)) {
+      // "Avena" arriba y "40 g · 150 kcal" abajo: la línea de datos completa lo que falta.
+      for (const k of ["kcal", "p", "c", "g", "medida", "gramos", "cantidad"]) if (actual[k] === undefined && d[k] !== undefined) actual[k] = d[k];
+      agregadas += 1;
+    } else {
+      actual = null;
+    }
+  }
+  return hallados.filter(conDatos).map(completarAlimento).filter((a) => a.kcal > 0);
+}
+
+function sumarAlimentos(alimentos) {
+  const total = alimentos.reduce((t, a) => ({ kcal: t.kcal + a.kcal, p: t.p + a.p, c: t.c + a.c, g: t.g + a.g }), { kcal: 0, p: 0, c: 0, g: 0 });
+  return { ...completar(total), alimentos };
+}
+
+// Con el peso se puede seguir ajustando la cantidad después de importar.
+export function itemImportado(a) {
+  const base = { nombre: a.nombre, fuente: "importado", kcal: a.kcal, p: a.p, c: a.c, g: a.g, ...(a.medida ? { medida: a.medida } : {}), ...(a.estimado ? { estimado: true } : {}) };
+  if (!(a.gramos > 0)) return base;
+  const por100 = Object.fromEntries(["kcal", "p", "c", "g"].map((k) => [k, (a[k] / a.gramos) * 100]));
+  return { ...base, gramos: a.gramos, por100 };
 }
 
 // Lo importado desde una comida: la que corresponde, o lo único que se haya leído.
@@ -184,10 +332,16 @@ export function leerResumen(texto) {
       const delTitulo = numerosDe(s.lineas[0])[0]?.valor;
       if (delTitulo >= 20) v.kcal = delTitulo;
     }
-    if (tieneDatos(v) && !porComida.has(s.tipo)) porComida.set(s.tipo, completar(v));
+    const alimentos = leerAlimentos(s.lineas.slice(1));
+    if (porComida.has(s.tipo)) continue;
+    if (alimentos.length) porComida.set(s.tipo, sumarAlimentos(alimentos));
+    else if (tieneDatos(v)) porComida.set(s.tipo, completar(v));
   }
 
-  const general = leerMacros(secciones.filter((x) => !x.tipo).flatMap((x) => x.lineas));
+  const sueltas = secciones.filter((x) => !x.tipo).flatMap((x) => x.lineas);
+  const general = leerMacros(sueltas);
+  const alimentosSueltos = porComida.size ? [] : leerAlimentos(sueltas);
+  if (alimentosSueltos.length) return [{ tipo: "resumen", ...sumarAlimentos(alimentosSueltos) }];
   const comidasConMacros = [...porComida.values()].some((v) => v.p || v.c || v.g);
   const generalConMacros = general.p || general.c || general.g;
 

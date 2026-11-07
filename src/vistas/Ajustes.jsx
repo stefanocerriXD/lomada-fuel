@@ -1,3 +1,4 @@
+import Tutorial from "../componentes/Tutorial.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Bell, BellOff, Check, Copy, HeartPulse, KeyRound, LogOut, Monitor, Moon, RefreshCw, Sun, Target, Unplug, Watch } from "lucide-react";
@@ -127,6 +128,8 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
       <AppleSalud avisar={avisar} />
 
       <ConexionWhoop avisar={avisar} />
+
+      <Tutorial />
 
       <section className="tarjeta ajuste">
         <h2>Apariencia</h2>

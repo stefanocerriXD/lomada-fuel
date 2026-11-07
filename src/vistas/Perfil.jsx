@@ -13,18 +13,18 @@ import Visor from "../componentes/Visor.jsx";
 const SECCIONES = [["dias", "Días"], ["fotos", "Fotos"], ["logros", "Logros"]];
 const numero = (v) => Math.round(v).toLocaleString("es-AR");
 
-export default function Perfil({ onEditar }) {
+export default function Perfil({ onEditar, onEditarComida }) {
   const { perfiles, perfilId, abrirPerfil } = useDatos();
   const perfil = perfiles[perfilId];
   const cerrar = useCallback(() => abrirPerfil(null), [abrirPerfil]);
   return (
     <Hoja abierta={!!perfil} onCerrar={cerrar} titulo={perfil?.nombre || "Perfil"} ancha>
-      {perfil && <Contenido key={perfil.id} perfil={perfil} onEditar={onEditar} />}
+      {perfil && <Contenido key={perfil.id} perfil={perfil} onEditar={onEditar} onEditarComida={onEditarComida} />}
     </Hoja>
   );
 }
 
-function Contenido({ perfil, onEditar }) {
+function Contenido({ perfil, onEditar, onEditarComida }) {
   const { usuario, fotos, extras, cargarHistorial } = useDatos();
   const [lista, setLista] = useState(null);
   const [error, setError] = useState(false);
@@ -107,6 +107,7 @@ function Contenido({ perfil, onEditar }) {
                           <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
                           <small>{tipoInfo(c.tipo).texto} · {numero(c.calorias || 0)} kcal · P {numero(c.proteinas || 0)} · C {numero(c.carbohidratos || 0)} · G {numero(c.grasas || 0)}</small>
                         </span>
+                        {propio && <button className="boton-icono chico" onClick={() => onEditarComida(c)} aria-label={`Editar ${c.descripcion || tipoInfo(c.tipo).texto}`}><Pencil size={15} /></button>}
                       </li>
                     ))}
                   </ul>

@@ -8,6 +8,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Avatar, vibrar } from "./Base.jsx";
+import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import { Reacciones } from "./TarjetaComida.jsx";
 
 // Foto a pantalla completa, con sus datos y una respuesta que cae en el chat del grupo.
@@ -91,6 +92,12 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
         <p className="visor-datos">
           {soloFoto ? "Contada en el total del día" : `${(comida.calorias || 0).toLocaleString("es-AR")} kcal · P ${Math.round(comida.proteinas || 0)} · C ${Math.round(comida.carbohidratos || 0)} · G ${Math.round(comida.grasas || 0)}`}
         </p>
+        {alimentosVisibles(comida.alimentos).length > 0 && (
+          <details className="visor-alimentos">
+            <summary>Ver alimentos</summary>
+            <DetalleAlimentos alimentos={comida.alimentos} />
+          </details>
+        )}
         {!comida.privada && <Reacciones comidaId={comida.id} />}
         {!comida.privada && (
           <form className="visor-responder" onSubmit={responder}>

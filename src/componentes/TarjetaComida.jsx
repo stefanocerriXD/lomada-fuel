@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Lock, MessageCircle, Pencil, PenLine, Reply, SendHorizontal, Star, Trash2 } from "lucide-react";
+import { ChevronDown, Lock, MessageCircle, Pencil, PenLine, Reply, SendHorizontal, Star, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Avatar, vibrar } from "./Base.jsx";
+import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import IconoComida from "./IconoComida.jsx";
 
 const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷"];
@@ -89,12 +90,14 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const { usuario, cargarComidas, extras, cargarExtras, abrirPerfil } = useDatos();
   const [confirmar, setConfirmar] = useState(false);
   const [charla, setCharla] = useState(false);
+  const [detalle, setDetalle] = useState(false);
   const comentarios = extras.comentarios.filter((c) => c.comida_id === comida.id);
   const tipo = tipoInfo(comida.tipo);
   const alimentos = comida.alimentos || [];
   const texto = comida.descripcion || tipo.texto;
   // Foto de una comida cuyas calorías ya entraron con el total importado del día.
   const soloFoto = alimentos[0]?.fuente === "foto" && !comida.calorias;
+  const conDetalle = alimentosVisibles(alimentos).length > 0;
 
   const nombreFavorita = texto.slice(0, 200);
   const favorita = extras.favoritas.find((f) => f.nombre === nombreFavorita);
@@ -144,7 +147,6 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
       {foto ? (
         <button className="comida-foto" onClick={() => onZoom({ src: foto, alt: texto })} aria-label={`Ampliar foto: ${texto}`}>
           <img src={foto} alt={texto} loading="lazy" />
-          {!soloFoto && <span className="comida-kcal">{(comida.calorias || 0).toLocaleString("es-AR")} kcal</span>}
         </button>
       ) : (
         <div className="comida-sinfoto">
@@ -155,10 +157,9 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
 
       <div className="comida-cuerpo">
         <p className="comida-texto">{texto}</p>
-        {alimentos.length > 0 && (
-          <p className="comida-items">{soloFoto ? "Contada en el total del día" : alimentos.map((a) => a.nombre).join(" · ")}</p>
-        )}
+        {soloFoto && <p className="comida-items">Contada en el total del día</p>}
         {!soloFoto && <ul className="comida-macros">
+          <li><strong>{(comida.calorias || 0).toLocaleString("es-AR")} kcal</strong></li>
           <li><span className="punto s-p" /> P <strong>{Math.round(comida.proteinas || 0)} g</strong></li>
           <li><span className="punto s-c" /> C <strong>{Math.round(comida.carbohidratos || 0)} g</strong></li>
           <li><span className="punto s-g" /> G <strong>{Math.round(comida.grasas || 0)} g</strong></li>
@@ -166,6 +167,21 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
             <li className="comida-editado"><PenLine size={12} /> ajustado</li>
           )}
         </ul>}
+        {!soloFoto && conDetalle && (
+          <>
+            <button className="boton-texto ver-alimentos" onClick={() => setDetalle(!detalle)} aria-expanded={detalle}>
+              <motion.span animate={{ rotate: detalle ? 180 : 0 }}><ChevronDown size={16} /></motion.span>
+              {detalle ? "Ocultar alimentos" : "Ver alimentos"}
+            </button>
+            <AnimatePresence initial={false}>
+              {detalle && (
+                <motion.div className="detalle-pliegue" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
+                  <DetalleAlimentos alimentos={alimentos} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
         {!comida.privada && <Reacciones comidaId={comida.id} />}
         {!comida.privada && (
           <div className="comida-social">
