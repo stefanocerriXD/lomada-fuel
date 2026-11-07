@@ -362,7 +362,7 @@ function AppleSalud({ avisar }) {
           <div className="dato-copiable"><code>{URL_SALUD}</code><button className="boton-icono" onClick={() => copiar(URL_SALUD, "Dirección")} aria-label="Copiar dirección"><Copy size={17} /></button></div>
           <ol className="pasos-atajo">
             <li>Abrí <strong>Atajos</strong> y creá uno nuevo.</li>
-            <li>Agregá una búsqueda de muestras de Salud por cada dato: energía de la dieta, proteína, carbohidratos y grasas de hoy, agrupadas por día.</li>
+            <li>Agregá una búsqueda de muestras de Salud por cada dato: ingesta calórica, proteína, carbohidratos y grasas de hoy, agrupadas por día.</li>
             <li>Agregá <strong>Obtener contenido de URL</strong> con esa dirección, método POST y cuerpo JSON: token, calorias, proteinas, carbohidratos y grasas.</li>
             <li>En <strong>Automatización</strong>, hacé que corra todas las noches.</li>
           </ol>
