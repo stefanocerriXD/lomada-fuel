@@ -5,7 +5,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
-import { Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
+import { Indicador, Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
 import Habitos from "../componentes/Habitos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
@@ -19,10 +19,10 @@ export default function Resumen({ onCargar, onImportar, onEditarCuerpo, avisar }
       <div className="selector tres" role="tablist" aria-label="Sección del resumen">
         {[["dia", "Por día"], ["semana", "Semana"], ["progreso", "Progreso"]].map(([id, texto]) => (
           <button key={id} role="tab" aria-selected={modo === id} className={modo === id ? "activo" : ""} onClick={() => { setModo(id); vibrar(5); }}>
-            {modo === id && <motion.span className="selector-fondo" layoutId="selector-resumen" />}
             <span>{texto}</span>
           </button>
         ))}
+        <Indicador indice={[["dia", "Por día"], ["semana", "Semana"], ["progreso", "Progreso"]].findIndex(([id]) => id === modo)} total={3} />
       </div>
       {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} />}
       {modo === "semana" && <ResumenSemana />}

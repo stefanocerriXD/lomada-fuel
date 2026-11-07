@@ -440,8 +440,12 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 
 /* Chat */
 .contenido-chat { padding-bottom: 0; }
-.chat { display: flex; flex-direction: column; gap: 8px; height: calc(var(--alto-visible, 100dvh) - 78px - env(safe-area-inset-top)); padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
-:root[data-teclado="si"] .chat { padding-bottom: 10px; }
+.contenido { overflow-x: clip; }
+.grupo, .grupo-contenido { display: flex; flex-direction: column; gap: 13px; min-width: 0; }
+.grupo-chat { gap: 8px; height: calc(var(--alto-visible, 100dvh) - 78px - env(safe-area-inset-top)); padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+:root[data-teclado="si"] .grupo-chat { padding-bottom: 10px; }
+.grupo-chat .grupo-contenido { flex: 1; min-height: 0; }
+.chat { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; }
 .chat-mensajes { overscroll-behavior: contain; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; padding: 4px 0; }
 .chat-grupo { display: contents; }
 .chat-dia { margin: 12px 0 6px; text-align: center; }
@@ -873,9 +877,9 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .chat-respondiendo img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: rgb(0 0 0 / 10%); }
 .chat-respondiendo span { flex: 1; min-width: 0; }
 .chat-avatar { display: grid; flex: none; place-items: center; width: 36px; height: 36px; margin: -3px; border-radius: 50%; }
-.burbuja-cita { display: flex; flex-direction: column; align-items: stretch; gap: 5px; width: 100%; min-width: min(220px, 58vw); margin: 2px 0 5px; padding: 5px; overflow: hidden; border-left: 3px solid var(--acento); border-radius: 9px; background: rgb(120 90 60 / 14%); color: inherit; text-align: left; }
-.burbuja-cita img { width: 100%; height: auto; max-height: 300px; object-fit: contain; border-radius: 7px; background: rgb(0 0 0 / 12%); }
-.burbuja-cita span { display: flex; flex-direction: column; min-width: 0; }
+.burbuja-cita { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; min-width: min(190px, 52vw); margin: 2px 0 5px; padding: 4px 5px 4px 8px; overflow: hidden; border-left: 3px solid var(--acento); border-radius: 8px; background: rgb(120 90 60 / 14%); color: inherit; text-align: left; }
+.burbuja-cita img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
+.burbuja-cita > span { display: flex; flex-direction: column; min-width: 0; }
 .burbuja-cita strong, .burbuja-cita small { overflow: hidden; font-size: 0.76rem; text-overflow: ellipsis; white-space: nowrap; }
 .burbuja-cita.sin-datos { font-size: 0.78rem; }
 
@@ -966,9 +970,9 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .boton-icono, .fila-busqueda .boton-icono, .dia-selector .boton-icono, .grupo-barra .boton-icono { background: transparent; box-shadow: none; }
 
 /* Pestañas subrayadas: la línea se desliza a la opción elegida */
-.selector { padding: 0; background: transparent; border-bottom: 1px solid var(--borde); border-radius: 0; }
+.selector { position: relative; padding: 0; background: transparent; border-bottom: 1px solid var(--borde); border-radius: 0; }
 .selector button { border-radius: 0; }
-.selector-fondo { inset: auto 0 -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--acento); box-shadow: none; }
+.selector-fondo { inset: auto auto -1px 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--acento); box-shadow: none; }
 .grupo-barra { background: color-mix(in srgb, var(--fondo) 92%, transparent); backdrop-filter: blur(12px); }
 
 /* Logros en lista */
@@ -1174,7 +1178,7 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
   .contenido { padding: 28px 24px 40px; max-width: 780px; }
   .muro { grid-template-columns: 1fr 1fr; align-items: start; }
   .fichas-personas { margin: 0; padding: 2px 0; flex-wrap: wrap; }
-  .chat { height: calc(100dvh - 28px); padding-bottom: 16px; }
+  .grupo-chat { height: calc(100dvh - 28px); padding-bottom: 16px; }
   .aviso { bottom: 28px; }
 }
 

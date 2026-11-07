@@ -61,8 +61,8 @@ function AvisoNotificaciones({ avisar }) {
   );
 }
 
-function CitaFoto({ id, onZoom }) {
-  const { comidas, perfiles, fotos, cargarComida } = useDatos();
+function CitaFoto({ id, autorId, onZoom }) {
+  const { usuario, comidas, perfiles, fotos, cargarComida } = useDatos();
   const reciente = comidas.find((c) => c.id === id);
   const [anterior, setAnterior] = useState(null);
   const comida = reciente || anterior;
@@ -75,18 +75,25 @@ function CitaFoto({ id, onZoom }) {
     return () => { activo = false; };
   }, [cargarComida, id, reciente]);
 
-  if (!comida) return <span className="burbuja-cita sin-datos">Respondió una foto</span>;
+  if (!comida) return <span className="burbuja-cita sin-datos">Respondió a una foto</span>;
   const src = fotos[comida.foto_path];
   const titulo = comida.descripcion || tipoInfo(comida.tipo).texto;
+  const nombre = perfiles[comida.usuario_id]?.nombre || "Amigo";
+  const soyAutor = autorId === usuario.id;
+  const esMia = comida.usuario_id === usuario.id;
+  let quien = `${soyAutor ? "Respondiste" : "Respondió"} a ${nombre}`;
+  if (esMia) quien = soyAutor ? "Respondiste a tu comida" : "Respondió a tu comida";
+  else if (comida.usuario_id === autorId) quien = "Respondió a su comida";
+
   return (
     <button className="burbuja-cita" type="button" onClick={() => src && onZoom({ src, alt: titulo })} aria-label={`Ver foto: ${titulo}`}>
+      <span><strong>{quien}</strong><small>{titulo}</small></span>
       {src ? <img src={src} alt="" /> : <IconoComida tipo={comida.tipo} />}
-      <span><strong>{perfiles[comida.usuario_id]?.nombre || "Amigo"}</strong><small>{titulo}</small></span>
     </button>
   );
 }
 
-export default function Chat({ avisar, cabecera }) {
+export default function Chat({ avisar }) {
   const { usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, abrirPerfil, respuesta, responder } = useDatos();
   const campo = useRef(null);
   const [texto, setTexto] = useState("");
@@ -128,7 +135,6 @@ export default function Chat({ avisar, cabecera }) {
 
   return (
     <section className="chat">
-      {cabecera}
       <AvisoNotificaciones avisar={avisar} />
 
       <div className="chat-mensajes" role="log" aria-live="polite">
@@ -175,7 +181,7 @@ export default function Chat({ avisar, cabecera }) {
                 {!propio && (fin ? <button className="chat-avatar" onClick={() => abrirPerfil(m.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}><Avatar perfil={perfil} tam={30} /></button> : <span className="chat-hueco" />)}
                 <div className="burbuja">
                   {!propio && inicio && <strong>{perfil?.nombre || "Amigo"}</strong>}
-                  {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} onZoom={setZoom} />}
+                  {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={setZoom} />}
                   <p>{m.texto}</p>
                   <time dateTime={m.creado_en}>{hora(m.creado_en)}</time>
                 </div>

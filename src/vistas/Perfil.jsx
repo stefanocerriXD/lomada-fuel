@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import { Award, Camera, Pencil, UtensilsCrossed } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { cantidades, LOGROS, nivelesGuardados } from "../lib/medallas.js";
 import { comidasFavoritas, estadisticas, porDia } from "../lib/perfil.js";
-import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
+import { Indicador, Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
 import DetalleLogro from "../componentes/DetalleLogro.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import NivelGeneral from "../componentes/NivelGeneral.jsx";
@@ -96,10 +96,10 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
       <div className="selector tres" role="tablist" aria-label="Sección del perfil">
         {SECCIONES.map(([id, texto]) => (
           <button key={id} role="tab" aria-selected={seccion === id} className={seccion === id ? "activo" : ""} onClick={() => { setSeccion(id); vibrar(5); }}>
-            {seccion === id && <motion.span className="selector-fondo" layoutId="selector-perfil" />}
             <span>{texto}</span>
           </button>
         ))}
+        <Indicador indice={SECCIONES.findIndex(([id]) => id === seccion)} total={SECCIONES.length} />
       </div>
 
       {lista === null && !error && <p className="nota">Cargando historial…</p>}

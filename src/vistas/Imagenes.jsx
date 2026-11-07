@@ -16,7 +16,7 @@ const moverDia = (fecha, dias) => {
   return fechaLocal(d);
 };
 
-export default function Imagenes({ cabecera, onCargar, avisar }) {
+export default function Imagenes({ onCargar, avisar }) {
   const { usuario, comidas, fotos, perfiles, cargarDia } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
@@ -55,8 +55,7 @@ export default function Imagenes({ cabecera, onCargar, avisar }) {
 
   return (
     <>
-      {cabecera}
-      <TiraDias fecha={fecha} onElegir={setFecha} conComidas={conFotos} grupo="dia-imagenes" />
+      <TiraDias fecha={fecha} onElegir={setFecha} conComidas={conFotos} />
 
       <div className="dia-selector">
         <button className="boton-icono" onClick={() => setFecha(moverDia(fecha, -1))} aria-label="Día anterior"><ChevronLeft size={20} /></button>

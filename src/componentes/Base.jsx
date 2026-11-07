@@ -25,6 +25,11 @@ export function Avatar({ perfil, tam = 40 }) {
   );
 }
 
+// Una sola línea que se corre de costado: nunca sale volando si la pantalla cambia de alto o de posición.
+export function Indicador({ indice, total }) {
+  return <motion.span className="selector-fondo" style={{ width: `${100 / total}%` }} initial={false} animate={{ x: `${indice * 100}%` }} transition={resorte} aria-hidden="true" />;
+}
+
 export function Numero({ valor, decimales = 0 }) {
   const quieto = useReducedMotion();
   const [visible, setVisible] = useState(valor);

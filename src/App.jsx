@@ -320,14 +320,14 @@ function Principal({ recuperando, onRecuperado }) {
       <main className={vista === "grupo" && seccion === "chat" ? "contenido contenido-chat" : "contenido"} onTouchStart={alEmpezarToque} onTouchEnd={alTerminarToque}>
         <AnimatePresence initial={false}>
           <motion.div
-            key={vista === "grupo" ? seccion : vista}
+            key={vista}
             className="vista"
             initial={{ opacity: 0, x: sentido * 44 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
           >
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
-            {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} />}
+            {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} sentido={sentido} />}
             {vista === "retos" && <Retos avisar={avisar} />}
             {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
           </motion.div>

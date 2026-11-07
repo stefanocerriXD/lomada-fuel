@@ -5,7 +5,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal } from "../lib/fechas.js";
 import { sumarComidas } from "../lib/macros.js";
 import { nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
-import { Avatar, Hoja, vibrar } from "../componentes/Base.jsx";
+import { Indicador, Avatar, Hoja, vibrar } from "../componentes/Base.jsx";
 import Chat from "./Chat.jsx";
 import Imagenes from "./Imagenes.jsx";
 
@@ -42,7 +42,7 @@ function Integrantes({ abierta, onCerrar }) {
   );
 }
 
-export default function Grupo({ seccion, onSeccion, onCargar, avisar }) {
+export default function Grupo({ seccion, onSeccion, onCargar, avisar, sentido }) {
   const [viendo, setViendo] = useState(false);
 
   const barra = (
@@ -50,21 +50,28 @@ export default function Grupo({ seccion, onSeccion, onCargar, avisar }) {
       <div className="selector" role="tablist" aria-label="Sección del grupo">
         {SECCIONES.map(([id, texto]) => (
           <button key={id} role="tab" aria-selected={seccion === id} className={seccion === id ? "activo" : ""} onClick={() => { onSeccion(id); vibrar(5); }}>
-            {seccion === id && <motion.span className="selector-fondo" layoutId="selector-grupo" />}
             <span>{texto}</span>
           </button>
         ))}
+        <Indicador indice={SECCIONES.findIndex(([id]) => id === seccion)} total={SECCIONES.length} />
       </div>
       <button className="boton-icono" onClick={() => setViendo(true)} aria-label="Integrantes"><Users size={20} /></button>
     </div>
   );
 
   return (
-    <>
-      {seccion === "chat"
-        ? <Chat avisar={avisar} cabecera={barra} />
-        : <Imagenes cabecera={barra} onCargar={onCargar} avisar={avisar} />}
+    <div className={seccion === "chat" ? "grupo grupo-chat" : "grupo"}>
+      {barra}
+      <motion.div
+        key={seccion}
+        className="grupo-contenido"
+        initial={{ opacity: 0, x: sentido * 44 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+      >
+        {seccion === "chat" ? <Chat avisar={avisar} /> : <Imagenes onCargar={onCargar} avisar={avisar} />}
+      </motion.div>
       <Integrantes abierta={viendo} onCerrar={() => setViendo(false)} />
-    </>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, MailCheck } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
+import { Indicador } from "../componentes/Base.jsx";
 
 const USUARIO_VALIDO = /^[a-z0-9_.]{3,20}$/;
 const LARGO_CLAVE = 8;
@@ -123,10 +124,10 @@ export default function Login() {
             <div className="selector" role="tablist" aria-label="Acceso">
               {[["entrar", "Entrar"], ["crear", "Crear cuenta"]].map(([id, texto]) => (
                 <button key={id} type="button" role="tab" aria-selected={modo === id} className={modo === id ? "activo" : ""} onClick={() => cambiarModo(id)}>
-                  {modo === id && <motion.span className="selector-fondo" layoutId="selector-login" />}
                   <span>{texto}</span>
                 </button>
               ))}
+              <Indicador indice={[["entrar", "Entrar"], ["crear", "Crear cuenta"]].findIndex(([id]) => id === modo)} total={2} />
             </div>
 
             <form onSubmit={modo === "entrar" ? entrar : crearCuenta}>
