@@ -1,13 +1,13 @@
 import { aFecha, fechaLocal, haceDias } from "./fechas.js";
 
 export const TIPOS = [
-  { id: "desayuno", texto: "Desayuno", emoji: "☕" },
-  { id: "almuerzo", texto: "Almuerzo", emoji: "🍝" },
-  { id: "merienda", texto: "Merienda", emoji: "🧉" },
-  { id: "cena", texto: "Cena", emoji: "🌙" },
+  { id: "desayuno", texto: "Desayuno" },
+  { id: "almuerzo", texto: "Almuerzo" },
+  { id: "merienda", texto: "Merienda" },
+  { id: "cena", texto: "Cena" },
 ];
 
-export const TIPOS_TODOS = [{ id: "resumen", texto: "Todo el día", emoji: "📋" }, ...TIPOS];
+export const TIPOS_TODOS = [{ id: "resumen", texto: "Todo el día" }, ...TIPOS];
 
 export const tipoInfo = (id) => TIPOS_TODOS.find((t) => t.id === id) || TIPOS[0];
 

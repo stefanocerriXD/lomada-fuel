@@ -1,10 +1,11 @@
+import { CalendarCheck, Camera, Droplets, Dumbbell } from "lucide-react";
 import { aFecha, fechaLocal } from "./fechas.js";
 
 export const TIPOS_DESAFIO = [
-  { id: "proteina", titulo: "Reto de proteína", emoji: "💪", meta: 120, unidad: "g", etiqueta: "Proteína por día (g)", regla: (m) => `Llegar a ${m} g de proteína por día` },
-  { id: "constancia", titulo: "Racha de registros", emoji: "📅", meta: 3, unidad: "comidas", etiqueta: "Comidas por día", regla: (m) => `Cargar al menos ${m} comidas por día` },
-  { id: "agua", titulo: "Reto de agua", emoji: "💧", meta: 2000, unidad: "ml", etiqueta: "Agua por día (ml)", regla: (m) => `Tomar ${Number(m).toLocaleString("es-AR")} ml de agua por día` },
-  { id: "fotos", titulo: "Reto de fotos", emoji: "📸", meta: 10, unidad: "fotos", etiqueta: "Fotos a subir", regla: (m) => `Subir ${m} comidas con foto` },
+  { id: "proteina", titulo: "Reto de proteína", icono: Dumbbell, meta: 120, unidad: "g", etiqueta: "Proteína por día (g)", regla: (m) => `Llegar a ${m} g de proteína por día` },
+  { id: "constancia", titulo: "Racha de registros", icono: CalendarCheck, meta: 3, unidad: "comidas", etiqueta: "Comidas por día", regla: (m) => `Cargar al menos ${m} comidas por día` },
+  { id: "agua", titulo: "Reto de agua", icono: Droplets, meta: 2000, unidad: "ml", etiqueta: "Agua por día (ml)", regla: (m) => `Tomar ${Number(m).toLocaleString("es-AR")} ml de agua por día` },
+  { id: "fotos", titulo: "Reto de fotos", icono: Camera, meta: 10, unidad: "fotos", etiqueta: "Fotos a subir", regla: (m) => `Subir ${m} comidas con foto` },
 ];
 
 export const tipoDesafio = (id) => TIPOS_DESAFIO.find((t) => t.id === id) || TIPOS_DESAFIO[0];

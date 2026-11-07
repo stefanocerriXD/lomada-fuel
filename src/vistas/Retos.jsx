@@ -1,12 +1,17 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Lock, Plus, Trash2 } from "lucide-react";
+import { Lock, Plus, Swords, Trash2, Trophy } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal, haceDias } from "../lib/fechas.js";
 import { desafioTerminado, diasRestantes, objetivoDesafio, puntajes, tipoDesafio, TIPOS_DESAFIO } from "../lib/desafios.js";
 import { MEDALLAS } from "../lib/medallas.js";
 import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
+
+function DesafioIcono({ tipo, size = 18 }) {
+  const Icono = tipo.icono;
+  return <Icono size={size} aria-hidden="true" />;
+}
 
 export default function Retos({ avisar }) {
   const { usuario, extras, perfiles, comidas, cargarExtras } = useDatos();
@@ -16,7 +21,7 @@ export default function Retos({ avisar }) {
   const terminados = extras.desafios.filter(desafioTerminado).slice(0, 5);
 
   if (!extras.disponible) {
-    return <Vacio emoji="🏆" titulo="Retos todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." />;
+    return <Vacio icono={Trophy} titulo="Retos todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." />;
   }
 
   async function borrar(id) {
@@ -37,7 +42,7 @@ export default function Retos({ avisar }) {
       </header>
 
       {activos.length === 0 ? (
-        <Vacio emoji="🥊" titulo="No hay desafíos en curso" texto="Armá uno y que gane el más constante.">
+        <Vacio icono={Swords} titulo="No hay desafíos en curso" texto="Armá uno y que gane el más constante.">
           <button className="boton" onClick={() => setCreando(true)}>Crear desafío</button>
         </Vacio>
       ) : (
@@ -57,7 +62,7 @@ export default function Retos({ avisar }) {
               const hubo = primero?.puntos > 0;
               return (
                 <li key={d.id} className="tarjeta">
-                  <span aria-hidden="true">{tipoDesafio(d.tipo).emoji}</span>
+                  <DesafioIcono tipo={tipoDesafio(d.tipo)} />
                   <span>
                     <strong>{tipoDesafio(d.tipo).titulo}</strong>
                     <small>{hubo ? `Ganó ${primero.perfil.nombre}` : "Sin ganador"}</small>
@@ -70,7 +75,7 @@ export default function Retos({ avisar }) {
       )}
 
       <section>
-        <h2 className="titulo-seccion">Medallas</h2>
+        <h2 className="titulo-seccion">Logros</h2>
         <Medallas />
       </section>
 
@@ -89,7 +94,7 @@ function TarjetaDesafio({ desafio, ranking, propio, onBorrar }) {
   return (
     <motion.article className="tarjeta desafio" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <header>
-        <span className="desafio-emoji" aria-hidden="true">{tipo.emoji}</span>
+        <span className="desafio-icono"><DesafioIcono tipo={tipo} size={24} /></span>
         <div>
           <h2>{tipo.titulo}</h2>
           <p>{tipo.regla(meta)}</p>
@@ -121,23 +126,28 @@ function TarjetaDesafio({ desafio, ranking, propio, onBorrar }) {
 }
 
 function Medallas() {
-  const { usuario, extras, perfiles } = useDatos();
+  const { usuario, extras, perfiles, abrirPerfil } = useDatos();
   const mias = useMemo(() => new Set(extras.medallas.filter((m) => m.usuario_id === usuario.id).map((m) => m.codigo)), [extras.medallas, usuario.id]);
 
   return (
     <>
-      <ul className="medallas">
-        {MEDALLAS.map((m) => {
-          const ganada = mias.has(m.codigo);
-          return (
-            <li key={m.codigo} className={ganada ? "tarjeta medalla ganada" : "tarjeta medalla"}>
-              <span className="medalla-emoji" aria-hidden="true">{ganada ? m.emoji : <Lock size={20} />}</span>
-              <strong>{m.nombre}</strong>
-              <small>{m.detalle}</small>
-            </li>
-          );
-        })}
-      </ul>
+      {[["constancia", "Constancia"], ["divertidos", "Divertidos"]].map(([grupo, titulo]) => (
+        <div key={grupo} className="grupo-medallas">
+          <h3 className="perfil-subtitulo">{titulo}</h3>
+          <ul className="medallas">
+            {MEDALLAS.filter((m) => m.grupo === grupo).map((m) => {
+              const ganada = mias.has(m.codigo);
+              return (
+                <li key={m.codigo} className={ganada ? "tarjeta medalla ganada" : "tarjeta medalla"}>
+                  <span className="medalla-icono" aria-hidden="true">{ganada ? <m.icono size={24} /> : <Lock size={20} />}</span>
+                  <strong>{m.nombre}</strong>
+                  <small>{m.detalle}</small>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
       {extras.medallas.some((m) => m.usuario_id !== usuario.id) && (
         <div className="medallas-grupo">
           <h3>El grupo</h3>
@@ -145,7 +155,7 @@ function Medallas() {
             {Object.values(perfiles).filter((p) => p.id !== usuario.id).map((p) => {
               const cantidad = extras.medallas.filter((m) => m.usuario_id === p.id).length;
               return (
-                <li key={p.id}><Avatar perfil={p} tam={28} /> <span>{p.nombre}</span> <strong>{cantidad}</strong></li>
+                <li key={p.id}><button onClick={() => abrirPerfil(p.id)}><Avatar perfil={p} tam={28} /> <span>{p.nombre}</span> <strong>{cantidad}</strong></button></li>
               );
             })}
           </ul>
@@ -192,7 +202,7 @@ function NuevoDesafio({ abierto, onCerrar, avisar }) {
         <div className="tipos-desafio" role="radiogroup" aria-label="Tipo de desafío">
           {TIPOS_DESAFIO.map((t) => (
             <button key={t.id} type="button" role="radio" aria-checked={tipo === t.id} className={tipo === t.id ? "activo" : ""} onClick={() => elegir(t)}>
-              <span aria-hidden="true">{t.emoji}</span> {t.titulo}
+              <DesafioIcono tipo={t} /> {t.titulo}
             </button>
           ))}
         </div>

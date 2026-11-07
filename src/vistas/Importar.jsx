@@ -8,6 +8,7 @@ import { ranurasDeFotos } from "../lib/importar.js";
 import { nombreDia } from "../lib/fechas.js";
 import { TIPOS, TIPOS_TODOS, tipoInfo } from "../lib/macros.js";
 import { Hoja, vibrar } from "../componentes/Base.jsx";
+import IconoComida from "../componentes/IconoComida.jsx";
 import Lector from "../componentes/Lector.jsx";
 
 const CAMPOS = [["kcal", "kcal"], ["p", "Prote"], ["c", "Carbos"], ["g", "Grasas"]];
@@ -102,7 +103,7 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
       {filas.map((f, i) => (
         <section key={i} className="tarjeta fila-importada">
           <select value={f.tipo} onChange={(e) => cambiar(i, "tipo", e.target.value)} aria-label="Comida">
-            {TIPOS_TODOS.map((t) => <option key={t.id} value={t.id}>{t.emoji} {t.texto}</option>)}
+            {TIPOS_TODOS.map((t) => <option key={t.id} value={t.id}>{t.texto}</option>)}
           </select>
           <div className="campos-importados">
             {CAMPOS.map(([k, texto]) => (
@@ -233,7 +234,7 @@ function Fotos({ fecha, guardadas, onListo }) {
                 {elegida ? <img src={elegida.vista} alt="" /> : <Camera size={24} />}
                 {lista && <span className="ranura-foto-lista"><Check size={15} /></span>}
               </label>
-              <span className="ranura-foto-nombre">{t.emoji} {t.texto}</span>
+              <span className="ranura-foto-nombre"><IconoComida tipo={r.tipo} size={16} /> {t.texto}</span>
             </li>
           );
         })}

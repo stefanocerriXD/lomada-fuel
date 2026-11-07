@@ -10,7 +10,6 @@ import { FormularioContrasena } from "../componentes/Contrasena.jsx";
 import { activarAvisos, avisosActivos, desactivarAvisos, estadoAvisos } from "../lib/avisos.js";
 import { Avatar } from "../componentes/Base.jsx";
 
-const EMOJIS = ["🍽️", "🍕", "🥑", "🌮", "🍔", "🍣", "🥩", "🍝", "🧉", "🥐", "🍩", "🍦", "🥦", "🍗", "🌶️", "🍺"];
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
   { id: "auto", texto: "Automático", icono: Monitor },
@@ -21,14 +20,13 @@ const TEMAS = [
 export default function Ajustes({ avisar, onEditarCuerpo }) {
   const { usuario, yo, cargarPerfiles, salud } = useDatos();
   const [nombre, setNombre] = useState(yo.nombre);
-  const [emoji, setEmoji] = useState(yo.emoji);
   const [color, setColor] = useState(yo.color);
   const [meta, setMeta] = useState(yo.meta_calorias);
   const [tema, setTema] = useState(leerTema());
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
 
-  const cambios = nombre.trim() !== yo.nombre || emoji !== yo.emoji || color !== yo.color || meta !== yo.meta_calorias;
+  const cambios = nombre.trim() !== yo.nombre || color !== yo.color || meta !== yo.meta_calorias;
 
   async function guardar(e) {
     e.preventDefault();
@@ -37,7 +35,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
     setGuardando(true);
     const { error: err } = await supabase
       .from("perfiles")
-      .update({ nombre: nombre.trim(), emoji, color, meta_calorias: meta })
+      .update({ nombre: nombre.trim(), color, meta_calorias: meta })
       .eq("id", usuario.id);
     setGuardando(false);
     if (err) return setError(err.message);
@@ -63,25 +61,14 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
         <section className="tarjeta ajuste">
           <h2>Tu perfil</h2>
           <div className="perfil-vista">
-            <motion.span key={`${emoji}${color}`} initial={{ scale: 0.7 }} animate={{ scale: 1 }}>
-              <Avatar perfil={{ emoji, color }} tam={72} />
+            <motion.span key={color} initial={{ scale: 0.7 }} animate={{ scale: 1 }}>
+              <Avatar perfil={{ nombre, color }} tam={72} />
             </motion.span>
             <label>
               <span>Nombre</span>
               <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={30} required />
             </label>
           </div>
-
-          <fieldset>
-            <legend>Tu emoji</legend>
-            <div className="opciones-emoji">
-              {EMOJIS.map((e) => (
-                <button type="button" key={e} className={emoji === e ? "activo" : ""} onClick={() => setEmoji(e)} aria-pressed={emoji === e} aria-label={`Emoji ${e}`}>
-                  {e}
-                </button>
-              ))}
-            </div>
-          </fieldset>
 
           <fieldset>
             <legend>Tu color</legend>

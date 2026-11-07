@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Lock, MessageCircle, Pencil, PenLine, SendHorizontal, Star, Trash2 } from "lucide-react";
+import { Lock, MessageCircle, Pencil, PenLine, Reply, SendHorizontal, Star, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Avatar, vibrar } from "./Base.jsx";
+import IconoComida from "./IconoComida.jsx";
 
 const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷"];
 
-function Reacciones({ comidaId }) {
+export function Reacciones({ comidaId }) {
   const { usuario, salud, reacciones, alternarReaccion } = useDatos();
   if (salud === undefined) return null; // Las reacciones llegan con la misma actualización de la base.
   const propias = reacciones.filter((r) => r.comida_id === comidaId);
@@ -84,8 +85,8 @@ function Comentarios({ comidaId, lista }) {
   );
 }
 
-export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
-  const { usuario, cargarComidas, extras, cargarExtras } = useDatos();
+export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, onResponder, avisar }) {
+  const { usuario, cargarComidas, extras, cargarExtras, abrirPerfil } = useDatos();
   const [confirmar, setConfirmar] = useState(false);
   const [charla, setCharla] = useState(false);
   const comentarios = extras.comentarios.filter((c) => c.comida_id === comida.id);
@@ -131,11 +132,13 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
       transition={{ delay: Math.min(indice, 8) * 0.03 }}
     >
       <header className="comida-cabecera">
-        <Avatar perfil={perfil} tam={38} />
-        <div>
-          <strong>{perfil?.nombre || "Amigo"}</strong>
-          <span>{tipo.emoji} {tipo.texto} · {haceCuanto(comida.creado_en)}{comida.privada && <><Lock size={12} className="candado" /> Solo vos</>}</span>
-        </div>
+        <button className="comida-autor" onClick={() => abrirPerfil(comida.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}>
+          <Avatar perfil={perfil} tam={38} />
+          <span className="comida-autor-datos">
+            <strong>{perfil?.nombre || "Amigo"}</strong>
+            <span>{tipo.texto} · {haceCuanto(comida.creado_en)}{comida.privada && <><Lock size={12} className="candado" /> Solo vos</>}</span>
+          </span>
+        </button>
       </header>
 
       {foto ? (
@@ -145,7 +148,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         </button>
       ) : (
         <div className="comida-sinfoto">
-          <span aria-hidden="true">{tipo.emoji}</span>
+          <IconoComida tipo={comida.tipo} size={32} />
           <strong>{(comida.calorias || 0).toLocaleString("es-AR")} kcal</strong>
         </div>
       )}
@@ -164,10 +167,15 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           )}
         </ul>}
         {!comida.privada && <Reacciones comidaId={comida.id} />}
-        {!comida.privada && extras.disponible && (
-          <button className="boton-texto" onClick={() => setCharla(!charla)} aria-expanded={charla}>
-            <MessageCircle size={15} /> {comentarios.length ? `${comentarios.length} ${comentarios.length === 1 ? "comentario" : "comentarios"}` : "Comentar"}
-          </button>
+        {!comida.privada && (
+          <div className="comida-social">
+            {onResponder && <button className="boton-texto" onClick={() => onResponder(comida)}><Reply size={15} /> Responder</button>}
+            {extras.disponible && (
+              <button className="boton-texto" onClick={() => setCharla(!charla)} aria-expanded={charla}>
+                <MessageCircle size={15} /> {comentarios.length ? `${comentarios.length} ${comentarios.length === 1 ? "comentario" : "comentarios"}` : "Comentar"}
+              </button>
+            )}
+          </div>
         )}
         <AnimatePresence initial={false}>
           {charla && <Comentarios comidaId={comida.id} lista={comentarios} />}

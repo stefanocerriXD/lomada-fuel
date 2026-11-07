@@ -17,10 +17,10 @@ export function Avatar({ perfil, tam = 40 }) {
   return (
     <span
       className="avatar"
-      style={{ width: tam, height: tam, fontSize: tam * 0.52, "--avatar": perfil?.color || "#E4572E" }}
+      style={{ width: tam, height: tam, fontSize: tam * 0.42, "--avatar": perfil?.color || "#E4572E" }}
       aria-hidden="true"
     >
-      {perfil?.emoji || "🍽️"}
+      {(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}
     </span>
   );
 }
@@ -163,16 +163,16 @@ export function Hoja({ abierta, onCerrar, titulo, pie, children, ancha = false }
   );
 }
 
-export function Vacio({ emoji, titulo, texto, children }) {
+export function Vacio({ icono: Icono, titulo, texto, children }) {
   return (
     <motion.div className="vacio" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <motion.span
-        className="vacio-emoji"
+        className="vacio-icono"
         animate={{ y: [0, -7, 0] }}
         transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
         aria-hidden="true"
       >
-        {emoji}
+        <Icono size={40} strokeWidth={1.7} />
       </motion.span>
       <h3>{titulo}</h3>
       {texto && <p>{texto}</p>}
@@ -181,14 +181,14 @@ export function Vacio({ emoji, titulo, texto, children }) {
   );
 }
 
-const PARTICULAS = ["🎉", "🥑", "🍕", "🥩", "🍝", "✨", "🧉", "🍰", "🌮", "🥐"];
+const PARTICULAS = ["#c43d15", "#f0a33a", "#2f6fd0", "#3fa45b", "#b8388e"];
 
 export function Festejo({ activo }) {
   const quieto = useReducedMotion();
   if (!activo || quieto) return null;
   return (
     <div className="festejo" aria-hidden="true">
-      {PARTICULAS.concat(PARTICULAS).map((p, i) => {
+      {Array.from({ length: 20 }, (_, i) => {
         const angulo = (i / 20) * Math.PI * 2;
         const distancia = 120 + (i % 4) * 45;
         return (
@@ -197,9 +197,8 @@ export function Festejo({ activo }) {
             initial={{ x: 0, y: 0, opacity: 1, scale: 0.4 }}
             animate={{ x: Math.cos(angulo) * distancia, y: Math.sin(angulo) * distancia + 60, opacity: 0, scale: 1.2, rotate: i * 37 }}
             transition={{ duration: 1.3, ease: "easeOut" }}
-          >
-            {p}
-          </motion.span>
+            style={{ background: PARTICULAS[i % PARTICULAS.length] }}
+          />
         );
       })}
     </div>

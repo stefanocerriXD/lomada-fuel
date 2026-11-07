@@ -11,6 +11,7 @@ import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
 import { Hoja, Numero, vibrar } from "../componentes/Base.jsx";
+import IconoComida from "../componentes/IconoComida.jsx";
 import Lector from "../componentes/Lector.jsx";
 import Escaner from "./Escaner.jsx";
 
@@ -164,7 +165,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
         <div className="tipos" role="radiogroup" aria-label="Tipo de comida">
           {TIPOS.map((t) => (
             <button key={t.id} role="radio" aria-checked={tipo === t.id} className={tipo === t.id ? "activo" : ""} onClick={() => setTipo(t.id)}>
-              <span aria-hidden="true">{t.emoji}</span> {t.texto}
+              <IconoComida tipo={t.id} /> {t.texto}
             </button>
           ))}
         </div>

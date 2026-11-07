@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Check, ChevronDown, ClipboardPaste, Flame, Moon, Plus, Zap } from "lucide-react";
+import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Users, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
-import { aFecha, diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
+import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
 import { Anillo, Avatar, BarraMacros, Numero, Vacio, vibrar } from "../componentes/Base.jsx";
 import Habitos from "../componentes/Habitos.jsx";
+import IconoComida from "../componentes/IconoComida.jsx";
+import TiraDias from "../componentes/TiraDias.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 
@@ -97,7 +99,7 @@ function ResumenDia({ onCargar, onImportar }) {
                   onClick={() => onCargar({ tipo: t.id, fecha })}
                   aria-label={`Agregar ${t.texto.toLowerCase()}`}
                 >
-                  <span className="ranura-emoji" aria-hidden="true">{t.emoji}</span>
+                  <span className="ranura-icono"><IconoComida tipo={t.id} size={21} /></span>
                   <span className="ranura-nombre">{t.texto}</span>
                   <span className="ranura-valor">
                     {lista.length ? <><Check size={13} /> {kcal > 0 && kcal.toLocaleString("es-AR")}</> : <Plus size={15} />}
@@ -111,7 +113,7 @@ function ResumenDia({ onCargar, onImportar }) {
 
       {resumenDia && (
         <button className="tarjeta resumen-importado" onClick={() => onCargar({ comida: resumenDia })}>
-          <span aria-hidden="true">📋</span>
+          <span className="resumen-icono"><ClipboardList size={22} aria-hidden="true" /></span>
           <span><strong>{resumenDia.descripcion || "Resumen importado"}</strong><small>{(resumenDia.calorias || 0).toLocaleString("es-AR")} kcal</small></span>
         </button>
       )}
@@ -131,7 +133,7 @@ function ResumenDia({ onCargar, onImportar }) {
       <section>
         <h2 className="titulo-seccion">El día de cada uno</h2>
         {amigos.length === 0 ? (
-          <Vacio emoji="👋" titulo="Todavía estás solo acá" texto="Cuando se sumen tus amigos, vas a ver su día en esta sección." />
+          <Vacio icono={Users} titulo="Todavía estás solo acá" texto="Cuando se sumen tus amigos, vas a ver su día en esta sección." />
         ) : (
           <motion.ul className="lista-amigos" initial="oculto" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
             {amigos.map(({ perfil, comidas: lista }) => (
@@ -141,37 +143,6 @@ function ResumenDia({ onCargar, onImportar }) {
         )}
       </section>
     </>
-  );
-}
-
-function TiraDias({ fecha, onElegir, conComidas }) {
-  const dias = useMemo(() => ultimosDias(21), []);
-  const tira = useRef(null);
-
-  useEffect(() => {
-    tira.current?.scrollTo({ left: tira.current.scrollWidth });
-  }, []);
-
-  return (
-    <div className="tira-dias" ref={tira} role="group" aria-label="Elegir día">
-      {dias.map((d) => {
-        const marcada = aFecha(d);
-        return (
-          <button
-            key={d}
-            className={d === fecha ? "dia activo" : "dia"}
-            onClick={() => { onElegir(d); vibrar(5); }}
-            aria-pressed={d === fecha}
-            aria-label={nombreDia(d)}
-          >
-            {d === fecha && <motion.span className="dia-fondo" layoutId="dia-activo" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
-            <small>{diaCorto(d).slice(0, 3)}</small>
-            <strong>{marcada.getDate()}</strong>
-            <i className={conComidas.has(d) ? "con-comida" : ""} />
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -211,6 +182,7 @@ function TarjetaWhoop({ dia, comidas }) {
 }
 
 function TarjetaAmigo({ perfil, comidas, fotos }) {
+  const { abrirPerfil } = useDatos();
   const [abierta, setAbierta] = useState(false);
   const total = sumarComidas(comidas);
   const avance = Math.min(total.kcal / perfil.meta_calorias, 1);
@@ -218,7 +190,7 @@ function TarjetaAmigo({ perfil, comidas, fotos }) {
 
   return (
     <motion.li className="tarjeta tarjeta-amigo" variants={{ oculto: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
-      <button className="amigo-cabecera" onClick={() => setAbierta(!abierta)} aria-expanded={abierta} disabled={!comidas.length}>
+      <button className="amigo-cabecera" onClick={() => (comidas.length ? setAbierta(!abierta) : abrirPerfil(perfil.id))} aria-expanded={comidas.length ? abierta : undefined}>
         <Avatar perfil={perfil} tam={44} />
         <span className="amigo-datos">
           <strong>{perfil.nombre}</strong>
@@ -250,12 +222,13 @@ function TarjetaAmigo({ perfil, comidas, fotos }) {
               <ul>
                 {comidas.map((c) => (
                   <li key={c.id}>
-                    <span aria-hidden="true">{tipoInfo(c.tipo).emoji}</span>
+                    <IconoComida tipo={c.tipo} size={16} />
                     <span className="amigo-comida">{c.descripcion || tipoInfo(c.tipo).texto}</span>
                     <strong>{(c.calorias || 0).toLocaleString("es-AR")}</strong>
                   </li>
                 ))}
               </ul>
+              <button className="boton-texto" onClick={() => abrirPerfil(perfil.id)}><UserRound size={15} /> Ver perfil</button>
             </div>
           </motion.div>
         )}
@@ -332,7 +305,7 @@ function ResumenSemana() {
         <ol className="ranking">
           {ranking.map((r, i) => (
             <motion.li key={r.perfil.id} className="tarjeta" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-              <span className="ranking-lugar">{["🥇", "🥈", "🥉"][i] || i + 1}</span>
+              <span className="ranking-lugar">{i + 1}</span>
               <Avatar perfil={r.perfil} tam={38} />
               <span className="ranking-datos">
                 <strong>{r.perfil.id === usuario.id ? "Vos" : r.perfil.nombre}</strong>

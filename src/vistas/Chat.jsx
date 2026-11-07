@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Bell, Camera, SendHorizontal, X } from "lucide-react";
+import { Bell, Bot, Camera, MessageCircle, SendHorizontal, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal, hora, nombreDia } from "../lib/fechas.js";
+import { tipoInfo } from "../lib/macros.js";
 import { Avatar, Vacio } from "../componentes/Base.jsx";
+import IconoComida from "../componentes/IconoComida.jsx";
 import TarjetaComida from "../componentes/TarjetaComida.jsx";
+import Volver from "../componentes/Volver.jsx";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
+
+// Los resúmenes del bot traen emojis guardados en la base.
+const sinEmojis = (texto) => texto.replace(/\p{Extended_Pictographic}\uFE0F?\s*/gu, "");
 
 function AvisoNotificaciones({ avisar }) {
   const { usuario } = useDatos();
@@ -57,8 +63,23 @@ function AvisoNotificaciones({ avisar }) {
   );
 }
 
-export default function Chat({ onCargar, avisar }) {
-  const { usuario, perfiles, comidas, fotos, cargarPerfiles } = useDatos();
+function CitaFoto({ id, onZoom }) {
+  const { comidas, perfiles, fotos } = useDatos();
+  const comida = comidas.find((c) => c.id === id);
+  if (!comida) return <span className="burbuja-cita sin-datos">Respondió una foto</span>;
+  const src = fotos[comida.foto_path];
+  const titulo = comida.descripcion || tipoInfo(comida.tipo).texto;
+  return (
+    <button className="burbuja-cita" type="button" onClick={() => src && onZoom({ src, alt: titulo })} aria-label={`Ver foto: ${titulo}`}>
+      {src ? <img src={src} alt="" /> : <IconoComida tipo={comida.tipo} />}
+      <span><strong>{perfiles[comida.usuario_id]?.nombre || "Amigo"}</strong><small>{titulo}</small></span>
+    </button>
+  );
+}
+
+export default function Chat({ onCargar, avisar, onVolver }) {
+  const { usuario, perfiles, comidas, fotos, cargarPerfiles, abrirPerfil } = useDatos();
+  const [respuesta, setRespuesta] = useState(null);
   const [mensajes, setMensajes] = useState([]);
   const [texto, setTexto] = useState("");
   const [error, setError] = useState("");
@@ -118,7 +139,7 @@ export default function Chat({ onCargar, avisar }) {
     setError("");
     const { data, error: err } = await supabase
       .from("mensajes")
-      .insert({ usuario_id: usuario.id, texto: limpio })
+      .insert({ usuario_id: usuario.id, texto: limpio, ...(respuesta ? { respuesta_comida: respuesta.id } : {}) })
       .select()
       .single();
     if (err) {
@@ -126,6 +147,7 @@ export default function Chat({ onCargar, avisar }) {
       setError(err.message);
       return;
     }
+    setRespuesta(null);
     // Se suma enseguida aunque el tiempo real tarde o esté caído.
     setMensajes((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]));
     avisarGrupo("mensaje", data.id);
@@ -133,11 +155,12 @@ export default function Chat({ onCargar, avisar }) {
 
   return (
     <section className="chat">
+      <Volver titulo="Chat" onVolver={onVolver} />
       <AvisoNotificaciones avisar={avisar} />
 
       <div className="chat-mensajes" role="log" aria-live="polite">
         {cargado && linea.length === 0 && (
-          <Vacio emoji="💬" titulo="Todavía no hay nada" texto="Subí tu primera comida o mandá un mensaje." />
+          <Vacio icono={MessageCircle} titulo="Todavía no hay nada" texto="Subí tu primera comida o mandá un mensaje." />
         )}
         {linea.map((m, i) => {
           const previo = linea[i - 1];
@@ -160,6 +183,7 @@ export default function Chat({ onCargar, avisar }) {
                     indice={0}
                     onZoom={setZoom}
                     onEditar={() => onCargar({ comida: m })}
+                    onResponder={setRespuesta}
                     avisar={avisar}
                   />
                 </div>
@@ -172,8 +196,8 @@ export default function Chat({ onCargar, avisar }) {
               <div key={m.id} className="chat-grupo">
                 {separador}
                 <motion.article className="burbuja-bot" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
-                  <header><span aria-hidden="true">🤖</span> <strong>Bot del grupo</strong></header>
-                  {m.texto.split("\n").filter(Boolean).map((l) => <p key={l}>{l}</p>)}
+                  <header><Bot size={17} aria-hidden="true" /> <strong>Bot del grupo</strong></header>
+                  {sinEmojis(m.texto).split("\n").filter(Boolean).map((l) => <p key={l}>{l}</p>)}
                 </motion.article>
               </div>
             );
@@ -192,9 +216,10 @@ export default function Chat({ onCargar, avisar }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.2 }}
               >
-                {!propio && (fin ? <Avatar perfil={perfil} tam={30} /> : <span className="chat-hueco" />)}
+                {!propio && (fin ? <button className="chat-avatar" onClick={() => abrirPerfil(m.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}><Avatar perfil={perfil} tam={30} /></button> : <span className="chat-hueco" />)}
                 <div className="burbuja">
                   {!propio && inicio && <strong>{perfil?.nombre || "Amigo"}</strong>}
+                  {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} onZoom={setZoom} />}
                   <p>{m.texto}</p>
                   <time dateTime={m.creado_en}>{hora(m.creado_en)}</time>
                 </div>
@@ -206,10 +231,17 @@ export default function Chat({ onCargar, avisar }) {
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
+      {respuesta && (
+        <div className="chat-respondiendo">
+          {fotos[respuesta.foto_path] ? <img src={fotos[respuesta.foto_path]} alt="" /> : <IconoComida tipo={respuesta.tipo} />}
+          <span>Respondiendo a <strong>{perfiles[respuesta.usuario_id]?.nombre || "Amigo"}</strong></span>
+          <button className="boton-icono chico" onClick={() => setRespuesta(null)} aria-label="Cancelar respuesta"><X size={16} /></button>
+        </div>
+      )}
       <form className="chat-enviar" onSubmit={enviar}>
         <button type="button" className="boton-icono" onClick={() => onCargar()} aria-label="Subir foto de comida"><Camera size={20} /></button>
         <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí algo…" aria-label="Mensaje" maxLength={1000} />
-        <motion.button className="boton-enviar" type="submit" disabled={!texto.trim()} whileTap={{ scale: 0.86 }} aria-label="Enviar">
+        <motion.button className="boton-enviar" type="submit" disabled={!texto.trim()} whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} aria-label="Enviar">
           <SendHorizontal size={20} />
         </motion.button>
       </form>

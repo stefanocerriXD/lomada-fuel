@@ -3,7 +3,6 @@ import { motion } from "motion/react";
 import { Droplets, Minus, Plus, Timer } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
-import { fechaLocal } from "../lib/fechas.js";
 import { vibrar } from "./Base.jsx";
 
 const VASO_ML = 250;

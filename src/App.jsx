@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { CalendarDays, MessageCircle, Plus, Settings, Trophy } from "lucide-react";
+import { CalendarDays, Plus, Settings, Trophy, Users } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
+import { avisarGrupo } from "./lib/api.js";
 import { medalla, medallasGanadas } from "./lib/medallas.js";
 import { DatosProvider, useDatos } from "./lib/datos.jsx";
 import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
-import Chat from "./vistas/Chat.jsx";
+import Grupo from "./vistas/Grupo.jsx";
+import Perfil from "./vistas/Perfil.jsx";
 import Retos from "./vistas/Retos.jsx";
 import Ajustes from "./vistas/Ajustes.jsx";
 import NuevaComida from "./vistas/NuevaComida.jsx";
@@ -17,12 +19,16 @@ import Importar from "./vistas/Importar.jsx";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
-  { id: "chat", texto: "Chat", icono: MessageCircle },
+  { id: "grupo", texto: "Grupo", icono: Users },
   { id: "retos", texto: "Retos", icono: Trophy },
   { id: "ajustes", texto: "Ajustes", icono: Settings },
 ];
 
 const VISTAS_VALIDAS = VISTAS.map((v) => v.id);
+const SECCIONES_GRUPO = ["chat", "imagenes"];
+
+const FRASES_COMIDA = ["¡Comida subida!", "Arriba. Quedó publicada", "Anotado. Sin juzgar", "Publicada. Que tiemble el grupo", "Listo, gordito"];
+const frase = () => FRASES_COMIDA[Math.floor(Math.random() * FRASES_COMIDA.length)];
 
 export default function App() {
   const [sesion, setSesion] = useState(null);
@@ -60,23 +66,25 @@ function Cargando() {
   return (
     <div className="pantalla-centro" role="status" aria-label="Cargando">
       <motion.span
-        className="cargando-emoji"
+        className="cargando-icono"
         animate={{ rotate: [0, 12, -12, 0], scale: [1, 1.12, 1] }}
         transition={{ repeat: Infinity, duration: 1.4 }}
         aria-hidden="true"
       >
-        🍽️
+        <img src="/icono.svg" alt="" width="64" height="64" />
       </motion.span>
     </div>
   );
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, yo, estado, salud, pesos, comidas, perfiles, reacciones, extras, cargarExtras } = useDatos();
+  const { usuario, yo, estado, salud, pesos, comidas, perfiles, reacciones, extras, cargarExtras, abrirPerfil } = useDatos();
+  const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
-    const pedida = new URLSearchParams(location.search).get("vista");
+    if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
     return VISTAS_VALIDAS.includes(pedida) ? pedida : "resumen";
   });
+  const [seccion, setSeccion] = useState(SECCIONES_GRUPO.includes(pedida) ? pedida : null);
   const entregando = useRef(false);
   const [carga, setCarga] = useState(null);
   const [festejo, setFestejo] = useState(0);
@@ -99,6 +107,10 @@ function Principal({ recuperando, onRecuperado }) {
   }, []);
 
   const abrirCarga = useCallback((datos = {}) => setCarga(datos), []);
+  const irA = useCallback((id) => {
+    setVista(id);
+    setSeccion(null);
+  }, []);
   const abrirImportar = useCallback((fecha, filas) => {
     setCarga(null);
     setImportar({ fecha, filas });
@@ -107,7 +119,7 @@ function Principal({ recuperando, onRecuperado }) {
   const alGuardar = useCallback(
     (nueva) => {
       setCarga(null);
-      avisar(nueva ? "¡Comida subida!" : "Cambios guardados");
+      avisar(nueva ? frase() : "Cambios guardados");
       if (nueva) {
         setFestejo((n) => n + 1);
         vibrar(25);
@@ -134,15 +146,22 @@ function Principal({ recuperando, onRecuperado }) {
     const visor = window.visualViewport;
     const medir = () => raiz.style.setProperty("--alto-visible", `${visor?.height || window.innerHeight}px`);
     const esTexto = (el) => el?.matches?.('input:not([type="range"]):not([type="checkbox"]):not([type="file"]), textarea');
+    let salida;
     const alEnfocar = (e) => {
+      clearTimeout(salida);
       if (esTexto(e.target) && matchMedia("(pointer: coarse)").matches) raiz.dataset.teclado = "si";
     };
-    const alSalir = () => delete raiz.dataset.teclado;
+    // Con una pausa, para que lo que se tocó no se mueva antes de terminar el toque.
+    const alSalir = () => {
+      clearTimeout(salida);
+      salida = setTimeout(() => delete raiz.dataset.teclado, 200);
+    };
     medir();
     visor?.addEventListener("resize", medir);
     document.addEventListener("focusin", alEnfocar);
     document.addEventListener("focusout", alSalir);
     return () => {
+      clearTimeout(salida);
       visor?.removeEventListener("resize", medir);
       document.removeEventListener("focusin", alEnfocar);
       document.removeEventListener("focusout", alSalir);
@@ -162,7 +181,8 @@ function Principal({ recuperando, onRecuperado }) {
       .then(async ({ error }) => {
         if (!error) {
           await cargarExtras();
-          avisar(`Medalla nueva: ${medalla(nuevas[0]).nombre}`);
+          avisar(`Logro nuevo: ${medalla(nuevas[0]).nombre}`);
+          avisarGrupo("medalla", nuevas[0]);
           setFestejo((n) => n + 1);
           vibrar(30);
         }
@@ -209,10 +229,10 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
         <nav aria-label="Menú principal">
           {VISTAS.map((v) => (
-            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="lateral" />
+            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" />
           ))}
         </nav>
-        <button className="perfil-lateral" onClick={() => setVista("ajustes")}>
+        <button className="perfil-lateral" onClick={() => abrirPerfil(yo.id)}>
           <Avatar perfil={yo} tam={36} />
           <span>{yo.nombre}</span>
         </button>
@@ -223,12 +243,12 @@ function Principal({ recuperando, onRecuperado }) {
           <img src="/icono.svg" alt="" width="30" height="30" />
           <span>Lomada Fuel</span>
         </div>
-        <button className="boton-avatar" onClick={() => setVista("ajustes")} aria-label="Tu perfil">
+        <button className="boton-avatar" onClick={() => abrirPerfil(yo.id)} aria-label="Tu perfil">
           <Avatar perfil={yo} tam={36} />
         </button>
       </header>
 
-      <main className={vista === "chat" ? "contenido contenido-chat" : "contenido"}>
+      <main className={vista === "grupo" && seccion === "chat" ? "contenido contenido-chat" : "contenido"}>
         <AnimatePresence initial={false}>
           <motion.div
             key={vista}
@@ -238,7 +258,7 @@ function Principal({ recuperando, onRecuperado }) {
             transition={{ duration: 0.16, ease: "easeOut" }}
           >
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
-            {vista === "chat" && <Chat onCargar={abrirCarga} avisar={avisar} />}
+            {vista === "grupo" && <Grupo seccion={seccion} onSeccion={setSeccion} onCargar={abrirCarga} avisar={avisar} />}
             {vista === "retos" && <Retos avisar={avisar} />}
             {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
           </motion.div>
@@ -247,7 +267,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <nav className="barra-inferior" aria-label="Menú principal">
         {VISTAS.slice(0, 2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
         ))}
         <motion.button
           className="boton-subir"
@@ -260,10 +280,11 @@ function Principal({ recuperando, onRecuperado }) {
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
         {VISTAS.slice(2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => setVista(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
         ))}
       </nav>
 
+      <Perfil onEditar={() => { abrirPerfil(null); irA("ajustes"); }} />
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} />
       <Importar
         pedido={importar}

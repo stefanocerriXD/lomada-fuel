@@ -6,10 +6,11 @@ import { haceDias } from "./fechas.js";
 const Contexto = createContext(null);
 export const useDatos = () => useContext(Contexto);
 
-const VENTANA_DIAS = 30;
+export const VENTANA_DIAS = 30;
+const HISTORIAL_MAXIMO = 1500;
 const RENOVAR_FOTOS_MS = 50 * 60 * 1000; // Los links firmados duran 1 hora.
 
-export const AVATAR_BASE = { emoji: "🍽️", color: "#E4572E", meta_calorias: 2000 };
+export const AVATAR_BASE = { color: "#E4572E", meta_calorias: 2000 };
 
 export function DatosProvider({ usuario, children }) {
   const [perfiles, setPerfiles] = useState({});
@@ -21,6 +22,7 @@ export function DatosProvider({ usuario, children }) {
   const [salud, setSalud] = useState(undefined);
   const [pesos, setPesos] = useState([]);
   const [reacciones, setReacciones] = useState([]);
+  const [perfilId, abrirPerfil] = useState(null);
   const [extras, setExtras] = useState({ disponible: false, comentarios: [], favoritas: [], agua: [], ayuno: null, desafios: [], medallas: [] });
   const espera = useRef(null);
 
@@ -34,7 +36,8 @@ export function DatosProvider({ usuario, children }) {
     const rutas = lista.filter((c) => c.foto_path).map((c) => c.foto_path);
     if (!rutas.length) return;
     const { data } = await supabase.storage.from("fotos").createSignedUrls(rutas, 3600);
-    setFotos(Object.fromEntries((data || []).filter((u) => u.signedUrl).map((u) => [u.path, u.signedUrl])));
+    // Se suman a las que ya están: el perfil y los días viejos traen fotos fuera de la ventana.
+    setFotos((prev) => ({ ...prev, ...Object.fromEntries((data || []).filter((u) => u.signedUrl).map((u) => [u.path, u.signedUrl])) }));
   }, []);
 
   const cargarComidas = useCallback(async () => {
@@ -47,6 +50,25 @@ export function DatosProvider({ usuario, children }) {
     if (error) throw error;
     await firmarFotos(data);
     setComidas(data);
+    return data;
+  }, [firmarFotos]);
+
+  const cargarHistorial = useCallback(async (id) => {
+    const { data, error } = await supabase
+      .from("comidas")
+      .select("*")
+      .eq("usuario_id", id)
+      .order("fecha", { ascending: false })
+      .limit(HISTORIAL_MAXIMO);
+    if (error) throw error;
+    await firmarFotos(data);
+    return data;
+  }, [firmarFotos]);
+
+  const cargarDia = useCallback(async (fecha) => {
+    const { data, error } = await supabase.from("comidas").select("*").eq("fecha", fecha).limit(200);
+    if (error) throw error;
+    await firmarFotos(data);
     return data;
   }, [firmarFotos]);
 
@@ -196,6 +218,10 @@ export function DatosProvider({ usuario, children }) {
       fotos,
       estado,
       cargarComidas,
+      cargarHistorial,
+      cargarDia,
+      perfilId,
+      abrirPerfil,
       cargarPerfiles,
       whoop,
       cargarWhoop,
@@ -208,7 +234,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarDia, perfilId, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

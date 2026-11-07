@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Scale, Sparkles, Target } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
@@ -15,11 +15,11 @@ export default function Progreso({ onEditarCuerpo, avisar }) {
   const [guardando, setGuardando] = useState(false);
 
   if (salud === undefined) {
-    return <Vacio emoji="⚖️" titulo="Progreso todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." />;
+    return <Vacio icono={Scale} titulo="Progreso todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." />;
   }
   if (!salud) {
     return (
-      <Vacio emoji="🎯" titulo="Armá tu plan" texto="Cargá tus medidas y tu objetivo para ver cuánto quemás y cómo vas.">
+      <Vacio icono={Target} titulo="Armá tu plan" texto="Cargá tus medidas y tu objetivo para ver cuánto quemás y cómo vas.">
         <button className="boton" onClick={onEditarCuerpo}>Empezar</button>
       </Vacio>
     );

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChefHat, Clock, RefreshCw } from "lucide-react";
 import { TIPOS } from "../lib/macros.js";
 import { comidaSugerida, comoItems, macrosFaltantes, metasDelDia, queFalta, recomendar, textoCantidad } from "../lib/recomendar.js";
+import IconoComida from "./IconoComida.jsx";
 import { Hoja, vibrar } from "./Base.jsx";
 
 const POR_PAGINA = 3;
@@ -57,7 +58,7 @@ function Opciones({ inicial, faltan, metas, total, cargadas, onElegir }) {
       <div className="tipos" role="radiogroup" aria-label="Para qué comida">
         {TIPOS.map((t) => (
           <button key={t.id} role="radio" aria-checked={tipo === t.id} className={tipo === t.id ? "activo" : ""} onClick={() => { setTipo(t.id); setPagina(0); }}>
-            <span aria-hidden="true">{t.emoji}</span> {t.texto}
+            <IconoComida tipo={t.id} /> {t.texto}
           </button>
         ))}
       </div>
@@ -74,7 +75,6 @@ function Opciones({ inicial, faltan, metas, total, cargadas, onElegir }) {
         {visibles.map((o, i) => (
           <motion.article key={`${tipo}-${o.receta.id}`} className="tarjeta receta" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: i * 0.04 }}>
             <header>
-              <span className="receta-emoji" aria-hidden="true">{o.receta.emoji}</span>
               <div>
                 <h3>{o.receta.nombre}</h3>
                 <p><Clock size={13} /> {o.receta.minutos} min</p>
