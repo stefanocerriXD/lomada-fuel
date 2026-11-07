@@ -44,5 +44,6 @@ export default async function handler(req, res) {
   if (resp.ok) return res.status(200).json({ ok: true, fecha });
   const cuerpo = await resp.json().catch(() => ({}));
   const codigo = Object.keys(ERRORES).find((c) => cuerpo.message?.includes(c));
-  return res.status(ERRORES[codigo] || 502).json({ error: codigo || "No se pudo guardar" });
+  if (!codigo) console.error("Apple Salud no se pudo guardar:", cuerpo);
+  return res.status(ERRORES[codigo] || 502).json({ error: codigo || "No se pudo guardar", detalle: codigo ? undefined : `${cuerpo.code || resp.status}: ${cuerpo.message || ""}`.slice(0, 200) });
 }
