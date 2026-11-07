@@ -57,5 +57,7 @@ export default async function handler(req, res) {
   const cuerpo = await resp.json().catch(() => ({}));
   const codigo = Object.keys(ERRORES).find((c) => cuerpo.message?.includes(c));
   if (!codigo) console.error("Apple Salud no se pudo guardar:", cuerpo);
-  return res.status(ERRORES[codigo] || 502).json({ error: codigo || "No se pudo guardar", detalle: codigo ? undefined : `${cuerpo.code || resp.status}: ${cuerpo.message || ""}`.slice(0, 200), recibido });
+  // Nunca se devuelve la llave: solo si llegó y cuánto mide, para detectar un error al pegarla.
+  const llave = typeof datos.token === "string" && datos.token ? `${datos.token.length} caracteres` : "no llegó";
+  return res.status(ERRORES[codigo] || 502).json({ error: codigo || "No se pudo guardar", detalle: codigo ? undefined : `${cuerpo.code || resp.status}: ${cuerpo.message || ""}`.slice(0, 200), llave: codigo === "token_invalido" ? llave : undefined, campos: Object.keys(datos), recibido });
 }
