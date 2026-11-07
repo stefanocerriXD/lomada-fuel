@@ -60,6 +60,23 @@ export function nivelesGuardados(codigos) {
   return niveles;
 }
 
+// Cada nivel de cada logro suma un punto. Los títulos generales cuestan cada vez más.
+const RANGOS = [[0, "Novato"], [5, "Aprendiz"], [15, "Constante"], [30, "Experto"], [50, "Maestro"], [80, "Leyenda"], [110, "Inmortal"]];
+
+export function nivelGeneral(niveles) {
+  const puntos = Object.values(niveles).reduce((t, n) => t + n, 0);
+  const i = RANGOS.filter(([p]) => puntos >= p).length - 1;
+  const [desde, rango] = RANGOS[i];
+  const proximo = RANGOS[i + 1];
+  return {
+    puntos,
+    nivel: Math.max(puntos, 1),
+    rango,
+    siguiente: proximo ? { puntos: proximo[0], nombre: proximo[1] } : null,
+    avance: proximo ? (puntos - desde) / (proximo[0] - desde) : 1,
+  };
+}
+
 const normal = (t) => String(t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 const textoDe = (c) => normal([c.descripcion, ...(c.alimentos || []).map((a) => a.nombre)].join(" "));
 

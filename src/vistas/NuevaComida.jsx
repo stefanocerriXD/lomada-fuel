@@ -117,9 +117,9 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   async function borrar() {
     if (!confirmarBorrado) return setConfirmarBorrado(true);
     setGuardando(true);
-    const { error: err } = await supabase.from("comidas").delete().eq("id", original.id);
-    if (err) {
-      setError(err.message);
+    const { data, error: err } = await supabase.from("comidas").delete().eq("id", original.id).select("id");
+    if (err || data?.length === 0) {
+      setError(err?.message || "No se pudo borrar");
       setGuardando(false);
       return;
     }

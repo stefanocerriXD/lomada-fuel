@@ -1,3 +1,4 @@
+import Mejoras from "../componentes/Mejoras.jsx";
 import Tutorial from "../componentes/Tutorial.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
@@ -131,6 +132,8 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
 
       <Tutorial />
 
+      <Mejoras avisar={avisar} />
+
       <section className="tarjeta ajuste">
         <h2>Apariencia</h2>
         <div className="opciones-tema" role="radiogroup" aria-label="Tema">
@@ -234,7 +237,7 @@ function Privacidad({ avisar }) {
     <section className="tarjeta ajuste">
       <h2>Qué ve el grupo</h2>
       <p className="ajuste-texto">
-        El grupo ve tu nombre, tu meta de calorías, tus comidas con sus fotos y macros, tu agua y tus medallas. Tu peso, altura, edad, objetivo, ayunos, favoritas y datos de WHOOP son solo tuyos.
+        El grupo ve tu nombre, tu meta de calorías, tus comidas con sus fotos y macros, tu agua y tus medallas. Tu peso, altura, edad, objetivo, favoritas y datos de WHOOP son solo tuyos.
       </p>
       <label className="interruptor">
         <input type="checkbox" checked={!!yo.comidas_privadas} onChange={cambiar} />
@@ -283,7 +286,7 @@ function Notificaciones({ avisar }) {
       <h2>Notificaciones</h2>
       {estado === "disponible" ? (
         <>
-          <p className="ajuste-texto">Avisos de mensajes nuevos, comidas del grupo y comentarios en tus fotos.</p>
+          <p className="ajuste-texto">Avisos de mensajes nuevos y comidas del grupo en tus fotos.</p>
           <button className={activas ? "boton boton-secundario" : "boton"} onClick={alternar} disabled={ocupado}>
             {activas ? <><BellOff size={17} /> Apagar</> : <><Bell size={17} /> Activar</>}
           </button>

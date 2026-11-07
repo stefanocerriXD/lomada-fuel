@@ -40,13 +40,14 @@ export function DatosProvider({ usuario, children }) {
   const [pesos, setPesos] = useState([]);
   const [reacciones, setReacciones] = useState([]);
   const [perfilId, abrirPerfil] = useState(null);
+  const [respuesta, responder] = useState(null);
   const [mensajes, setMensajes] = useState([]);
   const [mensajesListos, setMensajesListos] = useState(false);
   const [historial, setHistorial] = useState(null);
   const firmas = useRef({});
   const perfilesRef = useRef(perfiles);
   perfilesRef.current = perfiles;
-  const [extras, setExtras] = useState({ disponible: false, comentarios: [], favoritas: [], agua: [], ayuno: null, desafios: [], medallas: [] });
+  const [extras, setExtras] = useState({ disponible: false, favoritas: [], agua: [], desafios: [], medallas: [] });
 
   const cargarPerfiles = useCallback(async () => {
     const { data, error } = await supabase.from("perfiles").select("*");
@@ -117,6 +118,13 @@ export function DatosProvider({ usuario, children }) {
     return data;
   }, [firmarFotos]);
 
+  const cargarComida = useCallback(async (id) => {
+    const { data, error } = await supabase.from("comidas").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    if (data) await firmarFotos([data]);
+    return data;
+  }, [firmarFotos]);
+
   const cargarSalud = useCallback(async () => {
     const [cuerpo, historial] = await Promise.all([
       supabase.from("perfiles_salud").select("*").eq("usuario_id", usuario.id).maybeSingle(),
@@ -152,22 +160,18 @@ export function DatosProvider({ usuario, children }) {
 
   const cargarExtras = useCallback(async () => {
     const desde = haceDias(VENTANA_DIAS);
-    const [desafios, comentarios, favoritas, agua, ayuno, medallas] = await Promise.all([
+    const [desafios, favoritas, agua, medallas] = await Promise.all([
       supabase.from("desafios").select("*").gte("fin", haceDias(VENTANA_DIAS)).order("inicio", { ascending: false }),
-      supabase.from("comentarios").select("*").order("creado_en", { ascending: true }).limit(2000),
       supabase.from("favoritas").select("*").eq("usuario_id", usuario.id).order("creado_en", { ascending: false }),
       supabase.from("agua").select("*").gte("fecha", desde),
-      supabase.from("ayunos").select("*").eq("usuario_id", usuario.id).order("inicio", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("medallas").select("*"),
     ]);
     if (desafios.error) return; // Las tablas todavía no existen.
     setExtras({
       disponible: true,
       desafios: desafios.data,
-      comentarios: comentarios.data || [],
       favoritas: favoritas.data || [],
       agua: agua.data || [],
-      ayuno: ayuno.data || null,
       medallas: medallas.data || [],
     });
   }, [usuario.id]);
@@ -267,7 +271,7 @@ export function DatosProvider({ usuario, children }) {
     canal = tabla(canal, "comidas", () => enTanda("comidas", cargarComidas));
     canal = tabla(canal, "reacciones", () => enTanda("reacciones", cargarReacciones));
     canal = tabla(canal, "perfiles", () => enTanda("perfiles", cargarPerfiles));
-    for (const nombre of ["comentarios", "medallas", "desafios", "agua"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
+    for (const nombre of ["medallas", "desafios", "agua"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
     canal = tabla(canal, "mensajes", ({ eventType, new: nuevo }) => {
       if (eventType !== "INSERT") return enTanda("mensajes", cargarMensajes);
       agregarMensaje(nuevo);
@@ -364,6 +368,9 @@ export function DatosProvider({ usuario, children }) {
       estado,
       cargarComidas,
       cargarHistorial,
+      cargarComida,
+      respuesta,
+      responder,
       mensajes,
       mensajesListos,
       agregarMensaje,
@@ -385,7 +392,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarDia, perfilId, mensajes, mensajesListos, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

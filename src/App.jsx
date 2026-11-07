@@ -78,7 +78,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil } = useDatos();
+  const { usuario, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta } = useDatos();
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
@@ -107,6 +107,15 @@ function Principal({ recuperando, onRecuperado }) {
   }, []);
 
   const abrirCarga = useCallback((datos = {}) => setCarga(datos), []);
+
+  // Responder una foto lleva al chat desde cualquier pantalla.
+  useEffect(() => {
+    if (!respuesta) return;
+    abrirPerfil(null);
+    setVista("grupo");
+    setSeccion("chat");
+  }, [abrirPerfil, respuesta]);
+
   const abrirImportar = useCallback((fecha, filas) => {
     setCarga(null);
     setImportar({ fecha, filas });
@@ -140,17 +149,26 @@ function Principal({ recuperando, onRecuperado }) {
   useEffect(() => {
     const raiz = document.documentElement;
     const visor = window.visualViewport;
-    const medir = () => raiz.style.setProperty("--alto-visible", `${visor?.height || window.innerHeight}px`);
     const esTexto = (el) => el?.matches?.('input:not([type="range"]):not([type="checkbox"]):not([type="file"]), textarea');
+    const medir = () => {
+      raiz.style.setProperty("--alto-visible", `${visor?.height || window.innerHeight}px`);
+      // Un campo que desaparece abierto no siempre avisa que perdió el foco.
+      if (raiz.dataset.teclado && !esTexto(document.activeElement)) delete raiz.dataset.teclado;
+    };
     let salida;
     const alEnfocar = (e) => {
+      // Pasar de un campo a un botón no cancela la salida: ahí el teclado sí se cierra.
+      if (!esTexto(e.target) || !matchMedia("(pointer: coarse)").matches) return;
       clearTimeout(salida);
-      if (esTexto(e.target) && matchMedia("(pointer: coarse)").matches) raiz.dataset.teclado = "si";
+      raiz.dataset.teclado = "si";
     };
     // Con una pausa, para que lo que se tocó no se mueva antes de terminar el toque.
     const alSalir = () => {
       clearTimeout(salida);
-      salida = setTimeout(() => delete raiz.dataset.teclado, 200);
+      salida = setTimeout(() => {
+        delete raiz.dataset.teclado;
+        medir();
+      }, 200);
     };
     medir();
     visor?.addEventListener("resize", medir);

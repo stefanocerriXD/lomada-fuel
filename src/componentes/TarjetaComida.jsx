@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, Lock, MessageCircle, Pencil, PenLine, Reply, SendHorizontal, Star, Trash2 } from "lucide-react";
+import { ChevronDown, Lock, Pencil, PenLine, Reply, Star, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
-import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
@@ -40,58 +39,10 @@ export function Reacciones({ comidaId }) {
   );
 }
 
-function Comentarios({ comidaId, lista }) {
-  const { usuario, perfiles, cargarExtras } = useDatos();
-  const [texto, setTexto] = useState("");
-  const [enviando, setEnviando] = useState(false);
-
-  async function enviar(e) {
-    e.preventDefault();
-    const limpio = texto.trim();
-    if (!limpio) return;
-    setEnviando(true);
-    const { data, error } = await supabase
-      .from("comentarios")
-      .insert({ comida_id: comidaId, usuario_id: usuario.id, texto: limpio })
-      .select()
-      .single();
-    setEnviando(false);
-    if (error) return;
-    setTexto("");
-    await cargarExtras();
-    avisarGrupo("comentario", data.id);
-  }
-
-  async function borrar(id) {
-    await supabase.from("comentarios").delete().eq("id", id);
-    await cargarExtras();
-  }
-
-  return (
-    <motion.div className="comentarios" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-      {lista.map((c) => (
-        <div key={c.id} className="comentario">
-          <Avatar perfil={perfiles[c.usuario_id]} tam={28} />
-          <p><strong>{perfiles[c.usuario_id]?.nombre || "Amigo"}</strong> {c.texto}</p>
-          {c.usuario_id === usuario.id && (
-            <button className="boton-icono chico" onClick={() => borrar(c.id)} aria-label="Borrar comentario"><Trash2 size={15} /></button>
-          )}
-        </div>
-      ))}
-      <form className="comentar" onSubmit={enviar}>
-        <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí un comentario…" aria-label="Comentario" maxLength={300} />
-        <button className="boton-enviar" disabled={enviando || !texto.trim()} aria-label="Enviar comentario"><SendHorizontal size={18} /></button>
-      </form>
-    </motion.div>
-  );
-}
-
-export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, onResponder, avisar }) {
-  const { usuario, cargarComidas, extras, cargarExtras, abrirPerfil } = useDatos();
+export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
+  const { usuario, cargarComidas, extras, cargarExtras, abrirPerfil, responder } = useDatos();
   const [confirmar, setConfirmar] = useState(false);
-  const [charla, setCharla] = useState(false);
   const [detalle, setDetalle] = useState(false);
-  const comentarios = extras.comentarios.filter((c) => c.comida_id === comida.id);
   const tipo = tipoInfo(comida.tipo);
   const alimentos = comida.alimentos || [];
   const texto = comida.descripcion || tipo.texto;
@@ -118,8 +69,9 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   }
 
   async function borrar() {
-    const { error } = await supabase.from("comidas").delete().eq("id", comida.id);
-    if (error) return avisar("No se pudo borrar");
+    const { data, error } = await supabase.from("comidas").delete().eq("id", comida.id).select("id");
+    // Sin permiso, la base responde sin error pero no borra nada.
+    if (error || data?.length === 0) return avisar("No se pudo borrar");
     if (comida.foto_path) await supabase.storage.from("fotos").remove([comida.foto_path]);
     await cargarComidas();
     avisar("Comida borrada");
@@ -183,19 +135,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           </>
         )}
         {!comida.privada && <Reacciones comidaId={comida.id} />}
-        {!comida.privada && (
-          <div className="comida-social">
-            {onResponder && <button className="boton-texto" onClick={() => onResponder(comida)}><Reply size={15} /> Responder</button>}
-            {extras.disponible && (
-              <button className="boton-texto" onClick={() => setCharla(!charla)} aria-expanded={charla}>
-                <MessageCircle size={15} /> {comentarios.length ? `${comentarios.length} ${comentarios.length === 1 ? "comentario" : "comentarios"}` : "Comentar"}
-              </button>
-            )}
-          </div>
-        )}
-        <AnimatePresence initial={false}>
-          {charla && <Comentarios comidaId={comida.id} lista={comentarios} />}
-        </AnimatePresence>
+        {!comida.privada && <button className="boton-texto" onClick={() => responder(comida)}><Reply size={15} /> Responder en el chat</button>}
         {propia && (
           <div className="comida-acciones">
             <button className="boton-texto" onClick={onEditar}><Pencil size={15} /> Editar</button>

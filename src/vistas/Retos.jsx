@@ -5,8 +5,10 @@ import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal, haceDias } from "../lib/fechas.js";
 import { desafioTerminado, diasRestantes, objetivoDesafio, puntajes, tipoDesafio, TIPOS_DESAFIO } from "../lib/desafios.js";
-import { LOGROS, nivelesGuardados } from "../lib/medallas.js";
+import { LOGROS, nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
 import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
+import DetalleLogro from "../componentes/DetalleLogro.jsx";
+import NivelGeneral from "../componentes/NivelGeneral.jsx";
 import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 
 function DesafioIcono({ tipo, size = 18 }) {
@@ -128,30 +130,35 @@ function TarjetaDesafio({ desafio, ranking, propio, onBorrar }) {
 
 function Medallas() {
   const { usuario, extras, perfiles, progreso, abrirPerfil } = useDatos();
+  const [abierto, setAbierto] = useState(null);
+  const nivelesDe = (id) => nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === id).map((m) => m.codigo));
+  const otros = Object.values(perfiles)
+    .filter((p) => p.id !== usuario.id)
+    .map((p) => ({ perfil: p, general: nivelGeneral(nivelesDe(p.id)) }))
+    .sort((a, b) => b.general.puntos - a.general.puntos);
 
   return (
     <>
+      <div className="tarjeta nivel-propio"><NivelGeneral niveles={nivelesDe(usuario.id)} /></div>
       {[["objetivos", "Objetivos"], ["alimentacion", "Alimentación"]].map(([grupo, titulo]) => (
         <div key={grupo} className="grupo-medallas">
           <h3 className="perfil-subtitulo">{titulo}</h3>
           <ul className="medallas">
-            {LOGROS.filter((l) => l.grupo === grupo).map((l) => <TarjetaLogro key={l.codigo} logro={l} cantidad={progreso?.[l.codigo] || 0} />)}
+            {LOGROS.filter((l) => l.grupo === grupo).map((l) => <TarjetaLogro key={l.codigo} logro={l} cantidad={progreso?.[l.codigo] || 0} onAbrir={setAbierto} />)}
           </ul>
         </div>
       ))}
-      {extras.medallas.some((m) => m.usuario_id !== usuario.id) && (
+      {otros.length > 0 && (
         <div className="medallas-grupo">
           <h3>El grupo</h3>
           <ul>
-            {Object.values(perfiles).filter((p) => p.id !== usuario.id).map((p) => {
-              const cantidad = Object.keys(nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === p.id).map((m) => m.codigo))).length;
-              return (
-                <li key={p.id}><button onClick={() => abrirPerfil(p.id)}><Avatar perfil={p} tam={28} /> <span>{p.nombre}</span> <strong>{cantidad}</strong></button></li>
-              );
-            })}
+            {otros.map(({ perfil: p, general }) => (
+              <li key={p.id}><button onClick={() => abrirPerfil(p.id)}><Avatar perfil={p} tam={28} /> <span>{p.nombre}</span> <strong>Nivel {general.nivel}</strong></button></li>
+            ))}
           </ul>
         </div>
       )}
+      <DetalleLogro abierto={abierto} onCerrar={() => setAbierto(null)} />
     </>
   );
 }

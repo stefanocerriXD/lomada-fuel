@@ -4,6 +4,7 @@ import { ChevronRight, Users } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal } from "../lib/fechas.js";
 import { sumarComidas } from "../lib/macros.js";
+import { nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
 import { Avatar, Hoja, vibrar } from "../componentes/Base.jsx";
 import Chat from "./Chat.jsx";
 import Imagenes from "./Imagenes.jsx";
@@ -11,7 +12,7 @@ import Imagenes from "./Imagenes.jsx";
 const SECCIONES = [["chat", "Chat"], ["imagenes", "Imágenes"]];
 
 function Integrantes({ abierta, onCerrar }) {
-  const { usuario, perfiles, comidas, abrirPerfil } = useDatos();
+  const { usuario, perfiles, comidas, extras, abrirPerfil } = useDatos();
   const hoy = fechaLocal();
   const deHoy = useMemo(() => comidas.filter((c) => c.fecha === hoy), [comidas, hoy]);
   const lista = Object.values(perfiles).sort((a, b) => (a.id === usuario.id ? -1 : b.id === usuario.id ? 1 : a.nombre.localeCompare(b.nombre)));
@@ -21,12 +22,14 @@ function Integrantes({ abierta, onCerrar }) {
       <ul className="integrantes">
         {lista.map((p) => {
           const kcal = Math.round(sumarComidas(deHoy.filter((c) => c.usuario_id === p.id)).kcal);
+          const general = nivelGeneral(nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === p.id).map((m) => m.codigo)));
           return (
             <li key={p.id}>
               <button className="tarjeta integrante" onClick={() => { onCerrar(); abrirPerfil(p.id); }}>
                 <Avatar perfil={p} tam={44} />
                 <span>
                   <strong>{p.id === usuario.id ? `${p.nombre} (vos)` : p.nombre}</strong>
+                  <small>Nivel {general.nivel} · {general.rango}</small>
                   <small>{kcal ? `${kcal.toLocaleString("es-AR")} kcal hoy` : "Nada cargado hoy"}</small>
                 </span>
                 <ChevronRight size={19} aria-hidden="true" />

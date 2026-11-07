@@ -4,14 +4,18 @@ import { Award, Camera, Pencil, UtensilsCrossed } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
-import { LOGROS, nivelesGuardados } from "../lib/medallas.js";
+import { cantidades, LOGROS, nivelesGuardados } from "../lib/medallas.js";
 import { comidasFavoritas, estadisticas, porDia } from "../lib/perfil.js";
 import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
+import DetalleLogro from "../componentes/DetalleLogro.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
+import NivelGeneral from "../componentes/NivelGeneral.jsx";
 import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 import Visor from "../componentes/Visor.jsx";
 
 const SECCIONES = [["dias", "Días"], ["fotos", "Fotos"], ["logros", "Logros"]];
+// De otra persona no se ve su plan, su peso ni su agua: esos logros muestran solo el nivel.
+const SOLO_PROPIOS = new Set(["proteina", "agua", "peso", "reto"]);
 const numero = (v) => Math.round(v).toLocaleString("es-AR");
 
 export default function Perfil({ onEditar, onEditarComida }) {
@@ -26,7 +30,8 @@ export default function Perfil({ onEditar, onEditarComida }) {
 }
 
 function Contenido({ perfil, onEditar, onEditarComida }) {
-  const { usuario, fotos, extras, cargarHistorial } = useDatos();
+  const { usuario, comidas, fotos, extras, cargarHistorial, perfiles, progreso, reacciones } = useDatos();
+  const [abierto, setAbierto] = useState(null);
   const [lista, setLista] = useState(null);
   const [error, setError] = useState(false);
   const [seccion, setSeccion] = useState("dias");
@@ -35,18 +40,32 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
 
   useEffect(() => {
     let activo = true;
-    cargarHistorial(perfil.id).then((d) => activo && setLista(d), () => activo && setError(true));
+    // Se vuelve a pedir cada vez que cambian las comidas: lo editado o borrado se ve al instante.
+    cargarHistorial(perfil.id).then(
+      (d) => {
+        if (!activo) return;
+        setLista(d);
+        setError(false);
+      },
+      () => activo && setError(true),
+    );
     return () => { activo = false; };
-  }, [perfil.id, cargarHistorial]);
+  }, [perfil.id, cargarHistorial, comidas]);
 
   const stats = useMemo(() => estadisticas(lista || []), [lista]);
   const dias = useMemo(() => porDia(lista || []), [lista]);
   const favoritas = useMemo(() => comidasFavoritas(lista || []), [lista]);
   const conFoto = useMemo(() => (lista || []).filter((c) => c.foto_path && fotos[c.foto_path]), [lista, fotos]);
-  const logros = useMemo(() => {
-    const niveles = nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === perfil.id).map((m) => m.codigo));
-    return LOGROS.filter((l) => niveles[l.codigo]).map((l) => ({ logro: l, nivel: niveles[l.codigo] }));
-  }, [extras.medallas, perfil.id]);
+  const niveles = useMemo(() => nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === perfil.id).map((m) => m.codigo)), [extras.medallas, perfil.id]);
+  const avance = useMemo(() => {
+    if (propio) return progreso;
+    return lista ? cantidades({ usuarioId: perfil.id, comidas: lista, agua: [], reacciones, perfiles, salud: null, pesos: [] }) : null;
+  }, [lista, perfil.id, perfiles, progreso, propio, reacciones]);
+  const logros = useMemo(() => LOGROS.filter((l) => niveles[l.codigo]).map((l) => ({
+    logro: l,
+    nivel: niveles[l.codigo],
+    ...(avance && (propio || !SOLO_PROPIOS.has(l.codigo)) ? { cantidad: avance[l.codigo] || 0 } : {}),
+  })), [avance, niveles, propio]);
 
   const abrirFoto = (comida) => setVisor({ lista: conFoto, inicio: Math.max(conFoto.findIndex((c) => c.id === comida.id), 0) });
 
@@ -60,6 +79,8 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
           {propio && <button className="boton-texto" onClick={onEditar}><Pencil size={14} /> Editar perfil</button>}
         </div>
       </div>
+
+      <div className="tarjeta nivel-propio"><NivelGeneral niveles={niveles} /></div>
 
       {error && <p className="error" role="alert">No pudimos traer el historial. Probá de nuevo.</p>}
 
@@ -153,13 +174,14 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
             <h3 className="perfil-subtitulo">Logros</h3>
             {logros.length ? (
               <ul className="medallas">
-                {logros.map(({ logro, nivel }) => <TarjetaLogro key={logro.codigo} logro={logro} nivel={nivel} />)}
+                {logros.map(({ logro, nivel, cantidad }) => <TarjetaLogro key={logro.codigo} logro={logro} nivel={nivel} cantidad={cantidad} onAbrir={setAbierto} />)}
               </ul>
             ) : <Vacio icono={Award} titulo="Todavía sin logros" />}
           </section>
         </>
       )}
 
+      <DetalleLogro abierto={abierto} onCerrar={() => setAbierto(null)} />
       <AnimatePresence>
         {visor && <Visor lista={visor.lista} inicio={visor.inicio} onCerrar={() => setVisor(null)} />}
       </AnimatePresence>

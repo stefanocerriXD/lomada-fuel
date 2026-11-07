@@ -29,7 +29,7 @@ const SECCIONES = [
       ["¿Dónde están las fotos del grupo?", "En Grupo, arriba, elegí Imágenes. Están separadas por desayuno, almuerzo, merienda y cena. Tocá una comida para abrirla."],
       ["¿Cómo veo otro día?", "En Imágenes, usá la tira de días o las flechas. Con las flechas podés ir tan atrás como quieras."],
       ["¿Cómo veo qué comió cada uno?", "Tocá Ver alimentos debajo de la foto: aparece cada alimento con su cantidad y sus macros."],
-      ["¿Cómo respondo una foto?", "Tocá Responder o la foto, escribí tu mensaje y envialo. Aparece en el chat con la foto citada."],
+      ["¿Cómo respondo una foto?", "Tocá Responder en el chat, debajo de la foto o al abrirla. Te lleva al chat con la foto citada: escribí y enviá."],
       ["¿Cómo entro al perfil de alguien?", "Tocá su nombre o su inicial, o el botón de personas al lado de Chat e Imágenes. Ahí están sus estadísticas, días, fotos y logros."],
     ],
   },
@@ -47,7 +47,8 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo armo un reto?", "En Retos tocá Nuevo, elegí el tipo y los días. Participa todo el grupo."],
       ["¿Cómo se ganan los logros?", "Solos, a medida que usás la app. Cada logro tiene 5 niveles y cada nivel da un título mejor: por ejemplo, con 5 milanesas sos Bebé de la milanesa y con 250, Rey de la milanesa."],
-      ["¿Dónde veo cuánto me falta?", "En Retos, debajo de cada logro: ahí está tu avance y el título que sigue."],
+      ["¿Dónde veo cuánto me falta?", "En Retos, tocá cualquier logro: ves la barra de avance, cuánto falta y todos sus niveles."],
+      ["¿Qué es el nivel de cada uno?", "Cada nivel de cada logro suma un punto, y ese total es tu nivel general. Lo ves en Retos, en los perfiles y en Integrantes."],
       ["¿Las comidas privadas cuentan?", "No para los logros de Alimentación, porque esos los ve el grupo."],
     ],
   },
@@ -70,7 +71,8 @@ const SECCIONES = [
   {
     titulo: "Cuenta y privacidad",
     preguntas: [
-      ["¿Qué ve el grupo de mí?", "Tu nombre, tu meta, tus comidas con fotos y macros, tu agua y tus logros. No ve tu peso, altura, edad, objetivo, ayunos, favoritas ni datos de WHOOP."],
+      ["¿Qué ve el grupo de mí?", "Tu nombre, tu meta, tus comidas con fotos y macros, tu agua y tus logros. No ve tu peso, altura, edad, objetivo, favoritas ni datos de WHOOP."],
+      ["¿Cómo pido una mejora?", "En Ajustes, en Mejoras, contá qué cambiarías y tocá Enviar pedido."],
       ["¿Cómo la dejo como app en el celular?", "En iPhone: Safari, Compartir y Agregar a inicio. En Android: menú de Chrome y Agregar a la pantalla principal."],
     ],
   },

@@ -37,6 +37,9 @@ export default function Imagenes({ cabecera, onCargar, avisar }) {
     return () => { activo = false; };
   }, [antiguo, fecha, viejos, cargarDia]);
 
+  // Un día viejo también tiene que reflejar lo editado o borrado.
+  useEffect(() => setViejos({}), [comidas]);
+
   const delDia = useMemo(() => {
     const base = antiguo ? viejos[fecha] || [] : comidas.filter((c) => c.fecha === fecha);
     return base
@@ -100,7 +103,6 @@ export default function Imagenes({ cabecera, onCargar, avisar }) {
                           propia={c.usuario_id === usuario.id}
                           indice={0}
                           onZoom={() => setVisor({ lista: g.lista, inicio: i })}
-                          onResponder={() => setVisor({ lista: g.lista, inicio: i })}
                           onEditar={() => onCargar({ comida: c })}
                           avisar={avisar}
                         />

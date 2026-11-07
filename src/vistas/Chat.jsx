@@ -62,8 +62,19 @@ function AvisoNotificaciones({ avisar }) {
 }
 
 function CitaFoto({ id, onZoom }) {
-  const { comidas, perfiles, fotos } = useDatos();
-  const comida = comidas.find((c) => c.id === id);
+  const { comidas, perfiles, fotos, cargarComida } = useDatos();
+  const reciente = comidas.find((c) => c.id === id);
+  const [anterior, setAnterior] = useState(null);
+  const comida = reciente || anterior;
+
+  // Se puede responder una foto vieja, que no está entre las comidas recientes.
+  useEffect(() => {
+    if (reciente) return;
+    let activo = true;
+    cargarComida(id).then((c) => activo && setAnterior(c), () => {});
+    return () => { activo = false; };
+  }, [cargarComida, id, reciente]);
+
   if (!comida) return <span className="burbuja-cita sin-datos">Respondió una foto</span>;
   const src = fotos[comida.foto_path];
   const titulo = comida.descripcion || tipoInfo(comida.tipo).texto;
@@ -76,13 +87,18 @@ function CitaFoto({ id, onZoom }) {
 }
 
 export default function Chat({ avisar, cabecera }) {
-  const { usuario, perfiles, mensajes, mensajesListos: cargado, agregarMensaje, abrirPerfil } = useDatos();
+  const { usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, abrirPerfil, respuesta, responder } = useDatos();
+  const campo = useRef(null);
   const [texto, setTexto] = useState("");
   const [error, setError] = useState("");
   const [zoom, setZoom] = useState(null);
   const fondo = useRef(null);
 
   const linea = mensajes.slice(-MAXIMO_EN_PANTALLA);
+
+  useEffect(() => {
+    if (respuesta) campo.current?.focus();
+  }, [respuesta]);
 
   useEffect(() => {
     fondo.current?.scrollIntoView({ behavior: cargado ? "smooth" : "auto", block: "end" });
@@ -96,7 +112,7 @@ export default function Chat({ avisar, cabecera }) {
     setError("");
     const { data, error: err } = await supabase
       .from("mensajes")
-      .insert({ usuario_id: usuario.id, texto: limpio })
+      .insert({ usuario_id: usuario.id, texto: limpio, ...(respuesta ? { respuesta_comida: respuesta.id } : {}) })
       .select()
       .single();
     if (err) {
@@ -105,6 +121,7 @@ export default function Chat({ avisar, cabecera }) {
       return;
     }
     // Se suma enseguida aunque el tiempo real tarde o esté caído.
+    responder(null);
     agregarMensaje(data);
     avisarGrupo("mensaje", data.id);
   }
@@ -166,8 +183,15 @@ export default function Chat({ avisar, cabecera }) {
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
+      {respuesta && (
+        <div className="chat-respondiendo">
+          {fotos[respuesta.foto_path] ? <img src={fotos[respuesta.foto_path]} alt="" /> : <IconoComida tipo={respuesta.tipo} />}
+          <span>Respondiendo a <strong>{respuesta.usuario_id === usuario.id ? "tu foto" : perfiles[respuesta.usuario_id]?.nombre || "Amigo"}</strong></span>
+          <button className="boton-icono chico" onClick={() => responder(null)} aria-label="Cancelar respuesta"><X size={16} /></button>
+        </div>
+      )}
       <form className="chat-enviar" onSubmit={enviar}>
-        <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí algo…" aria-label="Mensaje" maxLength={1000} />
+        <input ref={campo} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respuesta ? "Escribí tu respuesta…" : "Escribí algo…"} aria-label="Mensaje" maxLength={1000} />
         <motion.button className="boton-enviar" type="submit" disabled={!texto.trim()} whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} aria-label="Enviar">
           <SendHorizontal size={20} />
         </motion.button>

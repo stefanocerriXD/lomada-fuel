@@ -5,7 +5,7 @@ import { nivelDe } from "../lib/medallas.js";
 const numero = (v) => Number(v).toLocaleString("es-AR");
 
 // Con "cantidad" muestra el avance propio; con "nivel" solo lo alcanzado, para ver a otra persona.
-export default function TarjetaLogro({ logro, cantidad, nivel: nivelFijo }) {
+export default function TarjetaLogro({ logro, cantidad, nivel: nivelFijo, onAbrir }) {
   const nivel = nivelFijo ?? nivelDe(logro, cantidad);
   const actual = logro.niveles[nivel - 1];
   const siguiente = logro.niveles[nivel];
@@ -14,7 +14,8 @@ export default function TarjetaLogro({ logro, cantidad, nivel: nivelFijo }) {
   const avance = siguiente ? Math.min(Math.max((cantidad - base) / (siguiente.meta - base), 0), 1) : 1;
 
   return (
-    <li className={nivel ? "tarjeta medalla ganada" : "tarjeta medalla"}>
+    <li>
+      <button className={nivel ? "tarjeta medalla ganada" : "tarjeta medalla"} onClick={() => onAbrir({ logro, cantidad, nivel: nivelFijo })}>
       <span className="medalla-icono" aria-hidden="true">{nivel ? <Icono size={24} /> : <Lock size={20} />}</span>
       <strong>{actual?.nombre || logro.niveles[0].nombre}</strong>
       <span className="medalla-niveles" role="img" aria-label={`Nivel ${nivel} de ${logro.niveles.length}`}>
@@ -31,6 +32,7 @@ export default function TarjetaLogro({ logro, cantidad, nivel: nivelFijo }) {
       ) : (
         <small>Nivel máximo</small>
       )}
+      </button>
     </li>
   );
 }

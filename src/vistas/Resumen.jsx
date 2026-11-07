@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Users, Zap } from "lucide-react";
+import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
-import { Anillo, Avatar, BarraMacros, Numero, Vacio, vibrar } from "../componentes/Base.jsx";
+import { Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
 import Habitos from "../componentes/Habitos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
@@ -44,9 +44,8 @@ function ResumenDia({ onCargar, onImportar }) {
   const racha = calcularRacha(comidas.filter((c) => c.usuario_id === usuario.id).map((c) => c.fecha));
 
   const amigos = Object.values(perfiles)
-    .filter((p) => p.id !== usuario.id)
     .map((p) => ({ perfil: p, comidas: delDia.filter((c) => c.usuario_id === p.id) }))
-    .sort((a, b) => b.comidas.length - a.comidas.length);
+    .sort((a, b) => (a.perfil.id === usuario.id ? -1 : b.perfil.id === usuario.id ? 1 : b.comidas.length - a.comidas.length));
 
   const plan = useMemo(() => (salud ? calcularPlan(salud) : null), [salud]);
   const propias = useMemo(() => new Set(comidas.filter((c) => c.usuario_id === usuario.id).map((c) => c.fecha)), [comidas, usuario.id]);
@@ -125,15 +124,11 @@ function ResumenDia({ onCargar, onImportar }) {
 
       <section>
         <h2 className="titulo-seccion">El día de cada uno</h2>
-        {amigos.length === 0 ? (
-          <Vacio icono={Users} titulo="Todavía estás solo acá" texto="Cuando se sumen tus amigos, vas a ver su día en esta sección." />
-        ) : (
-          <motion.ul className="lista-amigos" initial="oculto" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
-            {amigos.map(({ perfil, comidas: lista }) => (
-              <TarjetaAmigo key={perfil.id} perfil={perfil} comidas={lista} fotos={fotos} />
-            ))}
-          </motion.ul>
-        )}
+        <motion.ul className="lista-amigos" initial="oculto" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
+          {amigos.map(({ perfil, comidas: lista }) => (
+            <TarjetaAmigo key={perfil.id} perfil={perfil} comidas={lista} fotos={fotos} propio={perfil.id === usuario.id} />
+          ))}
+        </motion.ul>
       </section>
     </>
   );
@@ -197,7 +192,7 @@ function TarjetaWhoop({ dia, comidas }) {
   );
 }
 
-function TarjetaAmigo({ perfil, comidas, fotos }) {
+function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
   const { abrirPerfil } = useDatos();
   const [abierta, setAbierta] = useState(false);
   const total = sumarComidas(comidas);
@@ -209,7 +204,7 @@ function TarjetaAmigo({ perfil, comidas, fotos }) {
       <button className="amigo-cabecera" onClick={() => (comidas.length ? setAbierta(!abierta) : abrirPerfil(perfil.id))} aria-expanded={comidas.length ? abierta : undefined}>
         <Avatar perfil={perfil} tam={44} />
         <span className="amigo-datos">
-          <strong>{perfil.nombre}</strong>
+          <strong>{propio ? `${perfil.nombre} (vos)` : perfil.nombre}</strong>
           <span>
             {comidas.length
               ? `${Math.round(total.kcal).toLocaleString("es-AR")} kcal · ${comidas.length} ${comidas.length === 1 ? "comida" : "comidas"}`
