@@ -99,6 +99,10 @@ function Principal({ recuperando, onRecuperado }) {
   }, []);
 
   const abrirCarga = useCallback((datos = {}) => setCarga(datos), []);
+  const abrirImportar = useCallback((fecha, filas) => {
+    setCarga(null);
+    setImportar({ fecha, filas });
+  }, []);
 
   const alGuardar = useCallback(
     (nueva) => {
@@ -233,7 +237,7 @@ function Principal({ recuperando, onRecuperado }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
           >
-            {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={setImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
+            {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
             {vista === "chat" && <Chat onCargar={abrirCarga} avisar={avisar} />}
             {vista === "retos" && <Retos avisar={avisar} />}
             {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
@@ -260,13 +264,13 @@ function Principal({ recuperando, onRecuperado }) {
         ))}
       </nav>
 
-      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} />
+      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} />
       <Importar
-        fecha={importar}
+        pedido={importar}
         onCerrar={() => setImportar(null)}
-        onGuardar={() => {
+        onGuardar={(fotos) => {
           setImportar(null);
-          avisar("Resumen importado");
+          avisar(fotos ? `Importado, con ${fotos === 1 ? "1 foto" : `${fotos} fotos`}` : "Día importado");
           setFestejo((n) => n + 1);
         }}
       />

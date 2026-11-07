@@ -100,7 +100,7 @@ function ResumenDia({ onCargar, onImportar }) {
                   <span className="ranura-emoji" aria-hidden="true">{t.emoji}</span>
                   <span className="ranura-nombre">{t.texto}</span>
                   <span className="ranura-valor">
-                    {lista.length ? <><Check size={13} /> {kcal.toLocaleString("es-AR")}</> : <Plus size={15} />}
+                    {lista.length ? <><Check size={13} /> {kcal > 0 && kcal.toLocaleString("es-AR")}</> : <Plus size={15} />}
                   </span>
                 </motion.button>
               </li>
@@ -120,7 +120,7 @@ function ResumenDia({ onCargar, onImportar }) {
         {fecha === hoy && <Recomendador yo={yo} salud={salud} total={total} cargadas={mias.map((c) => c.tipo)} fecha={fecha} onCargar={onCargar} />}
         <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => onImportar(fecha)}>
           <ClipboardPaste size={22} />
-          <span><strong>Importar</strong><small>Captura o texto</small></span>
+          <span><strong>Importar el día</strong><small>Captura o texto</small></span>
         </motion.button>
       </div>
 

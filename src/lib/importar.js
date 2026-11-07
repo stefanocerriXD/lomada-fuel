@@ -130,6 +130,25 @@ export function corregirCaptura(texto) {
     .join("\n");
 }
 
+// Lo importado desde una comida: la que corresponde, o lo único que se haya leído.
+export function filaDeComida(filas, tipo) {
+  const propia = filas.find((f) => f.tipo === tipo);
+  if (propia) return propia;
+  return filas.length === 1 ? { ...filas[0], tipo } : null;
+}
+
+// Las comidas del día que todavía no tienen foto, más las que faltan si solo se importó el total.
+export function ranurasDeFotos(guardadas, propias, tipos) {
+  const sinFoto = (c) => c.tipo !== "resumen" && !c.foto_path;
+  const previas = propias.filter((c) => !guardadas.some((g) => g.id === c.id));
+  const hechas = [...guardadas, ...previas].filter(sinFoto).map((c) => ({ clave: c.id, id: c.id, tipo: c.tipo, privada: Boolean(c.privada) }));
+  const ocupados = new Set([...guardadas, ...previas].map((c) => c.tipo));
+  const faltantes = guardadas.some((g) => g.tipo === "resumen")
+    ? tipos.filter((t) => !ocupados.has(t)).map((t) => ({ clave: t, id: null, tipo: t, privada: false }))
+    : [];
+  return [...hechas, ...faltantes].sort((a, b) => tipos.indexOf(a.tipo) - tipos.indexOf(b.tipo));
+}
+
 export function leerResumen(texto) {
   const lineas = String(texto || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (!lineas.length) return [];

@@ -1,96 +1,57 @@
-import { useState } from "react";
-import { motion } from "motion/react";
-import { ClipboardPaste, ImageUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, Check } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
+import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
-import { leerResumen } from "../lib/importar.js";
-import { leerImagen } from "../lib/ocr.js";
+import { comprimirImagen } from "../lib/imagen.js";
+import { ranurasDeFotos } from "../lib/importar.js";
 import { nombreDia } from "../lib/fechas.js";
-import { TIPOS_TODOS, tipoInfo } from "../lib/macros.js";
+import { TIPOS, TIPOS_TODOS, tipoInfo } from "../lib/macros.js";
 import { Hoja, vibrar } from "../componentes/Base.jsx";
+import Lector from "../componentes/Lector.jsx";
 
 const CAMPOS = [["kcal", "kcal"], ["p", "Prote"], ["c", "Carbos"], ["g", "Grasas"]];
+const FILA_VACIA = { tipo: "resumen", kcal: 0, p: 0, c: 0, g: 0 };
 
-export default function Importar({ fecha, onCerrar, onGuardar }) {
+export default function Importar({ pedido, onCerrar, onGuardar }) {
   return (
-    <Hoja abierta={!!fecha} onCerrar={onCerrar} titulo="Importar de otra app" ancha>
-      {fecha && <Contenido fecha={fecha} onGuardar={onGuardar} />}
+    <Hoja abierta={!!pedido} onCerrar={onCerrar} titulo="Importar todo el día" ancha>
+      {pedido && <Contenido fecha={pedido.fecha} filasIniciales={pedido.filas} onGuardar={onGuardar} />}
     </Hoja>
   );
 }
 
-function Contenido({ fecha, onGuardar }) {
-  const [texto, setTexto] = useState("");
-  const [filas, setFilas] = useState(null);
-  const [progreso, setProgreso] = useState(null);
-  const [error, setError] = useState("");
+function Contenido({ fecha, filasIniciales, onGuardar }) {
+  const [filas, setFilas] = useState(filasIniciales || null);
+  const [guardadas, setGuardadas] = useState(null);
+  const [aviso, setAviso] = useState("");
 
-  function interpretar(contenido) {
-    const hallado = leerResumen(contenido);
-    if (!hallado.length) {
-      setError("No encontramos calorías ni macros. Probá con otra captura, o cargalos a mano acá abajo.");
-      setFilas([{ tipo: "resumen", kcal: 0, p: 0, c: 0, g: 0 }]);
-      return;
-    }
-    setError("");
-    setFilas(hallado);
+  function leido(halladas) {
+    setAviso(halladas.length ? "" : "No encontramos calorías ni macros. Probá con otra captura, o cargalos a mano acá abajo.");
+    setFilas(halladas.length ? halladas : [FILA_VACIA]);
   }
 
-  async function elegirArchivo(e) {
-    const archivo = e.target.files[0];
-    e.target.value = "";
-    if (!archivo) return;
-    setError("");
-    try {
-      if (archivo.type.startsWith("image/")) {
-        setProgreso(0);
-        interpretar(await leerImagen(archivo, setProgreso));
-      } else {
-        interpretar(await archivo.text());
-      }
-    } catch {
-      setError("No pudimos leerlo. Revisá tu conexión o pegá el texto.");
-    } finally {
-      setProgreso(null);
-    }
+  if (guardadas) return <Fotos fecha={fecha} guardadas={guardadas} onListo={onGuardar} />;
+  if (filas) {
+    return <Revisar fecha={fecha} filas={filas} setFilas={setFilas} aviso={aviso} onVolver={() => { setFilas(null); setAviso(""); }} onGuardadas={setGuardadas} />;
   }
-
-  if (filas) return <Revisar fecha={fecha} filas={filas} setFilas={setFilas} aviso={error} onVolver={() => { setFilas(null); setError(""); }} onGuardar={onGuardar} />;
-
-  if (progreso !== null) {
-    return (
-      <div className="leyendo" role="status">
-        <p>Leyendo la captura…</p>
-        <span className="pista-progreso gruesa"><motion.span animate={{ scaleX: progreso }} initial={false} /></span>
-        <small>La primera vez puede tardar un poco.</small>
-      </div>
-    );
-  }
-
   return (
-    <div className="formulario">
-      <p className="nota">Para {nombreDia(fecha).toLowerCase()}. Subí una captura de tu app donde se vean las calorías y los macros. La imagen no sale de tu celular.</p>
-      <label className="boton boton-grande">
-        <ImageUp size={20} /> Subir captura
-        <input className="oculto" type="file" accept="image/*,.csv,.txt,text/csv,text/plain" onChange={elegirArchivo} aria-label="Subir captura o archivo" />
-      </label>
-      <div className="separador"><span>o pegá el texto</span></div>
-      <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={5} placeholder={"Calorías 1850\nProteínas 142 g\nCarbos 180 g\nGrasas 62 g"} aria-label="Texto del resumen" />
-      {error && <p className="error" role="alert">{error}</p>}
-      <button className="boton boton-secundario" onClick={() => interpretar(texto)} disabled={!texto.trim()}>
-        <ClipboardPaste size={18} /> Leer texto
-      </button>
-    </div>
+    <Lector
+      nota={`Para ${nombreDia(fecha).toLowerCase()}. Usá una captura o el texto de tu otra app donde se vean las calorías y los macros.`}
+      onLeido={leido}
+    />
   );
 }
 
-function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardar }) {
+function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
   const { usuario, yo, comidas, cargarComidas, extras } = useDatos();
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
 
   const cambiar = (i, campo, valor) => setFilas(filas.map((f, n) => (n === i ? { ...f, [campo]: valor } : f)));
   const total = Math.round(filas.reduce((t, f) => t + (Number(f.kcal) || 0), 0));
+  const propias = comidas.filter((c) => c.usuario_id === usuario.id && c.fecha === fecha);
+  const yaCargadas = Math.round(propias.filter((c) => c.tipo !== "resumen").reduce((t, c) => t + (Number(c.calorias) || 0), 0));
 
   async function guardar() {
     const validas = filas.filter((f) => Number(f.kcal) > 0);
@@ -98,6 +59,7 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardar }) {
     setGuardando(true);
     setError("");
     try {
+      const guardadas = [];
       for (const f of validas) {
         const macros = { kcal: Math.round(Number(f.kcal)), p: Number(f.p) || 0, c: Number(f.c) || 0, g: Number(f.g) || 0 };
         const fila = {
@@ -113,16 +75,19 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardar }) {
           ...(extras.disponible ? { privada: yo.comidas_privadas ?? false } : {}),
         };
         // Importar de nuevo el mismo día reemplaza lo importado antes, no lo duplica.
-        const previa = comidas.find((c) => c.usuario_id === usuario.id && c.fecha === fecha && c.tipo === f.tipo && (f.tipo === "resumen" || c.alimentos?.[0]?.fuente === "importado"));
+        const previa = propias.find((c) => c.tipo === f.tipo && (f.tipo === "resumen" || c.alimentos?.[0]?.fuente === "importado"));
+        const id = previa?.id || crypto.randomUUID();
         const { error: err } = previa
-          ? await supabase.from("comidas").update(fila).eq("id", previa.id)
-          : await supabase.from("comidas").insert({ ...fila, usuario_id: usuario.id });
+          ? await supabase.from("comidas").update(fila).eq("id", id)
+          : await supabase.from("comidas").insert({ ...fila, id, usuario_id: usuario.id });
         if (err) throw err;
+        guardadas.push({ ...fila, id, foto_path: previa?.foto_path || null, privada: fila.privada ?? false });
       }
       await cargarComidas();
       vibrar(20);
-      onGuardar();
+      onGuardadas(guardadas);
     } catch (err) {
+      await cargarComidas().catch(() => {});
       setError(err.message || "No se pudo guardar");
       setGuardando(false);
     }
@@ -131,6 +96,9 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardar }) {
   return (
     <div className="formulario">
       {aviso ? <p className="error" role="alert">{aviso}</p> : <p className="nota">Revisá que los números estén bien antes de guardar.</p>}
+      {filas.some((f) => f.tipo === "resumen") && yaCargadas > 0 && (
+        <p className="nota">Este día ya tenés {yaCargadas.toLocaleString("es-AR")} kcal cargadas: el total importado se suma a esas.</p>
+      )}
       {filas.map((f, i) => (
         <section key={i} className="tarjeta fila-importada">
           <select value={f.tipo} onChange={(e) => cambiar(i, "tipo", e.target.value)} aria-label="Comida">
@@ -152,6 +120,131 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardar }) {
           <div className="pie-total"><strong>{total.toLocaleString("es-AR")} kcal</strong><span>{filas.length === 1 ? "1 registro" : `${filas.length} comidas`}</span></div>
           <button className="boton boton-secundario" onClick={onVolver}>Volver</button>
           <button className="boton" onClick={guardar} disabled={guardando}>{guardando ? "Guardando…" : "Guardar"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Fotos({ fecha, guardadas, onListo }) {
+  const { usuario, yo, comidas, cargarComidas, extras } = useDatos();
+  const [ranuras] = useState(() => ranurasDeFotos(
+    guardadas,
+    comidas.filter((c) => c.usuario_id === usuario.id && c.fecha === fecha),
+    TIPOS.map((t) => t.id),
+  ));
+  const [elegidas, setElegidas] = useState({});
+  const [listas, setListas] = useState([]);
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState("");
+  const vistas = useRef([]);
+
+  useEffect(() => {
+    if (!ranuras.length) onListo(0);
+    return () => vistas.current.forEach((v) => URL.revokeObjectURL(v));
+  }, []);
+
+  const pendientes = ranuras.filter((r) => elegidas[r.clave] && !listas.includes(r.clave));
+
+  async function elegir(ranura, e) {
+    const archivo = e.target.files[0];
+    e.target.value = "";
+    if (!archivo) return;
+    setError("");
+    try {
+      const blob = await comprimirImagen(archivo);
+      const vista = URL.createObjectURL(blob);
+      vistas.current.push(vista);
+      setElegidas((prev) => ({ ...prev, [ranura.clave]: { blob, vista } }));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function subir() {
+    setSubiendo(true);
+    setError("");
+    let paraAvisar = null;
+    let subidas = listas.length;
+    try {
+      for (const r of pendientes) {
+        const id = r.id || crypto.randomUUID();
+        const ruta = `${usuario.id}/${id}-${Date.now()}.jpg`;
+        const { error: errFoto } = await supabase.storage.from("fotos").upload(ruta, elegidas[r.clave].blob, { contentType: "image/jpeg" });
+        if (errFoto) throw errFoto;
+        const privada = r.id ? r.privada : (yo.comidas_privadas ?? false);
+        // La foto se publica ahora: pasa a ser lo último del chat aunque la comida sea anterior.
+        const { error: errFila } = r.id
+          ? await supabase.from("comidas").update({ foto_path: ruta, creado_en: new Date().toISOString() }).eq("id", id)
+          : await supabase.from("comidas").insert({
+            id,
+            usuario_id: usuario.id,
+            tipo: r.tipo,
+            fecha,
+            foto_path: ruta,
+            descripcion: tipoInfo(r.tipo).texto,
+            calorias: 0,
+            proteinas: 0,
+            carbohidratos: 0,
+            grasas: 0,
+            macros_editados: false,
+            // Las calorías ya están en el total importado: esta foto no suma nada.
+            alimentos: [{ nombre: "Foto", fuente: "foto", kcal: 0, p: 0, c: 0, g: 0 }],
+            ...(extras.disponible ? { privada } : {}),
+          });
+        if (errFila) {
+          await supabase.storage.from("fotos").remove([ruta]);
+          throw errFila;
+        }
+        subidas += 1;
+        setListas((prev) => [...prev, r.clave]);
+        if (!privada) paraAvisar = id;
+      }
+      await cargarComidas();
+      // Un solo aviso por tanda, para no llenarle el celular al grupo.
+      if (paraAvisar) avisarGrupo("comida", paraAvisar);
+      vibrar(25);
+      onListo(subidas);
+    } catch (err) {
+      await cargarComidas().catch(() => {});
+      if (paraAvisar) avisarGrupo("comida", paraAvisar);
+      setError(err.message || "No se pudo subir");
+      setSubiendo(false);
+    }
+  }
+
+  if (!ranuras.length) return null;
+
+  return (
+    <div className="formulario">
+      <div>
+        <h3 className="fotos-titulo">¿Subís las fotos?</h3>
+        <p className="nota">Se publican en el chat del grupo y no cambian tus calorías.</p>
+      </div>
+      <ul className="ranuras-foto">
+        {ranuras.map((r) => {
+          const t = tipoInfo(r.tipo);
+          const elegida = elegidas[r.clave];
+          const lista = listas.includes(r.clave);
+          return (
+            <li key={r.clave}>
+              <label className={elegida ? "ranura-foto con-foto" : "ranura-foto"}>
+                <input className="oculto" type="file" accept="image/*" disabled={subiendo || lista} onChange={(e) => elegir(r, e)} aria-label={`Foto de ${t.texto.toLowerCase()}`} />
+                {elegida ? <img src={elegida.vista} alt="" /> : <Camera size={24} />}
+                {lista && <span className="ranura-foto-lista"><Check size={15} /></span>}
+              </label>
+              <span className="ranura-foto-nombre">{t.emoji} {t.texto}</span>
+            </li>
+          );
+        })}
+      </ul>
+      {error && <p className="error" role="alert">{error}</p>}
+      <div className="pie-publicar">
+        <div className="pie-fila">
+          <button className="boton boton-secundario" onClick={() => onListo(listas.length)} disabled={subiendo}>Ahora no</button>
+          <button className="boton" onClick={subir} disabled={subiendo || !pendientes.length}>
+            {subiendo ? "Subiendo…" : pendientes.length === 1 ? "Subir 1 foto" : pendientes.length ? `Subir ${pendientes.length} fotos` : "Subir fotos"}
+          </button>
         </div>
       </div>
     </div>

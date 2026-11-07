@@ -92,6 +92,8 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const tipo = tipoInfo(comida.tipo);
   const alimentos = comida.alimentos || [];
   const texto = comida.descripcion || tipo.texto;
+  // Foto de una comida cuyas calorías ya entraron con el total importado del día.
+  const soloFoto = alimentos[0]?.fuente === "foto" && !comida.calorias;
 
   const nombreFavorita = texto.slice(0, 200);
   const favorita = extras.favoritas.find((f) => f.nombre === nombreFavorita);
@@ -139,7 +141,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
       {foto ? (
         <button className="comida-foto" onClick={() => onZoom({ src: foto, alt: texto })} aria-label={`Ampliar foto: ${texto}`}>
           <img src={foto} alt={texto} loading="lazy" />
-          <span className="comida-kcal">{(comida.calorias || 0).toLocaleString("es-AR")} kcal</span>
+          {!soloFoto && <span className="comida-kcal">{(comida.calorias || 0).toLocaleString("es-AR")} kcal</span>}
         </button>
       ) : (
         <div className="comida-sinfoto">
@@ -151,16 +153,16 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
       <div className="comida-cuerpo">
         <p className="comida-texto">{texto}</p>
         {alimentos.length > 0 && (
-          <p className="comida-items">{alimentos.map((a) => a.nombre).join(" · ")}</p>
+          <p className="comida-items">{soloFoto ? "Contada en el total del día" : alimentos.map((a) => a.nombre).join(" · ")}</p>
         )}
-        <ul className="comida-macros">
+        {!soloFoto && <ul className="comida-macros">
           <li><span className="punto s-p" /> P <strong>{Math.round(comida.proteinas || 0)} g</strong></li>
           <li><span className="punto s-c" /> C <strong>{Math.round(comida.carbohidratos || 0)} g</strong></li>
           <li><span className="punto s-g" /> G <strong>{Math.round(comida.grasas || 0)} g</strong></li>
           {comida.macros_editados && (
             <li className="comida-editado"><PenLine size={12} /> ajustado</li>
           )}
-        </ul>
+        </ul>}
         {!comida.privada && <Reacciones comidaId={comida.id} />}
         {!comida.privada && extras.disponible && (
           <button className="boton-texto" onClick={() => setCharla(!charla)} aria-expanded={charla}>
@@ -173,7 +175,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         {propia && (
           <div className="comida-acciones">
             <button className="boton-texto" onClick={onEditar}><Pencil size={15} /> Editar</button>
-            {extras.disponible && (
+            {extras.disponible && !soloFoto && (
               <button className={favorita ? "boton-texto favorita" : "boton-texto"} onClick={alternarFavorita} aria-pressed={!!favorita}>
                 <Star size={15} fill={favorita ? "currentColor" : "none"} /> Favorita
               </button>

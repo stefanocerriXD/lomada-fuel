@@ -1,30 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Camera, LoaderCircle, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, X } from "lucide-react";
+import { CalendarDays, Camera, ClipboardPaste, LoaderCircle, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
 import { comprimirImagen } from "../lib/imagen.js";
+import { filaDeComida } from "../lib/importar.js";
 import { fechaLocal, tipoSegunHora } from "../lib/fechas.js";
-import { macrosDeItem, sumarItems, TIPOS } from "../lib/macros.js";
+import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
 import { Hoja, Numero, vibrar } from "../componentes/Base.jsx";
+import Lector from "../componentes/Lector.jsx";
 import Escaner from "./Escaner.jsx";
 
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 
-export default function NuevaComida({ carga, onCerrar, onGuardar }) {
+export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia }) {
   const editando = carga?.comida;
   return (
     <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={editando ? "Editar comida" : "Subir comida"} ancha>
-      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} />}
+      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} />}
     </Hoja>
   );
 }
 
-function Formulario({ carga, onGuardar }) {
+function Formulario({ carga, onGuardar, onImportarDia }) {
   const { usuario, yo, comidas, fotos, cargarComidas, extras } = useDatos();
   const original = carga.comida;
 
@@ -39,6 +41,7 @@ function Formulario({ carga, onGuardar }) {
   const [vistaFoto, setVistaFoto] = useState(original ? fotos[original.foto_path] : null);
   const [texto, setTexto] = useState("");
   const [panel, setPanel] = useState(null);
+  const [importado, setImportado] = useState(null);
   const [ajuste, setAjuste] = useState(
     original?.macros_editados ? { kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas } : null,
   );
@@ -66,6 +69,7 @@ function Formulario({ carga, onGuardar }) {
     setItems((prev) => [...prev, { ...prepararItem(alimento), id: crypto.randomUUID() }]);
     setTexto("");
     setPanel(null);
+    setImportado(null);
     setError("");
     campo.current?.blur(); // Baja el teclado para ver lo agregado y elegir la medida.
     vibrar(8);
@@ -76,6 +80,25 @@ function Formulario({ carga, onGuardar }) {
     setDescripcion((d) => d || favorita.nombre);
     setError("");
     vibrar(8);
+  }
+
+  function alternarPanel(nombre) {
+    setPanel(panel === nombre ? null : nombre);
+    setImportado(null);
+  }
+
+  // Lo leído pasa por la carga manual: ahí se corrige antes de sumarlo a la comida.
+  function alLeer(filas) {
+    const fila = filaDeComida(filas, tipo);
+    if (!fila && filas.length) return onImportarDia(carga.fecha || fechaLocal(), filas);
+    setImportado({
+      clave: Date.now(),
+      nombre: `${tipoInfo(tipo).texto} importado`,
+      fuente: "importado",
+      aviso: fila ? "Revisá los números y tocá Agregar." : "No encontramos calorías ni macros. Cargalos acá.",
+      ...(fila ? { kcal: fila.kcal, p: fila.p, c: fila.c, g: fila.g } : {}),
+    });
+    setPanel("mano");
   }
 
   const cambiarItem = (id, nuevo) => setItems((prev) => prev.map((i) => (i.id === id ? nuevo : i)));
@@ -155,8 +178,8 @@ function Formulario({ carga, onGuardar }) {
         </div>
         {!buscando && (
           <>
-            <button className={panel === "codigo" ? "boton-icono activo" : "boton-icono"} onClick={() => setPanel(panel === "codigo" ? null : "codigo")} aria-label="Escanear código" aria-pressed={panel === "codigo"}><ScanBarcode size={20} /></button>
-            <button className={panel === "mano" ? "boton-icono activo" : "boton-icono"} onClick={() => setPanel(panel === "mano" ? null : "mano")} aria-label="Cargar a mano" aria-pressed={panel === "mano"}><PenLine size={19} /></button>
+            <button className={panel === "codigo" ? "boton-icono activo" : "boton-icono"} onClick={() => alternarPanel("codigo")} aria-label="Escanear código" aria-pressed={panel === "codigo"}><ScanBarcode size={20} /></button>
+            <button className={panel === "mano" ? "boton-icono activo" : "boton-icono"} onClick={() => alternarPanel("mano")} aria-label="Cargar a mano" aria-pressed={panel === "mano"}><PenLine size={19} /></button>
           </>
         )}
       </div>
@@ -165,8 +188,22 @@ function Formulario({ carga, onGuardar }) {
         <Resultados texto={texto} onElegir={agregar} />
       ) : (
         <>
+          {!original && !items.length && (
+            <div className="acciones-rapidas">
+              <button className={panel === "importar" ? "tarjeta accion activa" : "tarjeta accion"} onClick={() => alternarPanel("importar")} aria-pressed={panel === "importar"}>
+                <ClipboardPaste size={22} />
+                <span><strong>Importar {tipoInfo(tipo).texto.toLowerCase()}</strong><small>Captura o texto</small></span>
+              </button>
+              <button className="tarjeta accion" onClick={() => onImportarDia(carga.fecha || fechaLocal())}>
+                <CalendarDays size={22} />
+                <span><strong>Todo el día</strong><small>Importar el total</small></span>
+              </button>
+            </div>
+          )}
+
+          {panel === "importar" && <div className="tarjeta-interna"><Lector onLeido={alLeer} /></div>}
           {panel === "codigo" && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
-          {panel === "mano" && <CargaManual onAgregar={agregar} />}
+          {panel === "mano" && <CargaManual key={importado?.clave || "vacia"} inicial={importado} onAgregar={agregar} />}
 
           <AnimatePresence initial={false}>
             {items.map((i) => (
@@ -351,14 +388,14 @@ function Resultados({ texto, onElegir }) {
   );
 }
 
-function CargaManual({ onAgregar }) {
-  const [v, setV] = useState({ nombre: "", kcal: "", p: "", c: "", g: "" });
+function CargaManual({ inicial, onAgregar }) {
+  const [v, setV] = useState({ nombre: inicial?.nombre || "", kcal: inicial?.kcal ?? "", p: inicial?.p ?? "", c: inicial?.c ?? "", g: inicial?.g ?? "" });
 
   function agregar(e) {
     e.preventDefault();
     onAgregar({
       nombre: v.nombre.trim() || "Comida",
-      fuente: "manual",
+      fuente: inicial?.fuente || "manual",
       kcal: Number(v.kcal) || 0,
       p: Number(v.p) || 0,
       c: Number(v.c) || 0,
@@ -368,6 +405,7 @@ function CargaManual({ onAgregar }) {
 
   return (
     <form className="tarjeta-interna" onSubmit={agregar}>
+      {inicial?.aviso && <p className="nota">{inicial.aviso}</p>}
       <input value={v.nombre} onChange={(e) => setV({ ...v, nombre: e.target.value })} placeholder="Nombre (opcional)" aria-label="Nombre" />
       <div className="ajuste-macros">
         {CAMPOS.map(([k, nombre]) => (
