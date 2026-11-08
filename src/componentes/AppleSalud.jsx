@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Copy, Download, HeartPulse } from "lucide-react";
+import { Copy, Download, HeartPulse, RefreshCw } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
-import { ATAJO_SALUD } from "../lib/api.js";
+import { ATAJO_SALUD, CORRER_ATAJO, NOMBRE_ATAJO } from "../lib/api.js";
 
 const MODOS = [
   ["salud", "Usar lo de Apple Salud", "Lo que cargás en la app no cambia el total del día."],
@@ -81,8 +81,14 @@ export default function AppleSalud({ avisar }) {
           )}
         </li>
         <li>
-          <strong>Dejalo automático</strong>
-          <span>En la app Atajos: Automatización, +, Hora del día. Elegí 23:30, Diariamente, Ejecutar inmediatamente y el Atajo de Lomada Fuel.</span>
+          <strong>Que se actualice solo</strong>
+          <span>En la app Atajos tocá Automatización y +. Creá estas, todas con Ejecutar inmediatamente y el Atajo {NOMBRE_ATAJO}:</span>
+          <ul className="automatizaciones">
+            <li><b>App:</b> elegí Salud y marcá Se cierra. Así se actualiza cada vez que cargás algo ahí.</li>
+            <li><b>Hora del día:</b> una por cada horario que quieras, por ejemplo 9, 12, 15, 18, 21 y 23:30.</li>
+          </ul>
+          <span>Y cuando quieras, tocá Actualizar Salud en Resumen o acá.</span>
+          {conectado && <a className="boton boton-secundario" href={CORRER_ATAJO}><RefreshCw size={17} /> Actualizar ahora</a>}
         </li>
       </ol>
 

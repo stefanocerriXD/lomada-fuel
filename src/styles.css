@@ -1071,6 +1071,10 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .confirmar-publicar p { font-weight: 600; }
 .confirmar-publicar div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
+.automatizaciones { display: flex; flex-direction: column; gap: 4px; padding-left: 16px; list-style: disc; color: var(--tinta-2); font-size: 0.86rem; line-height: 1.4; }
+.automatizaciones b { color: var(--tinta); }
+a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
+
 /* Apple Salud */
 .dato-copiable { display: flex; align-items: center; gap: 8px; }
 .dato-copiable code { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 11px; background: var(--superficie-2); font-size: 0.76rem; overflow-wrap: anywhere; }

@@ -71,6 +71,7 @@ const SECCIONES = [
     titulo: "Apple Salud y WHOOP",
     preguntas: [
       ["¿Cómo traigo lo que tengo en Apple Salud?", "En Ajustes, en Apple Salud: creá tu llave, instalá el Atajo y pegala cuando la pida. Después dejalo automático todas las noches."],
+      ["¿Cada cuánto se actualiza lo de Salud?", "Cada vez que corre el Atajo. Dejá automatizaciones al cerrar la app Salud y en varios horarios, y cuando quieras tocá Actualizar Salud en Resumen."],
       ["¿Por qué WHOOP no me pasa lo que comí?", "WHOOP no ofrece esos datos a otras apps. Solo entrega recuperación, sueño, esfuerzo y calorías quemadas. Lo que comés se toma de Apple Salud."],
       ["¿Se suma con lo que cargo en la app?", "No. Lo de Apple Salud y lo que cargás acá quedan guardados por separado, y por defecto el total del día es el de Salud. En Ajustes, en Apple Salud, podés elegir usar el valor mayor o sumar todo."],
       ["¿Trae cada alimento desde Apple Salud?", "No: Salud solo le pasa a la app los totales del día. Para tener cada alimento con su cantidad y macros, importá la captura o el texto de tu app de comidas."],
