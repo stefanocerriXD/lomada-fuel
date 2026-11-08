@@ -58,10 +58,10 @@ export function DatosProvider({ usuario, children }) {
     setPerfiles(mapa);
   }, []);
 
-  const firmarFotos = useCallback(async (lista) => {
+  const firmarRutas = useCallback(async (todas) => {
     // Solo se firma lo nuevo o lo vencido: firmar de nuevo cambia el link y la foto parpadea.
     const ahora = Date.now();
-    const rutas = [...new Set(lista.filter((c) => c.foto_path).map((c) => c.foto_path))].filter((r) => !(ahora - firmas.current[r] < RENOVAR_FOTOS_MS));
+    const rutas = [...new Set(todas.filter(Boolean))].filter((r) => !(ahora - firmas.current[r] < RENOVAR_FOTOS_MS));
     if (!rutas.length) return;
     const { data } = await supabase.storage.from("fotos").createSignedUrls(rutas, 3600);
     // Se suman a las que ya están: el perfil y los días viejos traen fotos fuera de la ventana.
@@ -69,6 +69,8 @@ export function DatosProvider({ usuario, children }) {
     nuevas.forEach((u) => { firmas.current[u.path] = ahora; });
     setFotos((prev) => ({ ...prev, ...Object.fromEntries(nuevas.map((u) => [u.path, u.signedUrl])) }));
   }, []);
+
+  const firmarFotos = useCallback((lista) => firmarRutas(lista.map((c) => c.foto_path)), [firmarRutas]);
 
   const cargarComidas = useCallback(async () => {
     const { data, error } = await supabase
@@ -106,9 +108,42 @@ export function DatosProvider({ usuario, children }) {
   const cargarMensajes = useCallback(async () => {
     const { data, error } = await supabase.from("mensajes").select("*").order("creado_en", { ascending: false }).limit(200);
     if (error) throw error;
+    await firmarRutas(data.map((m) => m.adjunto_path));
     setMensajes(data.reverse());
     setMensajesListos(true);
+  }, [firmarRutas]);
+
+  // Reacciones a mensajes y hasta dónde leyó cada uno. Si las tablas no existen todavía, quedan vacías.
+  const [reaccionesMensajes, setReaccionesMensajes] = useState([]);
+  const [lecturas, setLecturas] = useState([]);
+  const cargarSocial = useCallback(async () => {
+    const [r, l] = await Promise.all([
+      supabase.from("reacciones_mensajes").select("*").limit(3000),
+      supabase.from("lecturas").select("*"),
+    ]);
+    if (!r.error) setReaccionesMensajes(r.data);
+    if (!l.error) setLecturas(l.data);
   }, []);
+
+  const alternarReaccionMensaje = useCallback(async (mensajeId, emoji) => {
+    const clave = (r) => r.mensaje_id === mensajeId && r.usuario_id === usuario.id && r.emoji === emoji;
+    const fila = { mensaje_id: mensajeId, usuario_id: usuario.id, emoji };
+    let tenia = false;
+    setReaccionesMensajes((prev) => {
+      tenia = prev.some(clave);
+      return tenia ? prev.filter((r) => !clave(r)) : [...prev, fila];
+    });
+    const consulta = supabase.from("reacciones_mensajes");
+    const { error } = await (tenia
+      ? consulta.delete().eq("mensaje_id", mensajeId).eq("usuario_id", usuario.id).eq("emoji", emoji)
+      : consulta.insert(fila));
+    if (error) cargarSocial().catch(() => {});
+  }, [usuario.id, cargarSocial]);
+
+  const marcarLeido = useCallback(async (hasta) => {
+    setLecturas((prev) => [...prev.filter((l) => l.usuario_id !== usuario.id), { usuario_id: usuario.id, hasta }]);
+    await supabase.from("lecturas").upsert({ usuario_id: usuario.id, hasta }, { onConflict: "usuario_id" });
+  }, [usuario.id]);
 
   const agregarMensaje = useCallback((nuevo) => {
     setMensajes((prev) => (prev.some((m) => m.id === nuevo.id) ? prev : [...prev, nuevo]));
@@ -248,8 +283,8 @@ export function DatosProvider({ usuario, children }) {
   const refrescar = useCallback(async (forzar = false) => {
     if (!forzar && Date.now() - ultimoRefresco.current < 2000) return;
     ultimoRefresco.current = Date.now();
-    await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarExtras()]);
-  }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarExtras]);
+    await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarExtras(), cargarSocial()]);
+  }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarExtras, cargarSocial]);
 
   const canalRef = useRef(null);
   const estadoCanal = useRef("");
@@ -275,8 +310,10 @@ export function DatosProvider({ usuario, children }) {
     canal = tabla(canal, "reacciones", () => enTanda("reacciones", cargarReacciones));
     canal = tabla(canal, "perfiles", () => enTanda("perfiles", cargarPerfiles));
     for (const nombre of ["medallas", "desafios", "agua"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
+    for (const nombre of ["reacciones_mensajes", "lecturas"]) canal = tabla(canal, nombre, () => enTanda("social", cargarSocial));
     canal = tabla(canal, "mensajes", ({ eventType, new: nuevo }) => {
       if (eventType !== "INSERT") return enTanda("mensajes", cargarMensajes);
+      if (nuevo.adjunto_path) firmarRutas([nuevo.adjunto_path]).catch(() => {});
       agregarMensaje(nuevo);
       if (nuevo.usuario_id && !perfilesRef.current[nuevo.usuario_id]) cargarPerfiles().catch(() => {});
     });
@@ -294,10 +331,11 @@ export function DatosProvider({ usuario, children }) {
         reintento.current = setTimeout(conectar, REINTENTO_MS);
       }
     });
-  }, [agregarMensaje, cargarComidas, cargarExtras, cargarMensajes, cargarPerfiles, cargarReacciones, refrescar]);
+  }, [agregarMensaje, cargarComidas, cargarExtras, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar]);
 
   useEffect(() => {
     cargarMensajes().catch(() => setMensajesListos(true));
+    cargarSocial().catch(() => {});
     conectar();
 
     let ocultaDesde = document.visibilityState === "hidden" ? Date.now() : null;
@@ -340,7 +378,7 @@ export function DatosProvider({ usuario, children }) {
       canalRef.current = null;
       if (canal) supabase.removeChannel(canal);
     };
-  }, [cargarMensajes, conectar, refrescar]);
+  }, [cargarMensajes, cargarSocial, conectar, refrescar]);
 
   // Lo reciente manda: incluye lo que se acaba de cargar, editar o borrar.
   const comidasLogros = useMemo(() => {
@@ -376,6 +414,11 @@ export function DatosProvider({ usuario, children }) {
       responder,
       mensajes,
       mensajesListos,
+      reaccionesMensajes,
+      alternarReaccionMensaje,
+      lecturas,
+      marcarLeido,
+      firmarRutas,
       agregarMensaje,
       comidasLogros,
       aguaLogros,
@@ -395,7 +438,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

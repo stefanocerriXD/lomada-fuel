@@ -45,6 +45,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   const [panel, setPanel] = useState(null);
   const [importado, setImportado] = useState(null);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
+  const [faltan, setFaltan] = useState(null);
   const [ajuste, setAjuste] = useState(
     original?.macros_editados ? { kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas } : null,
   );
@@ -88,10 +89,18 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
     const fila = filaDeComida(filas, tipo);
     if (!fila && filas.length) return onImportarDia(carga.fecha || fechaLocal(), filas);
     if (fila?.alimentos?.length) {
-      setItems((prev) => [...prev, ...fila.alimentos.map((a) => {
-        const item = itemImportado(a);
-        return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID() };
-      })]);
+      // Si un alimento igual ya está en la comida, no se vuelve a sumar.
+      const firma = (a) => `${String(a.nombre).toLowerCase().trim()}|${Math.round(macrosDeItem(a).kcal)}`;
+      setItems((prev) => {
+        const ya = new Set(prev.map(firma));
+        const nuevos = fila.alimentos
+          .map((a) => {
+            const item = itemImportado(a);
+            return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID() };
+          })
+          .filter((a) => !ya.has(firma(a)));
+        return [...prev, ...nuevos];
+      });
       setPanel(null);
       setImportado(null);
       setError("");
@@ -138,8 +147,18 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
     }
   }
 
+  // Antes de publicar algo nuevo, avisa qué quedó sin completar y deja seguir igual.
+  function publicar() {
+    if (!original) {
+      const vacios = [!vistaFoto && "la foto", !items.length && !ajuste && "las comidas", !descripcion.trim() && "el título"].filter(Boolean);
+      if (vacios.length && !faltan) return setFaltan(vacios);
+    }
+    setFaltan(null);
+    guardar();
+  }
+
   async function guardar() {
-    if (!items.length && !ajuste) return setError("Agregá al menos un alimento.");
+    if (!items.length && !ajuste && !foto && !original?.foto_path) return setError("Agregá una comida o una foto.");
     setError("");
     setGuardando(true);
     let rutaNueva = null;
@@ -274,7 +293,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
               <input type="file" accept="image/*" onChange={elegirFoto} aria-label="Foto de la comida" />
               {vistaFoto ? <img src={vistaFoto} alt="Foto de la comida" /> : <Camera size={24} />}
             </label>
-            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Agregá una foto o una nota" aria-label="Nota de la comida" maxLength={200} />
+            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Título de la comida" aria-label="Nota de la comida" maxLength={200} />
           </div>
 
           <details className="mas-opciones">
@@ -309,12 +328,23 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
 
           <div className="pie-publicar">
             {error && <p className="error" role="alert">{error}</p>}
+            <AnimatePresence>
+              {faltan && (
+                <motion.div className="confirmar-publicar" role="alertdialog" aria-label="Faltan datos" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
+                  <p>Te falta {faltan.length > 1 ? `${faltan.slice(0, -1).join(", ")} y ${faltan[faltan.length - 1]}` : faltan[0]}. ¿Publicás igual?</p>
+                  <div>
+                    <button className="boton boton-secundario" onClick={() => setFaltan(null)}>Completar</button>
+                    <button className="boton" onClick={publicar} disabled={guardando}>Publicar igual</button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div className="pie-fila">
               <div className="pie-total">
                 <strong><Numero valor={Math.round(total.kcal)} /> kcal</strong>
                 <span>P {Math.round(total.p)} · C {Math.round(total.c)} · G {Math.round(total.g)}</span>
               </div>
-              <button className="boton" onClick={guardar} disabled={guardando} aria-label={original ? "Guardar cambios" : "Publicar comida"}>
+              <button className="boton" onClick={publicar} disabled={guardando} aria-label={original ? "Guardar cambios" : "Publicar comida"}>
                 {guardando ? "Guardando…" : original ? "Guardar" : "Publicar"}
               </button>
             </div>

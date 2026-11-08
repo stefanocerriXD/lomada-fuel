@@ -1038,6 +1038,39 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .modo-total span { display: flex; flex-direction: column; }
 .modo-total small { color: var(--tinta-2); font-size: 0.8rem; }
 
+/* Chat: acciones, respuestas, reacciones, vistos, fotos y stickers */
+.chat-columna { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; max-width: 100%; }
+.chat-fila.propia .chat-columna { align-items: flex-end; }
+.burbuja { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+.chat-fila.resaltado .burbuja { box-shadow: 0 0 0 3px var(--acento); transition: box-shadow 0.3s; }
+.reacciones-mensaje { display: flex; flex-wrap: wrap; gap: 4px; margin: -4px 6px 2px; }
+.reacciones-mensaje button { display: inline-flex; align-items: center; justify-content: center; gap: 2px; min-width: 40px; min-height: 36px; padding: 0 8px; border-radius: 99px; background: var(--superficie); box-shadow: var(--sombra); font-size: 0.9rem; }
+.reacciones-mensaje button.mia { box-shadow: inset 0 0 0 1.5px var(--acento); }
+.reacciones-mensaje small { color: var(--tinta-2); font-size: 0.72rem; font-weight: 700; }
+.visto { margin: 1px 4px 2px; color: var(--tinta-2); font-size: 0.72rem; }
+.adjunto { display: block; width: min(240px, 62vw); margin: 2px 0 4px; overflow: hidden; border-radius: 12px; background: rgb(0 0 0 / 8%); }
+.adjunto img { width: 100%; height: auto; max-height: 320px; object-fit: cover; }
+.adjunto-cargando { display: block; height: 160px; }
+.burbuja-sticker { padding: 0; background: transparent; box-shadow: none; }
+.chat-fila.propia .burbuja-sticker { background: transparent; color: var(--tinta); }
+.burbuja-sticker time { color: var(--tinta-2); }
+.sticker { display: block; font-size: 3.6rem; line-height: 1.1; }
+.panel-stickers { display: grid; flex: none; grid-template-columns: repeat(8, 1fr); gap: 2px; overflow: hidden; }
+.panel-stickers button { display: grid; place-items: center; aspect-ratio: 1; border-radius: 10px; font-size: 1.6rem; }
+.panel-stickers button:active { background: var(--superficie-2); }
+.chat-enviar .boton-icono { flex: none; }
+.chat-enviar .boton-icono.activo { color: var(--acento); }
+.chat-enviar label.boton-icono { position: relative; display: grid; place-items: center; cursor: pointer; }
+.chat-enviar label.ocupado { opacity: 0.5; }
+.acciones-mensaje { display: flex; flex-direction: column; gap: 4px; }
+.reaccionar { display: flex; justify-content: space-between; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid var(--borde); }
+.reaccionar button { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; font-size: 1.6rem; }
+.reaccionar button.mia { background: var(--acento-suave); }
+.accion-mensaje { display: flex; align-items: center; gap: 12px; min-height: 52px; font-weight: 600; text-align: left; }
+.confirmar-publicar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
+.confirmar-publicar p { font-weight: 600; }
+.confirmar-publicar div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
 /* Apple Salud */
 .dato-copiable { display: flex; align-items: center; gap: 8px; }
 .dato-copiable code { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 11px; background: var(--superficie-2); font-size: 0.76rem; overflow-wrap: anywhere; }

@@ -262,7 +262,14 @@ export function leerAlimentos(lineas) {
       actual = null;
     }
   }
-  return hallados.filter(conDatos).map(completarAlimento).filter((a) => a.kcal > 0);
+  // Algunas capturas muestran cada alimento dos veces (en la lista y en el detalle): se deja uno.
+  const vistos = new Set();
+  return hallados.filter(conDatos).map(completarAlimento).filter((a) => {
+    const firma = `${a.nombre.toLowerCase()}|${a.kcal}`;
+    if (a.kcal <= 0 || vistos.has(firma)) return false;
+    vistos.add(firma);
+    return true;
+  });
 }
 
 function sumarAlimentos(alimentos) {
