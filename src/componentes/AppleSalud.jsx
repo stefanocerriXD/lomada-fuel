@@ -73,7 +73,7 @@ export default function AppleSalud({ avisar }) {
           <strong>Instalá el Atajo</strong>
           {ATAJO_SALUD ? (
             <>
-              <span>Tocá Agregar atajo y, cuando te pida la llave, pegala.</span>
+              <span>Tocá Agregar atajo. Después abrilo en la app Atajos, tocá el campo vacío al lado de token y pegá tu llave.</span>
               <a className="boton boton-secundario" href={ATAJO_SALUD} target="_blank" rel="noreferrer"><Download size={17} /> Instalar Atajo</a>
             </>
           ) : (
