@@ -35,7 +35,7 @@ begin
     if armar_resumen_semanal() is null then return null; end if;
     return jsonb_build_object('titulo', 'Salieron los podios de la semana', 'cuerpo', 'Mirá cómo quedó cada uno en el chat.', 'vista', 'chat', 'destinos', todos);
   elsif p_tipo = 'matchday' then
-    return jsonb_build_object('titulo', '⚽ MATCH DAY 🔥', 'cuerpo', 'Día de guerra 💪 No te olvides de publicar tu CARB LOAD 🍝', 'vista', 'resumen', 'destinos', todos);
+    return jsonb_build_object('titulo', 'MATCH DAY ⚽', 'cuerpo', 'Día de guerra ⚔️. No te olvides de publicar tu CARB LOAD 🍝', 'vista', 'resumen', 'destinos', todos);
   end if;
   raise exception 'tipo_invalido';
 end;

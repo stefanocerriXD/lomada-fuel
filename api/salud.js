@@ -6,7 +6,7 @@ const CON_UNIDAD = new RegExp(`(${NUMERO})\\s*(?:k?cal|kj|g\\b)`, "i");
 const SUELTO = new RegExp(NUMERO);
 
 // Un Atajo manda números crudos ("2.595000028610229"), a veces con unidad, fecha o una lista de días: se toma un solo valor.
-// Con un solo separador es decimal. Con varios, el último es el decimal salvo que todos sean iguales ("1.234.567").
+// Con un solo separador y tres cifras después son miles; si no, decimal. Con varios, el último es el decimal salvo que todos sean iguales ("1.234.567").
 export function aNumero(valor) {
   if (valor === null || valor === undefined || valor === "") return null;
   if (typeof valor === "number") return Number.isFinite(valor) ? valor : null;
@@ -17,7 +17,9 @@ export function aNumero(valor) {
   const separadores = texto.match(/[.,]/g) || [];
   let limpio = texto;
   if (separadores.length === 1) {
-    limpio = texto.replace(",", ".");
+    // "1,650" o "1.650" son miles; "2.595000028610229" o "82,4" son decimales.
+    const [entero, resto] = texto.split(/[.,]/);
+    limpio = resto.length === 3 && entero.length <= 3 ? `${entero}${resto}` : `${entero}.${resto}`;
   } else if (separadores.length > 1) {
     const ultimo = Math.max(texto.lastIndexOf(","), texto.lastIndexOf("."));
     limpio = new Set(separadores).size === 1
