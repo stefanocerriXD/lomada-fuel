@@ -1,25 +1,30 @@
 // Recibe los datos del Atajo del iPhone. Los Atajos pueden mandar valores como "1.650,5 kcal".
 const ERRORES = { token_invalido: 401, fecha_invalida: 400, valores_invalidos: 400 };
 
-const NUMERO = "\\d{1,3}(?:[.,]\\d{3})+(?:[.,]\\d+)?|\\d+(?:[.,]\\d+)?";
+const NUMERO = "\\d+(?:[.,]\\d+)*";
 const CON_UNIDAD = new RegExp(`(${NUMERO})\\s*(?:k?cal|kj|g\\b)`, "i");
 const SUELTO = new RegExp(NUMERO);
 
-// Un Atajo puede mandar "1.650,5 kcal", una lista de días o un texto con la fecha: se toma un solo valor.
+// Un Atajo manda números crudos ("2.595000028610229"), a veces con unidad, fecha o una lista de días: se toma un solo valor.
+// Con un solo separador es decimal. Con varios, el último es el decimal salvo que todos sean iguales ("1.234.567").
 export function aNumero(valor) {
   if (valor === null || valor === undefined || valor === "") return null;
   if (typeof valor === "number") return Number.isFinite(valor) ? valor : null;
   if (Array.isArray(valor)) return valor.length ? aNumero(valor[valor.length - 1]) : null;
   const original = String(valor);
-  let texto = (original.match(CON_UNIDAD) || original.match(SUELTO))?.[1] ?? original.match(SUELTO)?.[0];
+  const texto = original.match(CON_UNIDAD)?.[1] ?? original.match(SUELTO)?.[0];
   if (!texto) return null;
-  const decimal = Math.max(texto.lastIndexOf(","), texto.lastIndexOf("."));
-  if (decimal >= 0 && texto.length - decimal - 1 !== 3) {
-    texto = `${texto.slice(0, decimal).replace(/[.,]/g, "")}.${texto.slice(decimal + 1)}`;
-  } else {
-    texto = texto.replace(/[.,]/g, "");
+  const separadores = texto.match(/[.,]/g) || [];
+  let limpio = texto;
+  if (separadores.length === 1) {
+    limpio = texto.replace(",", ".");
+  } else if (separadores.length > 1) {
+    const ultimo = Math.max(texto.lastIndexOf(","), texto.lastIndexOf("."));
+    limpio = new Set(separadores).size === 1
+      ? texto.replace(/[.,]/g, "")
+      : `${texto.slice(0, ultimo).replace(/[.,]/g, "")}.${texto.slice(ultimo + 1)}`;
   }
-  const numero = Number(texto);
+  const numero = Number(limpio);
   return Number.isFinite(numero) ? numero : null;
 }
 
