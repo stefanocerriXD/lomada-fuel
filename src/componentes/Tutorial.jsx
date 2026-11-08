@@ -60,7 +60,7 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo las activo en iPhone?", "Abrí la app en Safari, tocá Compartir y Agregar a inicio. Después entrá desde ese ícono y activalas en Notificaciones, acá en Ajustes."],
       ["¿Cómo las activo en Android?", "Abrí la app en Chrome y activalas en Notificaciones, acá en Ajustes."],
-      ["¿Qué avisos automáticos hay?", "A las 21 te recuerda cargar tus comidas si todavía no cargaste el día. Cada lunes a las 9 llegan los podios de la semana, que quedan en el chat."],
+      ["¿Qué avisos automáticos hay?", "A las 21 te recuerda cargar tus comidas si todavía no cargaste el día. Cada lunes a las 9 llegan los podios de la semana, que quedan en el chat. Los domingos a las 9 llega el Match Day, antes del partido."],
       ["No me llegan. ¿Qué reviso?", "Fijate que el permiso esté activo en tu celular y que no estés en modo No molestar. En iPhone, usá siempre el ícono de inicio."],
     ],
   },
