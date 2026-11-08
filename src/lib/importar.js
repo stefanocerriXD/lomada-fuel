@@ -263,13 +263,24 @@ export function leerAlimentos(lineas) {
     }
   }
   // Algunas capturas muestran cada alimento dos veces (en la lista y en el detalle): se deja uno.
+  // Si un alimento trae sus números en la captura, se descarta la copia que la app tuvo que estimar.
+  const nombreDe = (a) => a.nombre.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\d]+/gu, " ").trim();
+  const completos = hallados
+    .filter(conDatos)
+    .map((a) => ({ alimento: completarAlimento(a), propias: a.kcal !== undefined }))
+    .filter(({ alimento }) => alimento.kcal > 0);
+  const conCaloriasPropias = new Set(completos.filter((x) => x.propias).map((x) => nombreDe(x.alimento)));
   const vistos = new Set();
-  return hallados.filter(conDatos).map(completarAlimento).filter((a) => {
-    const firma = `${a.nombre.toLowerCase()}|${a.kcal}`;
-    if (a.kcal <= 0 || vistos.has(firma)) return false;
-    vistos.add(firma);
-    return true;
-  });
+  return completos
+    .filter(({ alimento, propias }) => {
+      const nombre = nombreDe(alimento);
+      if (!propias && conCaloriasPropias.has(nombre)) return false;
+      const firma = `${nombre}|${alimento.kcal}`;
+      if (vistos.has(firma)) return false;
+      vistos.add(firma);
+      return true;
+    })
+    .map(({ alimento }) => alimento);
 }
 
 function sumarAlimentos(alimentos) {
