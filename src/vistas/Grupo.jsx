@@ -6,7 +6,7 @@ import { fechaLocal } from "../lib/fechas.js";
 import { sumarComidas } from "../lib/macros.js";
 import { nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
 import { Indicador, Avatar, Hoja, vibrar } from "../componentes/Base.jsx";
-import Chat from "./Chat.jsx";
+import Chat, { EnVivo } from "./Chat.jsx";
 import Imagenes from "./Imagenes.jsx";
 
 const SECCIONES = [["chat", "Chat"], ["imagenes", "Imágenes"]];
@@ -62,6 +62,7 @@ export default function Grupo({ seccion, onSeccion, onCargar, avisar, sentido })
   return (
     <div className={seccion === "chat" ? "grupo grupo-chat" : "grupo"}>
       {barra}
+      <EnVivo que="publicando" />
       <motion.div
         key={seccion}
         className="grupo-contenido"

@@ -9,6 +9,7 @@ import { fechaLocal, hora, nombreDia } from "../lib/fechas.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
+import Grabador, { extensionAudio } from "../componentes/Grabador.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 
 const MAXIMO_EN_PANTALLA = 250;
@@ -23,7 +24,25 @@ const STICKERS = ["🔥", "💪", "🥩", "🍖", "🍝", "🍕", "🍔", "🌮"
 const sinEmojis = (texto) => texto.replace(/\p{Extended_Pictographic}️?\s*/gu, "");
 const normal = (t) => String(t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 const escapar = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const resumenDe = (m) => m.texto || (m.sticker ? `Sticker ${m.sticker}` : m.adjunto_path ? "Foto" : "");
+const esAudio = (ruta) => /\.(m4a|mp4|webm|ogg|aac)$/i.test(ruta || "");
+const resumenDe = (m) => m.texto || (m.sticker ? `Sticker ${m.sticker}` : esAudio(m.adjunto_path) ? "Audio" : m.adjunto_path ? "Foto" : "");
+const ESCRIBIENDO_MS = 4000;
+
+const listaDeNombres = (nombres) => (nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}` : nombres[0]);
+
+// "Nacho está escribiendo…" o "Juli está publicando su comida…", en vivo.
+export function EnVivo({ que }) {
+  const { presentes, perfiles } = useDatos();
+  const nombres = Object.entries(presentes).filter(([, e]) => e[que]).map(([id]) => perfiles[id]?.nombre).filter(Boolean);
+  if (!nombres.length) return null;
+  const verbo = que === "escribiendo" ? "escribiendo" : "publicando su comida";
+  return (
+    <p className="en-vivo" role="status">
+      <span className="puntos" aria-hidden="true"><i /><i /><i /></span>
+      {listaDeNombres(nombres)} {nombres.length > 1 ? "están" : "está"} {verbo}…
+    </p>
+  );
+}
 
 function ConMenciones({ texto }) {
   const { perfiles, yo } = useDatos();
@@ -240,7 +259,10 @@ function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onRespo
             {!propio && inicio && <strong>{perfil?.nombre || "Amigo"}</strong>}
             {m.respuesta_mensaje && <CitaMensaje id={m.respuesta_mensaje} />}
             {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={onZoom} />}
-            {m.adjunto_path && (
+            {m.adjunto_path && esAudio(m.adjunto_path) && (
+              <audio className="audio" controls preload="metadata" src={foto || undefined} onPointerDown={(e) => e.stopPropagation()} aria-label="Audio" />
+            )}
+            {m.adjunto_path && !esAudio(m.adjunto_path) && (
               <button type="button" className="adjunto" onClick={() => foto && onZoom({ src: foto, alt: "Foto del chat" })} aria-label="Ver foto">
                 {foto ? <img src={foto} alt="Foto del chat" /> : <span className="adjunto-cargando" />}
               </button>
@@ -290,8 +312,9 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
 export default function Chat({ avisar }) {
   const {
     usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, respuesta, responder,
-    lecturas, marcarLeido, firmarRutas,
+    lecturas, marcarLeido, firmarRutas, avisarEstado,
   } = useDatos();
+  const reposo = useRef(null);
   const campo = useRef(null);
   const lista = useRef(null);
   const [texto, setTexto] = useState("");
@@ -336,6 +359,10 @@ export default function Chat({ avisar }) {
   function alEscribir(e) {
     const valor = e.target.value;
     setTexto(valor);
+    // Los demás ven "escribiendo…" mientras haya texto y se siga tecleando.
+    avisarEstado({ escribiendo: Boolean(valor.trim()) });
+    clearTimeout(reposo.current);
+    reposo.current = setTimeout(() => avisarEstado({ escribiendo: false }), ESCRIBIENDO_MS);
     const antes = valor.slice(0, e.target.selectionStart ?? valor.length);
     const hallado = antes.match(/(?:^|\s)@([\p{L}\d_.]*)$/u);
     setMencion(hallado ? normal(hallado[1]) : null);
@@ -390,7 +417,29 @@ export default function Chat({ avisar }) {
     if (!limpio) return;
     setTexto("");
     setMencion(null);
+    clearTimeout(reposo.current);
+    avisarEstado({ escribiendo: false });
     if (!(await mandar({}, limpio))) setTexto(limpio);
+  }
+
+  useEffect(() => () => {
+    clearTimeout(reposo.current);
+    avisarEstado({ escribiendo: false });
+  }, [avisarEstado]);
+
+  async function enviarAudio(blob) {
+    setSubiendo(true);
+    setError("");
+    try {
+      const ruta = `${usuario.id}/chat/${crypto.randomUUID()}.${extensionAudio(blob.type)}`;
+      const { error: errAudio } = await supabase.storage.from("fotos").upload(ruta, blob, { contentType: blob.type || "audio/webm" });
+      if (errAudio) throw errAudio;
+      if (!(await mandar({ adjunto_path: ruta }))) await supabase.storage.from("fotos").remove([ruta]);
+    } catch {
+      setError("No se pudo mandar el audio.");
+    } finally {
+      setSubiendo(false);
+    }
   }
 
   async function enviarSticker(sticker) {
@@ -489,6 +538,7 @@ export default function Chat({ avisar }) {
           <button className="boton-icono chico" onClick={() => setCitado(null)} aria-label="Cancelar respuesta"><X size={16} /></button>
         </div>
       )}
+      <EnVivo que="escribiendo" />
       {sugeridos.length > 0 && (
         <ul className="chat-menciones" role="listbox" aria-label="Mencionar a">
           {sugeridos.map((p) => (
@@ -514,9 +564,13 @@ export default function Chat({ avisar }) {
         </label>
         <button type="button" className={stickers ? "boton-icono activo" : "boton-icono"} onClick={() => setStickers(!stickers)} aria-pressed={stickers} aria-label="Stickers"><Smile size={20} /></button>
         <input ref={campo} value={texto} onChange={alEscribir} placeholder={respuesta || citado ? "Escribí tu respuesta…" : "Escribí algo…"} aria-label="Mensaje" maxLength={1000} />
-        <motion.button className="boton-enviar" type="submit" disabled={!texto.trim()} whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} aria-label="Enviar">
-          <SendHorizontal size={20} />
-        </motion.button>
+        {texto.trim() ? (
+          <motion.button className="boton-enviar" type="submit" whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} aria-label="Enviar">
+            <SendHorizontal size={20} />
+          </motion.button>
+        ) : (
+          <Grabador onListo={enviarAudio} onError={setError} deshabilitado={subiendo} />
+        )}
       </form>
 
       <AccionesMensaje mensaje={acciones} onCerrar={() => setAcciones(null)} onResponder={responderMensaje} avisar={avisar} />

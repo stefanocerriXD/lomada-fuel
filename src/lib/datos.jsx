@@ -380,6 +380,38 @@ export function DatosProvider({ usuario, children }) {
     };
   }, [cargarMensajes, cargarSocial, conectar, refrescar]);
 
+  // Quién está escribiendo o publicando ahora. No se guarda en la base: vive solo mientras la app está abierta.
+  const [presentes, setPresentes] = useState({});
+  const presencia = useRef(null);
+  const estadoPropio = useRef({ escribiendo: false, publicando: false });
+  useEffect(() => {
+    const canal = supabase.channel("presencia-grupo", { config: { presence: { key: usuario.id } } });
+    canal.on("presence", { event: "sync" }, () => {
+      const mapa = {};
+      for (const [id, lista] of Object.entries(canal.presenceState())) {
+        if (id === usuario.id || !lista.length) continue;
+        const ultimo = lista[lista.length - 1];
+        mapa[id] = { escribiendo: Boolean(ultimo.escribiendo), publicando: Boolean(ultimo.publicando) };
+      }
+      setPresentes(mapa);
+    });
+    canal.subscribe((estado) => {
+      if (estado === "SUBSCRIBED") canal.track(estadoPropio.current);
+    });
+    presencia.current = canal;
+    return () => {
+      presencia.current = null;
+      supabase.removeChannel(canal);
+    };
+  }, [usuario.id]);
+
+  const avisarEstado = useCallback((parcial) => {
+    const nuevo = { ...estadoPropio.current, ...parcial };
+    if (nuevo.escribiendo === estadoPropio.current.escribiendo && nuevo.publicando === estadoPropio.current.publicando) return;
+    estadoPropio.current = nuevo;
+    presencia.current?.track(nuevo)?.catch?.(() => {});
+  }, []);
+
   // Lo reciente manda: incluye lo que se acaba de cargar, editar o borrar.
   const comidasLogros = useMemo(() => {
     if (!historial) return null;
@@ -414,6 +446,8 @@ export function DatosProvider({ usuario, children }) {
       responder,
       mensajes,
       mensajesListos,
+      presentes,
+      avisarEstado,
       reaccionesMensajes,
       alternarReaccionMensaje,
       lecturas,
@@ -438,7 +472,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

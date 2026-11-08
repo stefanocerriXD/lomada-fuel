@@ -29,8 +29,15 @@ export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia 
 }
 
 function Formulario({ carga, onGuardar, onImportarDia }) {
-  const { usuario, yo, comidas, comidasLogros, fotos, cargarComidas, extras } = useDatos();
+  const { usuario, yo, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado } = useDatos();
   const original = carga.comida;
+
+  // Mientras arma una comida nueva, el grupo ve "está publicando su comida…".
+  useEffect(() => {
+    if (original) return undefined;
+    avisarEstado({ publicando: true });
+    return () => avisarEstado({ publicando: false });
+  }, [original, avisarEstado]);
 
   const [tipo, setTipo] = useState(original?.tipo || carga.tipo || tipoSegunHora());
   const [descripcion, setDescripcion] = useState(original?.descripcion || carga.receta?.descripcion || "");

@@ -34,6 +34,8 @@ const SECCIONES = [
       ["¿Cómo respondo o reacciono a un mensaje?", "Para responder, deslizá el mensaje hacia la derecha. Para reaccionar o copiar, mantenelo apretado y soltá: se abren las opciones."],
       ["¿Puedo mandar fotos, GIF o stickers?", "Sí. En el chat, el botón de la imagen manda una foto o un GIF de tu galería, y la carita abre los stickers."],
       ["¿Cómo sé quién vio mi mensaje?", "Debajo de tu último mensaje aparece quién lo vio."],
+      ["¿Puedo mandar audios?", "Sí. Con el campo vacío aparece el micrófono: tocalo para grabar y tocá enviar cuando termines, o el tacho para descartarlo. La primera vez el celular pide permiso."],
+      ["¿Qué es \"está escribiendo\"?", "Mientras alguien escribe en el chat o arma una comida para publicar, lo ves arriba en vivo."],
       ["¿Cómo menciono a alguien?", "En el chat escribí @ y elegí a la persona. Le llega un aviso que dice que la mencionaste."],
       ["¿Cómo respondo una foto?", "Tocá Responder en el chat, debajo de la foto o al abrirla. Te lleva al chat con la foto citada: escribí y enviá."],
       ["¿Cómo entro al perfil de alguien?", "Tocá su nombre o su inicial, o el botón de personas al lado de Chat e Imágenes. Ahí están sus estadísticas, días, fotos y logros."],
