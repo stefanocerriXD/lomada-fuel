@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, Lock, Pencil, PenLine, Reply, Star, Trash2 } from "lucide-react";
+import { ChevronDown, Lock, Maximize2, Pencil, PenLine, Reply, Star, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
@@ -99,6 +99,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
       {foto ? (
         <button className="comida-foto" onClick={() => onZoom({ src: foto, alt: texto })} aria-label={`Ampliar foto: ${texto}`}>
           <img src={foto} alt={texto} loading="lazy" />
+          <span className="comida-foto-ampliar" aria-hidden="true"><Maximize2 size={15} /></span>
         </button>
       ) : (
         <div className="comida-sinfoto">

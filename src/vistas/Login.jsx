@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { ArrowRight, MailCheck } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { Indicador } from "../componentes/Base.jsx";
+import InstalarApp from "../componentes/InstalarApp.jsx";
 
 const USUARIO_VALIDO = /^[a-z0-9_.]{3,20}$/;
 const LARGO_CLAVE = 8;
@@ -82,6 +83,7 @@ export default function Login() {
 
   return (
     <div className="login">
+      <InstalarApp />
       <div className="login-foto" aria-hidden="true">
         <motion.img
           src="/login-foto.webp"

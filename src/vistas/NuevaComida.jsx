@@ -18,7 +18,7 @@ import Escaner from "./Escaner.jsx";
 
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
-const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", resumen: "días" };
+const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia }) {
   const editando = carga?.comida;
@@ -49,7 +49,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   });
   const [foto, setFoto] = useState(null);
   const [vistaFoto, setVistaFoto] = useState(original ? fotos[original.foto_path] : null);
-  const [texto, setTexto] = useState("");
+  const [texto, setTexto] = useState(carga.buscar || "");
   const [panel, setPanel] = useState(null);
   const [importado, setImportado] = useState(null);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
@@ -167,7 +167,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   // Antes de publicar algo nuevo, avisa qué quedó sin completar y deja seguir igual.
   function publicar() {
     if (!original) {
-      const vacios = [!vistaFoto && "la foto", !items.length && !ajuste && "las comidas", !descripcion.trim() && "el título"].filter(Boolean);
+      const vacios = [!vistaFoto && "la foto de la comida", !items.length && !ajuste && "los alimentos", !descripcion.trim() && "el título"].filter(Boolean);
       if (vacios.length && !faltan) return setFaltan(vacios);
     }
     setFaltan(null);
@@ -221,7 +221,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
         <div className="tipos" role="radiogroup" aria-label="Tipo de comida">
           {TIPOS.map((t) => (
             <button key={t.id} role="radio" aria-checked={tipo === t.id} className={tipo === t.id ? "activo" : ""} onClick={() => setTipo(t.id)}>
-              <IconoComida tipo={t.id} /> {t.texto}
+              <IconoComida tipo={t.id} /> {t.plural || t.texto}
             </button>
           ))}
         </div>

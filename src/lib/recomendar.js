@@ -1,7 +1,7 @@
 import { INGREDIENTES, RECETAS } from "../data/recetas.js";
 import { calcularPlan } from "./cuerpo.js";
 import { tipoSegunHora } from "./fechas.js";
-import { TIPOS } from "./macros.js";
+import { TIPOS_PRINCIPALES as TIPOS } from "./macros.js";
 
 const PESO_COMIDA = { desayuno: 0.25, almuerzo: 0.35, merienda: 0.15, cena: 0.25 };
 const CALORIAS_MINIMAS = 150;

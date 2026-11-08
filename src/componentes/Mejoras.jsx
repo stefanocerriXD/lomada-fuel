@@ -66,13 +66,13 @@ export default function Mejoras({ avisar }) {
 
       {lista.length > 0 && (
         <>
-          <h3 className="perfil-subtitulo">{admin ? "Todos los pedidos" : "Tus pedidos"}</h3>
+          <h3 className="perfil-subtitulo">Pedidos del grupo</h3>
           <ul className="lista-mejoras">
             {lista.map((m) => (
               <li key={m.id} className={m.hecha ? "hecha" : ""}>
                 <p>{m.texto}</p>
                 <small>
-                  {admin ? `${m.usuario_id === usuario.id ? "Vos" : perfiles[m.usuario_id]?.nombre || "Amigo"} · ` : ""}
+                  {`${m.usuario_id === usuario.id ? "Vos" : perfiles[m.usuario_id]?.nombre || "Amigo"} · `}
                   {haceCuanto(m.creado_en)}{m.hecha ? " · Hecha" : ""}
                 </small>
                 {admin && (

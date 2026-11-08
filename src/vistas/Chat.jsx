@@ -256,7 +256,7 @@ function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onRespo
               if (gesto.offset.x > DESLIZAR_PARA_RESPONDER) onResponder(m);
             }}
           >
-            {!propio && inicio && <strong>{perfil?.nombre || "Amigo"}</strong>}
+            {!propio && inicio && <strong className="autor" style={{ "--autor": perfil?.color }}>{perfil?.nombre || "Amigo"}</strong>}
             {m.respuesta_mensaje && <CitaMensaje id={m.respuesta_mensaje} />}
             {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={onZoom} />}
             {m.adjunto_path && esAudio(m.adjunto_path) && (
@@ -349,11 +349,20 @@ export default function Chat({ avisar }) {
     if (!miLectura || miLectura < ultimo.creado_en) marcarLeido(ultimo.creado_en);
   }, [ultimo, miLectura, marcarLeido]);
 
-  // Debajo de tu último mensaje, quién llegó a verlo.
-  const ultimoPropio = [...linea].reverse().find((m) => m.usuario_id === usuario.id);
+  // Cada uno aparece debajo del último mensaje que vio, en todos los mensajes y para todos.
   const otros = Object.values(perfiles).filter((p) => p.id !== usuario.id);
-  const vieron = ultimoPropio ? otros.filter((p) => (lecturas.find((l) => l.usuario_id === p.id)?.hasta || "") >= ultimoPropio.creado_en) : [];
-  const textoVisto = !vieron.length ? "" : vieron.length === otros.length && otros.length > 1 ? "Visto por todos" : `Visto por ${vieron.map((p) => p.nombre).join(", ")}`;
+  const hastaDe = (id) => lecturas.find((l) => l.usuario_id === id)?.hasta || "";
+  function vistoDe(m, siguiente) {
+    const autores = Object.values(perfiles).filter((p) => p.id !== m.usuario_id);
+    const vieron = autores.filter((p) => {
+      const hasta = hastaDe(p.id);
+      return hasta >= m.creado_en && (!siguiente || hasta < siguiente.creado_en);
+    });
+    if (!vieron.length) return "";
+    const nombres = vieron.map((p) => (p.id === usuario.id ? "vos" : p.nombre));
+    const todosLeyeron = autores.every((p) => hastaDe(p.id) >= m.creado_en);
+    return todosLeyeron && autores.length > 1 && !siguiente ? "Visto por todos" : `Visto por ${listaDeNombres(nombres)}`;
+  }
 
   // "@" seguido de letras abre la lista de personas para mencionar.
   function alEscribir(e) {
@@ -448,28 +457,37 @@ export default function Chat({ avisar }) {
     await mandar({ sticker });
   }
 
-  // Los GIF se suben tal cual para que sigan animados; las fotos se achican.
+  // Los GIF se suben tal cual para que sigan animados; las fotos se achican. Se pueden elegir varias juntas.
   async function enviarFoto(e) {
-    const archivo = e.target.files[0];
+    const archivos = [...e.target.files];
     e.target.value = "";
-    if (!archivo) return;
-    const esGif = archivo.type === "image/gif";
-    if (esGif && archivo.size > GIF_MAXIMO) return setError("El GIF es muy pesado. Probá con uno más chico.");
+    if (!archivos.length) return;
     setSubiendo(true);
     setError("");
-    try {
-      const contenido = esGif ? archivo : await comprimirImagen(archivo);
-      const ruta = `${usuario.id}/chat/${crypto.randomUUID()}.${esGif ? "gif" : "jpg"}`;
-      const { error: errFoto } = await supabase.storage.from("fotos").upload(ruta, contenido, { contentType: esGif ? "image/gif" : "image/jpeg" });
-      if (errFoto) throw errFoto;
-      const titulo = texto.trim();
-      if (await mandar({ adjunto_path: ruta }, titulo)) setTexto("");
-      else await supabase.storage.from("fotos").remove([ruta]);
-    } catch {
-      setError("No se pudo mandar la foto.");
-    } finally {
-      setSubiendo(false);
+    let titulo = texto.trim();
+    for (const archivo of archivos) {
+      const esGif = archivo.type === "image/gif";
+      if (esGif && archivo.size > GIF_MAXIMO) {
+        setError("Un GIF era muy pesado y no se mandó.");
+        continue;
+      }
+      try {
+        const contenido = esGif ? archivo : await comprimirImagen(archivo);
+        const ruta = `${usuario.id}/chat/${crypto.randomUUID()}.${esGif ? "gif" : "jpg"}`;
+        const { error: errFoto } = await supabase.storage.from("fotos").upload(ruta, contenido, { contentType: esGif ? "image/gif" : "image/jpeg" });
+        if (errFoto) throw errFoto;
+        if (await mandar({ adjunto_path: ruta }, titulo)) {
+          // El texto escrito acompaña solo a la primera foto.
+          if (titulo) setTexto("");
+          titulo = "";
+        } else {
+          await supabase.storage.from("fotos").remove([ruta]);
+        }
+      } catch {
+        setError("No se pudo mandar una de las fotos.");
+      }
     }
+    setSubiendo(false);
   }
 
   const autorCitado = citado && (citado.usuario_id === usuario.id ? "vos" : perfiles[citado.usuario_id]?.nombre || "el bot");
@@ -514,7 +532,7 @@ export default function Chat({ avisar }) {
               inicio={nuevoDia || !mismoAutor(previo)}
               fin={!mismoAutor(siguiente)}
               separador={separador}
-              visto={m.id === ultimoPropio?.id ? textoVisto : ""}
+              visto={vistoDe(m, siguiente)}
               onAcciones={setAcciones}
               onResponder={responderMensaje}
               onZoom={setZoom}
@@ -560,7 +578,7 @@ export default function Chat({ avisar }) {
       <form className="chat-enviar" onSubmit={enviar}>
         <label className={subiendo ? "boton-icono ocupado" : "boton-icono"} aria-label="Mandar foto o GIF">
           <ImagePlus size={20} />
-          <input className="oculto" type="file" accept="image/*" onChange={enviarFoto} disabled={subiendo} aria-label="Elegir foto o GIF" />
+          <input className="oculto" type="file" accept="image/*" multiple onChange={enviarFoto} disabled={subiendo} aria-label="Elegir foto o GIF" />
         </label>
         <button type="button" className={stickers ? "boton-icono activo" : "boton-icono"} onClick={() => setStickers(!stickers)} aria-pressed={stickers} aria-label="Stickers"><Smile size={20} /></button>
         <input ref={campo} value={texto} onChange={alEscribir} placeholder={respuesta || citado ? "Escribí tu respuesta…" : "Escribí algo…"} aria-label="Mensaje" maxLength={1000} />

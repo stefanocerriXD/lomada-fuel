@@ -1,11 +1,15 @@
 import { aFecha, fechaLocal, haceDias } from "./fechas.js";
 
-export const TIPOS = [
+// Las cuatro comidas del día; el recomendador reparte lo que falta entre estas.
+export const TIPOS_PRINCIPALES = [
   { id: "desayuno", texto: "Desayuno" },
   { id: "almuerzo", texto: "Almuerzo" },
   { id: "merienda", texto: "Merienda" },
   { id: "cena", texto: "Cena" },
 ];
+
+// Las colaciones son lo que se come entre comidas; puede haber varias por día.
+export const TIPOS = [...TIPOS_PRINCIPALES, { id: "colacion", texto: "Colación", plural: "Colaciones" }];
 
 export const TIPOS_TODOS = [{ id: "resumen", texto: "Todo el día" }, ...TIPOS];
 

@@ -14,8 +14,9 @@ const LETRAS = { p: /(?:^|[^\p{L}])P\s*[:=]?\s*(\d+(?:[.,]\d+)?)/u, c: /(?:^|[^\
 const COMIDAS = [
   ["desayuno", /^\W*(desayuno|breakfast)\b/i],
   ["almuerzo", /^\W*(almuerzo|comida|lunch)\b/i],
-  ["merienda", /^\W*(merienda|colaci[oó]n|snacks?|tentempi[eé])\b/i],
+  ["merienda", /^\W*(merienda)\b/i],
   ["cena", /^\W*(cena|dinner)\b/i],
+  ["colacion", /^\W*(colaci[oó]n(es)?|snacks?|tentempi[eé]s?)\b/i],
 ];
 
 // Líneas que hablan de metas o de lo que queda, no de lo comido.
@@ -232,7 +233,7 @@ function completarAlimento(a) {
   const g = macro("g");
   const kcal = Math.round(a.kcal ?? (base && factor ? base.por100.kcal * factor : p * 4 + c * 4 + g * 9));
   return {
-    nombre: a.nombre,
+    nombre: a.marca ? `${a.nombre} (${a.marca})` : a.nombre,
     ...(a.medida ? { medida: a.medida } : {}),
     ...(gramos ? { gramos: Math.round(gramos * 10) / 10 } : {}),
     kcal, p, c, g,
@@ -250,6 +251,15 @@ export function leerAlimentos(lineas) {
       continue;
     }
     const d = datosDeLinea(linea);
+    // MyFitnessPal pone debajo del alimento la marca y la porción: "Festa, 1 porción". Es el mismo alimento.
+    const marca = actual && actual.medida === undefined && actual.gramos === undefined && actual.cantidad === undefined
+      && linea.match(/^\W{0,3}(\p{L}[\p{L}\d .&'’-]{1,38}),\s*\d/u);
+    if (marca) {
+      actual.marca = marca[1].trim();
+      for (const k of ["kcal", "p", "c", "g", "medida", "gramos", "cantidad"]) if (actual[k] === undefined && d[k] !== undefined) actual[k] = d[k];
+      agregadas += 1;
+      continue;
+    }
     if (esNombre(linea, d.nombre)) {
       actual = { ...d };
       hallados.push(actual);
@@ -310,7 +320,8 @@ export function ranurasDeFotos(guardadas, propias, tipos) {
   const hechas = [...guardadas, ...previas].filter(sinFoto).map((c) => ({ clave: c.id, id: c.id, tipo: c.tipo, privada: Boolean(c.privada) }));
   const ocupados = new Set([...guardadas, ...previas].map((c) => c.tipo));
   const faltantes = guardadas.some((g) => g.tipo === "resumen")
-    ? tipos.filter((t) => !ocupados.has(t)).map((t) => ({ clave: t, id: null, tipo: t, privada: false }))
+    // Las colaciones son opcionales: solo se pide su foto si se importó alguna.
+    ? tipos.filter((t) => t !== "colacion" && !ocupados.has(t)).map((t) => ({ clave: t, id: null, tipo: t, privada: false }))
     : [];
   return [...hechas, ...faltantes].sort((a, b) => tipos.indexOf(a.tipo) - tipos.indexOf(b.tipo));
 }

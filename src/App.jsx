@@ -8,6 +8,7 @@ import { DatosProvider, useDatos } from "./lib/datos.jsx";
 import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
+import InstalarApp from "./componentes/InstalarApp.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Grupo from "./vistas/Grupo.jsx";
@@ -322,6 +323,7 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
       </header>
 
+      <InstalarApp />
       <main className={vista === "grupo" && seccion === "chat" ? "contenido contenido-chat" : "contenido"} onTouchStart={alEmpezarToque} onTouchEnd={alTerminarToque}>
         <AnimatePresence initial={false}>
           <motion.div

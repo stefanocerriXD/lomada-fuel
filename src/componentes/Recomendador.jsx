@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChefHat, Clock, RefreshCw } from "lucide-react";
-import { TIPOS } from "../lib/macros.js";
+import { TIPOS_PRINCIPALES as TIPOS } from "../lib/macros.js";
 import { comidaSugerida, comoItems, macrosFaltantes, metasDelDia, queFalta, recomendar, textoCantidad } from "../lib/recomendar.js";
 import IconoComida from "./IconoComida.jsx";
 import { Hoja, vibrar } from "./Base.jsx";

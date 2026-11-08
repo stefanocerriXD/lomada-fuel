@@ -80,7 +80,7 @@ export default function Imagenes({ onCargar, avisar }) {
                 <button className="grupo-fotos-cabecera" onClick={() => alternar(g.id)} aria-expanded={abierto} disabled={vacio}>
                   <span className="grupo-fotos-icono"><IconoComida tipo={g.id} size={21} /></span>
                   <span className="grupo-fotos-datos">
-                    <strong>{g.texto}</strong>
+                    <strong>{g.plural || g.texto}</strong>
                     <small>{vacio ? "Sin fotos" : `${g.lista.length} ${g.lista.length === 1 ? "foto" : "fotos"}`}</small>
                   </span>
                   {!abierto && !vacio && (

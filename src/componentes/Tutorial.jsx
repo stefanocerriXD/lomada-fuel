@@ -4,7 +4,8 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo subo una comida?", "Tocá el botón + o el + de la comida en Resumen. Escribí qué comiste, elegí el resultado y tocá Publicar. La foto es opcional."],
       ["¿Cómo cambio la medida de un alimento?", "Después de agregarlo, usá los botones − y + o escribí la cantidad. En el desplegable elegís unidad, cucharada, porción o gramos, y las calorías se recalculan solas."],
-      ["¿Puedo repetir una comida completa de otro día?", "Sí. Al tocar el + de desayuno, almuerzo, merienda o cena aparecen tus comidas anteriores de ese momento. Tocá una y se cargan todos sus alimentos con las mismas cantidades; después podés cambiar lo que quieras."],
+      ["¿Qué son las colaciones?", "Lo que comés entre comidas: una fruta, una barrita, un puñado de frutos secos. Tocá el + de Colaciones y cargá cada una cuando la comas; podés cargar varias en el mismo día y todas suman al total."],
+      ["¿Puedo repetir una comida completa de otro día?", "Sí. Al tocar el + de desayuno, almuerzo, merienda, cena o colaciones aparecen tus comidas anteriores de ese momento. Tocá una y se cargan todos sus alimentos con las mismas cantidades; después podés cambiar lo que quieras."],
       ["¿Puedo repetir algo que ya comí?", "Sí. Al abrir Subir comida aparecen tus recientes y los que más usás. Al buscar, primero salen tus alimentos con la última cantidad que usaste."],
       ["No encuentro un producto. ¿Qué hago?", "Tocá Buscar en productos de supermercado, escaneá el código de barras con el botón de al lado, o usá el lápiz para cargarlo a mano."],
       ["¿Cómo edito o borro algo que cargué?", "Tocá tu inicial arriba a la derecha, entrá a Días, abrí el día y tocá el lápiz de la comida. Para borrarla, entrá a Más opciones."],
@@ -28,13 +29,13 @@ const SECCIONES = [
   {
     titulo: "Grupo",
     preguntas: [
-      ["¿Dónde están las fotos del grupo?", "En Grupo, arriba, elegí Imágenes. Están separadas por desayuno, almuerzo, merienda y cena. Tocá una comida para abrirla."],
+      ["¿Dónde están las fotos del grupo?", "En Grupo, arriba, elegí Imágenes. Están separadas por desayuno, almuerzo, merienda, cena y colaciones. Tocá una comida para abrirla."],
       ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Retos y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
       ["¿Cómo veo otro día?", "En Imágenes, usá la tira de días o las flechas. Con las flechas podés ir tan atrás como quieras."],
       ["¿Cómo veo qué comió cada uno?", "Tocá Ver alimentos debajo de la foto: aparece cada alimento con su cantidad y sus macros."],
       ["¿Cómo respondo o reacciono a un mensaje?", "Para responder, deslizá el mensaje hacia la derecha. Para reaccionar o copiar, mantenelo apretado y soltá: se abren las opciones."],
-      ["¿Puedo mandar fotos, GIF o stickers?", "Sí. En el chat, el botón de la imagen manda una foto o un GIF de tu galería, y la carita abre los stickers."],
-      ["¿Cómo sé quién vio mi mensaje?", "Debajo de tu último mensaje aparece quién lo vio."],
+      ["¿Puedo mandar fotos, GIF o stickers?", "Sí. En el chat, el botón de la imagen manda fotos o GIF de tu galería, varias juntas si querés, y la carita abre los stickers."],
+      ["¿Cómo sé quién vio un mensaje?", "Debajo de cada mensaje aparece quién lo vio: cada persona queda en el último mensaje que leyó."],
       ["¿Puedo mandar audios?", "Sí. Con el campo vacío aparece el micrófono: tocalo para grabar y tocá enviar cuando termines, o el tacho para descartarlo. La primera vez el celular pide permiso."],
       ["¿Qué es \"está escribiendo\"?", "Mientras alguien escribe en el chat o arma una comida para publicar, lo ves arriba en vivo."],
       ["¿Cómo menciono a alguien?", "En el chat escribí @ y elegí a la persona. Le llega un aviso que dice que la mencionaste."],
@@ -105,7 +106,7 @@ const SECCIONES = [
     preguntas: [
       ["¿Qué ve el grupo de mí?", "Tu nombre, tu meta, tus comidas con fotos y macros, tu agua y tus logros. No ve tu peso, altura, edad, objetivo, favoritas ni datos de WHOOP."],
       ["¿Cómo pido una mejora?", "En Ajustes, en Mejoras, contá qué cambiarías y tocá Enviar pedido."],
-      ["¿Cómo la dejo como app en el celular?", "En iPhone: Safari, Compartir y Agregar a inicio. En Android: menú de Chrome y Agregar a la pantalla principal."],
+      ["¿Cómo la dejo como app en el celular?", "En iPhone: Safari, Compartir y Agregar a inicio. En Android: menú de Chrome y Agregar a la pantalla principal. Mientras la uses desde el navegador vas a ver un cartel arriba que te lo recuerda; desaparece cuando la abrís como app."],
     ],
   },
 ];
