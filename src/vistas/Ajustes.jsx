@@ -3,7 +3,7 @@ import Mejoras from "../componentes/Mejoras.jsx";
 import Tutorial from "../componentes/Tutorial.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Bell, BellOff, Check, KeyRound, LogOut, Monitor, Moon, RefreshCw, Sun, Target, Unplug, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChevronRight, HeartPulse, KeyRound, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Sprout, Sun, Target, Unplug, UserRound, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -15,6 +15,7 @@ import { Avatar } from "../componentes/Base.jsx";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
+  { id: "lomada", texto: "Lomada", icono: Sprout },
   { id: "auto", texto: "Automático", icono: Monitor },
   { id: "claro", texto: "Claro", icono: Sun },
   { id: "oscuro", texto: "Oscuro", icono: Moon },
@@ -28,6 +29,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
   const [tema, setTema] = useState(leerTema());
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const [seccion, setSeccion] = useState(null);
 
   const cambios = nombre.trim() !== yo.nombre || color !== yo.color || meta !== yo.meta_calorias;
 
@@ -51,117 +53,143 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
     guardarTema(nuevo);
   }
 
+  const SECCIONES = [
+    { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
+    { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
+    { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
+    { id: "salud", titulo: "Apple Salud", detalle: "Traer calorías y macros", icono: HeartPulse },
+    { id: "whoop", titulo: "WHOOP", detalle: "Recuperación, sueño y esfuerzo", icono: Watch },
+    { id: "apariencia", titulo: "Apariencia", detalle: "Lomada, claro u oscuro", icono: Palette },
+    { id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
+    { id: "mejoras", titulo: "Mejoras", detalle: "Pedí cambios para la app", icono: MessageSquarePlus },
+    { id: "cuenta", titulo: "Cuenta", detalle: "Contraseña y cerrar sesión", icono: KeyRound },
+  ];
+  const actual = SECCIONES.find((x) => x.id === seccion);
+
+  if (!actual) {
+    return (
+      <>
+        <header className="titulo-vista">
+          <div>
+            <p className="sobretitulo">Tu cuenta</p>
+            <h1>Ajustes</h1>
+          </div>
+        </header>
+        <nav className="menu-ajustes" aria-label="Secciones de ajustes">
+          {SECCIONES.map((x) => (
+            <button key={x.id} onClick={() => { setSeccion(x.id); scrollTo(0, 0); }}>
+              <span className="icono-ajuste"><x.icono size={19} /></span>
+              <span><strong>{x.titulo}</strong><small>{x.detalle}</small></span>
+              <ChevronRight className="chevron" size={19} aria-hidden="true" />
+            </button>
+          ))}
+        </nav>
+      </>
+    );
+  }
+
   return (
-    <>
-      <header className="titulo-vista">
-        <div>
-          <p className="sobretitulo">Tu cuenta</p>
-          <h1>Ajustes</h1>
-        </div>
+    <div className="ajustes-seccion">
+      <header className="volver-ajustes">
+        <button className="boton-icono" onClick={() => { setSeccion(null); scrollTo(0, 0); }} aria-label="Volver a ajustes"><ArrowLeft size={20} /></button>
+        <h1>{actual.titulo}</h1>
       </header>
 
-      <form className="ajustes" onSubmit={guardar}>
-        <section className="tarjeta ajuste">
-          <h2>Tu perfil</h2>
-          <div className="perfil-vista">
-            <motion.span key={color} initial={{ scale: 0.7 }} animate={{ scale: 1 }}>
-              <Avatar perfil={{ nombre, color }} tam={72} />
-            </motion.span>
-            <label>
-              <span>Nombre</span>
-              <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={30} required />
-            </label>
-          </div>
+      {seccion === "perfil" && (
+        <>
+          <form className="ajustes" onSubmit={guardar}>
+            <section className="tarjeta ajuste">
+              <div className="perfil-vista">
+                <motion.span key={color} initial={{ scale: 0.7 }} animate={{ scale: 1 }}>
+                  <Avatar perfil={{ nombre, color }} tam={72} />
+                </motion.span>
+                <label>
+                  <span>Nombre</span>
+                  <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={30} required />
+                </label>
+              </div>
 
-          <fieldset>
-            <legend>Tu color</legend>
-            <div className="opciones-color">
-              {COLORES.map((c) => (
-                <button type="button" key={c} style={{ background: c }} onClick={() => setColor(c)} aria-pressed={color === c} aria-label={`Color ${c}`}>
-                  {color === c && <Check size={17} color="#fff" strokeWidth={3} />}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        </section>
+              <fieldset>
+                <legend>Tu color</legend>
+                <div className="opciones-color">
+                  {COLORES.map((c) => (
+                    <button type="button" key={c} style={{ background: c }} onClick={() => setColor(c)} aria-pressed={color === c} aria-label={`Color ${c}`}>
+                      {color === c && <Check size={17} color="#fff" strokeWidth={3} />}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </section>
 
-        <section className="tarjeta ajuste">
-          <h2>Meta diaria</h2>
-          <label className="meta">
-            <span className="meta-valor"><strong>{meta.toLocaleString("es-AR")}</strong> kcal por día</span>
-            <input
-              type="range"
-              min="1200"
-              max="4500"
-              step="50"
-              value={meta}
-              onChange={(e) => setMeta(Number(e.target.value))}
-              aria-label="Meta diaria de calorías"
-            />
-          </label>
-        </section>
+            <section className="tarjeta ajuste con-titulo">
+              <h3 className="perfil-subtitulo">Meta diaria</h3>
+              <label className="meta">
+                <span className="meta-valor"><strong>{meta.toLocaleString("es-AR")}</strong> kcal por día</span>
+                <input type="range" min="1200" max="4500" step="50" value={meta} onChange={(e) => setMeta(Number(e.target.value))} aria-label="Meta diaria de calorías" />
+              </label>
+            </section>
 
-        {error && <p className="error" role="alert">{error}</p>}
-        {cambios && (
-          <motion.button className="boton boton-grande" type="submit" disabled={guardando} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-            {guardando ? "Guardando…" : "Guardar cambios"}
-          </motion.button>
-        )}
-      </form>
+            {error && <p className="error" role="alert">{error}</p>}
+            {cambios && (
+              <motion.button className="boton boton-grande" type="submit" disabled={guardando} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                {guardando ? "Guardando…" : "Guardar cambios"}
+              </motion.button>
+            )}
+          </form>
 
-      {salud !== undefined && (
-        <section className="tarjeta ajuste">
-          <h2>Tu cuerpo y objetivo</h2>
-          {salud ? (
-            <p className="ajuste-texto">
-              {Number(salud.altura_cm)} cm · {Number(salud.peso_kg).toLocaleString("es-AR")} kg · objetivo {Number(salud.peso_objetivo).toLocaleString("es-AR")} kg. Quemás unas {calcularPlan(salud).gasto.toLocaleString("es-AR")} kcal por día. Solo lo ves vos.
-            </p>
-          ) : (
-            <p className="ajuste-texto">Cargá tus medidas, tu actividad y tu objetivo para calcular cuánto quemás y tu meta diaria.</p>
+          {salud !== undefined && (
+            <section className="tarjeta ajuste con-titulo">
+              <h3 className="perfil-subtitulo">Tu cuerpo y objetivo</h3>
+              {salud ? (
+                <p className="ajuste-texto">
+                  {Number(salud.altura_cm)} cm · {Number(salud.peso_kg).toLocaleString("es-AR")} kg · objetivo {Number(salud.peso_objetivo).toLocaleString("es-AR")} kg. Quemás unas {calcularPlan(salud).gasto.toLocaleString("es-AR")} kcal por día. Solo lo ves vos.
+                </p>
+              ) : (
+                <p className="ajuste-texto">Cargá tus medidas, tu actividad y tu objetivo para calcular cuánto quemás y tu meta diaria.</p>
+              )}
+              <button className="boton boton-secundario" onClick={onEditarCuerpo}><Target size={17} /> {salud ? "Editar mi plan" : "Armar mi plan"}</button>
+            </section>
           )}
-          <button className="boton boton-secundario" onClick={onEditarCuerpo}><Target size={17} /> {salud ? "Editar mi plan" : "Armar mi plan"}</button>
+        </>
+      )}
+
+      {seccion === "notificaciones" && <Notificaciones avisar={avisar} />}
+      {seccion === "privacidad" && <Privacidad avisar={avisar} />}
+      {seccion === "salud" && <AppleSalud avisar={avisar} />}
+      {seccion === "whoop" && <ConexionWhoop avisar={avisar} />}
+      {seccion === "tutorial" && <Tutorial />}
+      {seccion === "mejoras" && <Mejoras avisar={avisar} />}
+
+      {seccion === "apariencia" && (
+        <section className="tarjeta ajuste">
+          <div className="opciones-tema" role="radiogroup" aria-label="Tema">
+            {TEMAS.map((t) => (
+              <button key={t.id} role="radio" aria-checked={tema === t.id} className={tema === t.id ? "activo" : ""} onClick={() => cambiarTema(t.id)}>
+                <t.icono size={18} /> {t.texto}
+              </button>
+            ))}
+          </div>
         </section>
       )}
 
-      <Privacidad avisar={avisar} />
-
-      <Notificaciones avisar={avisar} />
-
-      <AppleSalud avisar={avisar} />
-
-      <ConexionWhoop avisar={avisar} />
-
-      <Tutorial />
-
-      <Mejoras avisar={avisar} />
-
-      <section className="tarjeta ajuste">
-        <h2>Apariencia</h2>
-        <div className="opciones-tema" role="radiogroup" aria-label="Tema">
-          {TEMAS.map((t) => (
-            <button key={t.id} role="radio" aria-checked={tema === t.id} className={tema === t.id ? "activo" : ""} onClick={() => cambiarTema(t.id)}>
-              <t.icono size={18} /> {t.texto}
+      {seccion === "cuenta" && (
+        <>
+          <section className="tarjeta ajuste">
+            <p className="ajuste-texto">Usuario: <strong>{yo.usuario || yo.nombre}</strong><br />Mail de recuperación: {usuario.email}</p>
+            <Contrasena avisar={avisar} />
+            <button className="boton boton-secundario" onClick={() => supabase.auth.signOut()}>
+              <LogOut size={17} /> Cerrar sesión
             </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="tarjeta ajuste">
-        <h2>Datos de alimentos</h2>
-        <p className="ajuste-texto">
-          Los productos vienen de Open Food Facts, una base colaborativa; los alimentos genéricos, de USDA FoodData Central. Las comidas típicas son valores aproximados. Revisá siempre el envase si necesitás precisión.
-        </p>
-      </section>
-
-      <section className="tarjeta ajuste">
-        <h2>Cuenta</h2>
-        <p className="ajuste-texto">Usuario: <strong>{yo.usuario || yo.nombre}</strong><br />Mail de recuperación: {usuario.email}</p>
-        <Contrasena avisar={avisar} />
-        <button className="boton boton-secundario" onClick={() => supabase.auth.signOut()}>
-          <LogOut size={17} /> Cerrar sesión
-        </button>
-      </section>
-    </>
+          </section>
+          <section className="tarjeta ajuste con-titulo">
+            <h3 className="perfil-subtitulo">Datos de alimentos</h3>
+            <p className="ajuste-texto">
+              Los productos vienen de Open Food Facts, una base colaborativa; los alimentos genéricos, de USDA FoodData Central. Las comidas típicas son valores aproximados. Revisá siempre el envase si necesitás precisión.
+            </p>
+          </section>
+        </>
+      )}
+    </div>
   );
 }
 
