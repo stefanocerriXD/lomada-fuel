@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import { Bell, Bot, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
@@ -13,7 +13,8 @@ import IconoComida from "../componentes/IconoComida.jsx";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
-const TOQUE_LARGO_MS = 450;
+const TOQUE_LARGO_MS = 380;
+const DESLIZAR_PARA_RESPONDER = 60;
 const GIF_MAXIMO = 8 * 1024 * 1024;
 const REACCIONES = ["❤️", "😂", "🔥", "👏", "🤤", "🐷"];
 const STICKERS = ["🔥", "💪", "🥩", "🍖", "🍝", "🍕", "🍔", "🌮", "🥗", "⚽", "🏆", "😂", "🤤", "🐷", "👀", "💀"];
@@ -134,29 +135,40 @@ function CitaMensaje({ id }) {
   );
 }
 
-// Mantener apretado (o clic derecho) abre las acciones del mensaje.
+// Mantener apretado marca el mensaje; al soltar se abren las opciones. Así no se selecciona nada sin querer.
 function useToqueLargo(alAbrir) {
   const reloj = useRef(null);
   const inicio = useRef(null);
-  const cancelar = () => clearTimeout(reloj.current);
+  const [marcado, setMarcado] = useState(false);
+  const cancelar = () => {
+    clearTimeout(reloj.current);
+    inicio.current = null;
+    setMarcado(false);
+  };
   return {
-    onPointerDown(e) {
-      inicio.current = { x: e.clientX, y: e.clientY };
-      reloj.current = setTimeout(() => {
-        vibrar(15);
+    marcado,
+    eventos: {
+      onPointerDown(e) {
+        inicio.current = { x: e.clientX, y: e.clientY };
+        reloj.current = setTimeout(() => {
+          setMarcado(true);
+          vibrar(15);
+        }, TOQUE_LARGO_MS);
+      },
+      onPointerMove(e) {
+        if (inicio.current && Math.hypot(e.clientX - inicio.current.x, e.clientY - inicio.current.y) > 10) cancelar();
+      },
+      onPointerUp() {
+        const abrir = marcado;
+        cancelar();
+        if (abrir) alAbrir();
+      },
+      onPointerCancel: cancelar,
+      onContextMenu(e) {
+        e.preventDefault();
+        cancelar();
         alAbrir();
-      }, TOQUE_LARGO_MS);
-    },
-    onPointerMove(e) {
-      if (inicio.current && Math.hypot(e.clientX - inicio.current.x, e.clientY - inicio.current.y) > 10) cancelar();
-    },
-    onPointerUp: cancelar,
-    onPointerCancel: cancelar,
-    onPointerLeave: cancelar,
-    onContextMenu(e) {
-      e.preventDefault();
-      cancelar();
-      alAbrir();
+      },
     },
   };
 }
@@ -181,9 +193,13 @@ function Reacciones({ mensajeId }) {
   );
 }
 
-function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onZoom }) {
+function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onResponder, onZoom }) {
   const { perfiles, fotos, abrirPerfil } = useDatos();
-  const toque = useToqueLargo(() => onAcciones(m));
+  const { marcado, eventos } = useToqueLargo(() => onAcciones(m));
+  // Deslizar a la derecha responde, como en WhatsApp.
+  const x = useMotionValue(0);
+  const flecha = useTransform(x, [0, DESLIZAR_PARA_RESPONDER], [0, 1]);
+  const avisado = useRef(false);
   const perfil = perfiles[m.usuario_id];
   const foto = m.adjunto_path && fotos[m.adjunto_path];
   const soloSticker = m.sticker && !m.texto && !m.respuesta_mensaje && !m.respuesta_comida;
@@ -200,7 +216,27 @@ function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onZoom 
       >
         {!propio && (fin ? <button className="chat-avatar" onClick={() => abrirPerfil(m.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}><Avatar perfil={perfil} tam={30} /></button> : <span className="chat-hueco" />)}
         <div className="chat-columna">
-          <div className={soloSticker ? "burbuja burbuja-sticker" : "burbuja"} {...toque}>
+          <motion.span className="deslizar-responder" style={{ opacity: flecha, scale: flecha }} aria-hidden="true"><Reply size={18} /></motion.span>
+          <motion.div
+            className={`${soloSticker ? "burbuja burbuja-sticker" : "burbuja"}${marcado ? " marcada" : ""}`}
+            {...eventos}
+            drag="x"
+            dragDirectionLock
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={{ left: 0, right: 0.55 }}
+            dragSnapToOrigin
+            style={{ x }}
+            onDrag={(_, gesto) => {
+              if (gesto.offset.x > DESLIZAR_PARA_RESPONDER && !avisado.current) {
+                avisado.current = true;
+                vibrar(10);
+              }
+            }}
+            onDragEnd={(_, gesto) => {
+              avisado.current = false;
+              if (gesto.offset.x > DESLIZAR_PARA_RESPONDER) onResponder(m);
+            }}
+          >
             {!propio && inicio && <strong>{perfil?.nombre || "Amigo"}</strong>}
             {m.respuesta_mensaje && <CitaMensaje id={m.respuesta_mensaje} />}
             {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={onZoom} />}
@@ -212,7 +248,7 @@ function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onZoom 
             {m.sticker && <span className="sticker" role="img" aria-label="Sticker">{m.sticker}</span>}
             {m.texto && <p><ConMenciones texto={m.texto} /></p>}
             <time dateTime={m.creado_en}>{hora(m.creado_en)}</time>
-          </div>
+          </motion.div>
           <Reacciones mensajeId={m.id} />
           {visto && <p className="visto">{visto}</p>}
         </div>
@@ -431,6 +467,7 @@ export default function Chat({ avisar }) {
               separador={separador}
               visto={m.id === ultimoPropio?.id ? textoVisto : ""}
               onAcciones={setAcciones}
+              onResponder={responderMensaje}
               onZoom={setZoom}
             />
           );

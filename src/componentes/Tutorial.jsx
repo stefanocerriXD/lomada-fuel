@@ -31,7 +31,7 @@ const SECCIONES = [
       ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Retos y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
       ["¿Cómo veo otro día?", "En Imágenes, usá la tira de días o las flechas. Con las flechas podés ir tan atrás como quieras."],
       ["¿Cómo veo qué comió cada uno?", "Tocá Ver alimentos debajo de la foto: aparece cada alimento con su cantidad y sus macros."],
-      ["¿Cómo respondo o reacciono a un mensaje?", "Mantené apretado el mensaje: arriba elegís la reacción y abajo Responder o Copiar."],
+      ["¿Cómo respondo o reacciono a un mensaje?", "Para responder, deslizá el mensaje hacia la derecha. Para reaccionar o copiar, mantenelo apretado y soltá: se abren las opciones."],
       ["¿Puedo mandar fotos, GIF o stickers?", "Sí. En el chat, el botón de la imagen manda una foto o un GIF de tu galería, y la carita abre los stickers."],
       ["¿Cómo sé quién vio mi mensaje?", "Debajo de tu último mensaje aparece quién lo vio."],
       ["¿Cómo menciono a alguien?", "En el chat escribí @ y elegí a la persona. Le llega un aviso que dice que la mencionaste."],
@@ -70,8 +70,28 @@ const SECCIONES = [
   {
     titulo: "Apple Salud y WHOOP",
     preguntas: [
-      ["¿Cómo traigo lo que tengo en Apple Salud?", "En Ajustes, en Apple Salud: creá tu llave, instalá el Atajo y pegala en el campo token del Atajo. Después dejalo automático todas las noches."],
-      ["¿Cada cuánto se actualiza lo de Salud?", "Cada vez que corre el Atajo. Dejá automatizaciones al cerrar la app donde cargás tus comidas y en varios horarios: corren solas en segundo plano."],
+      ["¿Qué necesito para conectar Apple Salud?", "Un iPhone y que tus comidas lleguen a la app Salud, por ejemplo desde MyFitnessPal u otra app que escriba en Salud. Si cargás todo directo en Lomada Fuel, no hace falta conectar nada."],
+      ["¿Cómo conecto Apple Salud? (paso a paso)", [
+        "En Lomada Fuel, entrá a Ajustes y bajá hasta Apple Salud. Tocá Crear mi llave: se copia sola. Es personal, no la compartas.",
+        "En el mismo lugar tocá Instalar Atajo. Se abre la app Atajos: tocá Agregar atajo.",
+        "En Atajos, tocá el atajo Lomada fuel para abrirlo. Bajá hasta Obtener contenido de URL y buscá la fila token. Tocá el lado derecho, que está vacío, y pegá tu llave. Tocá OK arriba.",
+        "Probalo una vez a mano: tocá ▶ abajo. La primera vez te pide permiso para leer Salud: aceptá. Tiene que aparecer un texto que dice \"ok\": true.",
+        "Fijate en Resumen de Lomada Fuel: aparece Resumen de Apple Salud con tus calorías de hoy.",
+        "Dejalo automático: en Atajos, tocá Automatización abajo y después +. Elegí App, tocá Elegir y marcá la app donde cargás tus comidas (o Salud). Marcá Se cierra y desmarcá Se abre. Elegí Ejecutar inmediatamente, tocá Siguiente y elegí Lomada fuel.",
+        "Si querés, sumá otra automatización con Hora del día (por ejemplo 23:30, Diariamente, Ejecutar inmediatamente) para cerrar el día aunque no abras tu app.",
+      ]],
+      ["¿Cómo funciona una vez conectado?", [
+        "Cada vez que cerrás tu app de comidas, el Atajo corre solo en segundo plano y manda las calorías y los macros de hoy. No te saca de ninguna app.",
+        "En Resumen aparece como Resumen de Apple Salud. Si se actualiza varias veces en el día, reemplaza el dato anterior: no lo suma.",
+        "Por defecto el total del día es el de Salud, así no cuenta doble con lo que cargues en Lomada Fuel. Lo podés cambiar en Ajustes, en Apple Salud.",
+        "El grupo ve tu total en El día de cada uno, y cuenta para retos, logros y podios. No aparece en Imágenes ni en el chat porque no tiene foto.",
+      ]],
+      ["No se actualiza. ¿Qué reviso?", [
+        "Que el campo token del Atajo tenga tu llave. Si creaste otra llave, la anterior deja de servir: pegá la nueva.",
+        "Que hayas aceptado el permiso de Salud: corré el Atajo una vez a mano con ▶.",
+        "Que la automatización diga Ejecutar inmediatamente; si no, iPhone te pregunta y no corre solo.",
+        "Que tus comidas estén en la app Salud: abrí Salud, Explorar, Nutrición, y fijate en Ingesta calórica.",
+      ]],
       ["¿Por qué WHOOP no me pasa lo que comí?", "WHOOP no ofrece esos datos a otras apps. Solo entrega recuperación, sueño, esfuerzo y calorías quemadas. Lo que comés se toma de Apple Salud."],
       ["¿Se suma con lo que cargo en la app?", "No. Lo de Apple Salud y lo que cargás acá quedan guardados por separado, y por defecto el total del día es el de Salud. En Ajustes, en Apple Salud, podés elegir usar el valor mayor o sumar todo."],
       ["¿Trae cada alimento desde Apple Salud?", "No: Salud solo le pasa a la app los totales del día. Para tener cada alimento con su cantidad y macros, importá la captura o el texto de tu app de comidas."],
@@ -99,7 +119,9 @@ export default function Tutorial() {
             {s.preguntas.map(([pregunta, respuesta]) => (
               <details key={pregunta} className="tutorial-pregunta">
                 <summary>{pregunta}</summary>
-                <p>{respuesta}</p>
+                {Array.isArray(respuesta)
+                  ? <ol className="tutorial-pasos">{respuesta.map((paso) => <li key={paso}>{paso}</li>)}</ol>
+                  : <p>{respuesta}</p>}
               </details>
             ))}
           </div>

@@ -38,6 +38,8 @@ const GESTO_MS = 700;
 function seMueveDeCostado(elemento) {
   for (let el = elemento; el && el !== document.body; el = el.parentElement) {
     if (el.matches("input, textarea, select")) return true;
+    // Sobre un mensaje, deslizar es para responderlo.
+    if (el.matches(".burbuja")) return true;
     if (el.scrollWidth > el.clientWidth + 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowX)) return true;
   }
   return false;
