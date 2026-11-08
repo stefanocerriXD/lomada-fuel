@@ -32,6 +32,9 @@ export async function avisarGrupo(tipo, id, nombre) {
 
 export const URL_SALUD = `${window.location.origin}/api/salud`;
 
+// Enlace de iCloud del Atajo compartido, sin ninguna llave adentro.
+export const ATAJO_SALUD = "";
+
 const memoria = new Map();
 
 export async function buscarAlimentos(texto, signal) {

@@ -3,6 +3,7 @@ import { supabase } from "./supabase.js";
 import { accionWhoop } from "./api.js";
 import { haceDias } from "./fechas.js";
 import { cantidades } from "./medallas.js";
+import { configurarTotales } from "./macros.js";
 
 const Contexto = createContext(null);
 export const useDatos = () => useContext(Contexto);
@@ -52,7 +53,9 @@ export function DatosProvider({ usuario, children }) {
   const cargarPerfiles = useCallback(async () => {
     const { data, error } = await supabase.from("perfiles").select("*");
     if (error) throw error;
-    setPerfiles(Object.fromEntries(data.map((p) => [p.id, { ...AVATAR_BASE, ...p }])));
+    const mapa = Object.fromEntries(data.map((p) => [p.id, { ...AVATAR_BASE, ...p }]));
+    configurarTotales(mapa);
+    setPerfiles(mapa);
   }, []);
 
   const firmarFotos = useCallback(async (lista) => {

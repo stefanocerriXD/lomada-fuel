@@ -1016,6 +1016,28 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
   .lista-amigos > *, .integrantes > li, .medallas > li, .perfil-dias > li, .galeria > li, .grupo-fotos, .niveles-logro > li, .perfil-stats > li, .macros-faltan > li, .ranuras > li { animation: none; }
 }
 
+/* Chat con teclado: ocupa justo lo que se ve, sin que se mueva la página */
+:root[data-teclado="si"] .grupo-chat { position: fixed; left: 0; right: 0; top: var(--arriba-visible, 0px); z-index: 30; height: var(--alto-visible, 100dvh); max-width: 720px; margin: 0 auto; padding: 6px 16px 10px; background: var(--fondo); }
+:root[data-teclado="si"] .grupo-chat .grupo-barra { position: static; margin: 0; padding: 0 0 4px; }
+.chat-menciones { display: flex; flex-direction: column; flex: none; border-top: 1px solid var(--borde); }
+.chat-menciones button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 44px; padding: 4px 2px; font-weight: 600; text-align: left; }
+.mencion { font-weight: 700; color: var(--sobre-acento-suave); }
+.chat-fila.propia .mencion { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.mencion.mia { padding: 0 3px; border-radius: 4px; background: var(--acento-suave); color: var(--sobre-acento-suave); }
+.historial { display: flex; flex-direction: column; gap: 4px; }
+.titulo-lista { margin-top: 6px; color: var(--tinta-2); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.pasos-salud { display: flex; flex-direction: column; gap: 14px; counter-reset: paso; }
+.pasos-salud li { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-left: 34px; counter-increment: paso; }
+.pasos-salud li::before { content: counter(paso); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--acento); color: var(--sobre-acento); font-size: 0.8rem; font-weight: 800; }
+.pasos-salud span { color: var(--tinta-2); font-size: 0.86rem; line-height: 1.4; }
+.pasos-salud .dato-copiable { width: 100%; }
+.modo-total { display: flex; flex-direction: column; gap: 2px; margin-top: 16px; }
+.modo-total legend { margin-bottom: 6px; font-weight: 700; }
+.modo-total label { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--borde); cursor: pointer; }
+.modo-total input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--acento); flex: none; }
+.modo-total span { display: flex; flex-direction: column; }
+.modo-total small { color: var(--tinta-2); font-size: 0.8rem; }
+
 /* Apple Salud */
 .dato-copiable { display: flex; align-items: center; gap: 8px; }
 .dato-copiable code { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 11px; background: var(--superficie-2); font-size: 0.76rem; overflow-wrap: anywhere; }

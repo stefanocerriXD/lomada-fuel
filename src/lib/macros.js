@@ -17,20 +17,36 @@ const macrosDe = (c) => ({ kcal: Number(c.calorias) || 0, p: Number(c.proteinas)
 const CLAVES = ["kcal", "p", "c", "g"];
 const sumar = (a, b) => Object.fromEntries(CLAVES.map((k) => [k, a[k] + b[k]]));
 
-// Un total del día (Apple Salud o importado) y las comidas cargadas suelen ser lo mismo:
-// se usa el mayor de cada dato en vez de sumarlos. Nada de lo guardado se modifica.
+// Cómo combina cada persona el total del día (Apple Salud o importado) con lo cargado.
+// Por defecto manda el total del día. Nada de lo guardado se modifica.
+const MODOS = new Map();
+export function configurarTotales(perfiles) {
+  MODOS.clear();
+  Object.values(perfiles).forEach((p) => MODOS.set(p.id, p.modo_total || "salud"));
+}
+
+const combinar = (modo, cargado, total) => {
+  if (modo === "sumar") return cargado + total;
+  if (modo === "mayor") return Math.max(cargado, total);
+  return total;
+};
+
 export function sumarComidas(lista) {
   const dias = new Map();
   for (const c of lista) {
     const clave = `${c.usuario_id}|${c.fecha}`;
-    const dia = dias.get(clave) || { cargado: VACIO, total: VACIO };
-    if (c.tipo === "resumen") dia.total = sumar(dia.total, macrosDe(c));
+    const dia = dias.get(clave) || { cargado: VACIO, total: VACIO, conTotal: false, usuario: c.usuario_id };
+    if (c.tipo === "resumen") {
+      dia.total = sumar(dia.total, macrosDe(c));
+      dia.conTotal = true;
+    }
     else dia.cargado = sumar(dia.cargado, macrosDe(c));
     dias.set(clave, dia);
   }
   let total = VACIO;
-  for (const { cargado, total: delDia } of dias.values()) {
-    total = sumar(total, Object.fromEntries(CLAVES.map((k) => [k, Math.max(cargado[k], delDia[k])])));
+  for (const { cargado, total: delDia, conTotal, usuario } of dias.values()) {
+    const modo = MODOS.get(usuario) || "salud";
+    total = sumar(total, conTotal ? Object.fromEntries(CLAVES.map((k) => [k, combinar(modo, cargado[k], delDia[k])])) : cargado);
   }
   return total;
 }

@@ -15,6 +15,18 @@ const CLAVE_AVISO = "lomada-aviso-cerrado";
 
 // Los resúmenes del bot traen emojis guardados en la base.
 const sinEmojis = (texto) => texto.replace(/\p{Extended_Pictographic}\uFE0F?\s*/gu, "");
+const normal = (t) => String(t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const escapar = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function ConMenciones({ texto }) {
+  const { perfiles, yo } = useDatos();
+  const nombres = Object.values(perfiles).map((p) => p.nombre).filter(Boolean).sort((a, b) => b.length - a.length);
+  if (!texto.includes("@") || !nombres.length) return texto;
+  const partes = texto.split(new RegExp(`(@(?:${nombres.map(escapar).join("|")}))`, "gi"));
+  return partes.map((parte, i) => (i % 2
+    ? <b key={i} className={normal(parte) === normal(`@${yo.nombre}`) ? "mencion mia" : "mencion"}>{parte}</b>
+    : parte));
+}
 
 function AvisoNotificaciones({ avisar }) {
   const { usuario } = useDatos();
@@ -99,7 +111,8 @@ export default function Chat({ avisar }) {
   const [texto, setTexto] = useState("");
   const [error, setError] = useState("");
   const [zoom, setZoom] = useState(null);
-  const fondo = useRef(null);
+  const lista = useRef(null);
+  const [mencion, setMencion] = useState(null);
 
   const linea = mensajes.slice(-MAXIMO_EN_PANTALLA);
 
@@ -108,14 +121,40 @@ export default function Chat({ avisar }) {
   }, [respuesta]);
 
   useEffect(() => {
-    fondo.current?.scrollIntoView({ behavior: cargado ? "smooth" : "auto", block: "end" });
+    // Solo se mueve la lista: en el iPhone, mover la página desacomoda el teclado.
+    const el = lista.current;
+    el?.scrollTo({ top: el.scrollHeight, behavior: cargado ? "smooth" : "auto" });
   }, [linea.length, cargado]);
+
+  // "@" seguido de letras abre la lista de personas para mencionar.
+  function alEscribir(e) {
+    const valor = e.target.value;
+    setTexto(valor);
+    const antes = valor.slice(0, e.target.selectionStart ?? valor.length);
+    const hallado = antes.match(/(?:^|\s)@([\p{L}\d_.]*)$/u);
+    setMencion(hallado ? normal(hallado[1]) : null);
+  }
+
+  function mencionar(perfil) {
+    const el = campo.current;
+    const posicion = el?.selectionStart ?? texto.length;
+    const antes = texto.slice(0, posicion).replace(/@([\p{L}\d_.]*)$/u, `@${perfil.nombre} `);
+    setTexto(antes + texto.slice(posicion));
+    setMencion(null);
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(antes.length, antes.length);
+    });
+  }
+
+  const sugeridos = mencion === null ? [] : Object.values(perfiles).filter((p) => p.id !== usuario.id && normal(p.nombre).startsWith(mencion)).slice(0, 5);
 
   async function enviar(e) {
     e.preventDefault();
     const limpio = texto.trim();
     if (!limpio) return;
     setTexto("");
+    setMencion(null);
     setError("");
     const { data, error: err } = await supabase
       .from("mensajes")
@@ -137,7 +176,7 @@ export default function Chat({ avisar }) {
     <section className="chat">
       <AvisoNotificaciones avisar={avisar} />
 
-      <div className="chat-mensajes" role="log" aria-live="polite">
+      <div className="chat-mensajes" role="log" aria-live="polite" ref={lista}>
         {cargado && linea.length === 0 && (
           <Vacio icono={MessageCircle} titulo="Todavía no hay mensajes" texto="Mandá el primero." />
         )}
@@ -182,14 +221,13 @@ export default function Chat({ avisar }) {
                 <div className="burbuja">
                   {!propio && inicio && <strong>{perfil?.nombre || "Amigo"}</strong>}
                   {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={setZoom} />}
-                  <p>{m.texto}</p>
+                  <p><ConMenciones texto={m.texto} /></p>
                   <time dateTime={m.creado_en}>{hora(m.creado_en)}</time>
                 </div>
               </motion.div>
             </div>
           );
         })}
-        <div ref={fondo} />
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
@@ -200,8 +238,19 @@ export default function Chat({ avisar }) {
           <button className="boton-icono chico" onClick={() => responder(null)} aria-label="Cancelar respuesta"><X size={16} /></button>
         </div>
       )}
+      {sugeridos.length > 0 && (
+        <ul className="chat-menciones" role="listbox" aria-label="Mencionar a">
+          {sugeridos.map((p) => (
+            <li key={p.id}>
+              <button type="button" role="option" aria-selected="false" onMouseDown={(e) => e.preventDefault()} onClick={() => mencionar(p)}>
+                <Avatar perfil={p} tam={28} /> {p.nombre}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <form className="chat-enviar" onSubmit={enviar}>
-        <input ref={campo} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respuesta ? "Escribí tu respuesta…" : "Escribí algo…"} aria-label="Mensaje" maxLength={1000} />
+        <input ref={campo} value={texto} onChange={alEscribir} placeholder={respuesta ? "Escribí tu respuesta…" : "Escribí algo…"} aria-label="Mensaje" maxLength={1000} />
         <motion.button className="boton-enviar" type="submit" disabled={!texto.trim()} whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} aria-label="Enviar">
           <SendHorizontal size={20} />
         </motion.button>

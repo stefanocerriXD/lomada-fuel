@@ -204,6 +204,7 @@ function Principal({ recuperando, onRecuperado }) {
     const esTexto = (el) => el?.matches?.('input:not([type="range"]):not([type="checkbox"]):not([type="file"]), textarea');
     const medir = () => {
       raiz.style.setProperty("--alto-visible", `${visor?.height || window.innerHeight}px`);
+      raiz.style.setProperty("--arriba-visible", `${visor?.offsetTop || 0}px`);
       // Un campo que desaparece abierto no siempre avisa que perdió el foco.
       if (raiz.dataset.teclado && !esTexto(document.activeElement)) delete raiz.dataset.teclado;
     };
@@ -224,11 +225,13 @@ function Principal({ recuperando, onRecuperado }) {
     };
     medir();
     visor?.addEventListener("resize", medir);
+    visor?.addEventListener("scroll", medir);
     document.addEventListener("focusin", alEnfocar);
     document.addEventListener("focusout", alSalir);
     return () => {
       clearTimeout(salida);
       visor?.removeEventListener("resize", medir);
+      visor?.removeEventListener("scroll", medir);
       document.removeEventListener("focusin", alEnfocar);
       document.removeEventListener("focusout", alSalir);
     };

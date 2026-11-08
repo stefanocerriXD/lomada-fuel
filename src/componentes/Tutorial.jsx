@@ -4,6 +4,7 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo subo una comida?", "Tocá el botón + o el + de la comida en Resumen. Escribí qué comiste, elegí el resultado y tocá Publicar. La foto es opcional."],
       ["¿Cómo cambio la medida de un alimento?", "Después de agregarlo, usá los botones − y + o escribí la cantidad. En el desplegable elegís unidad, cucharada, porción o gramos, y las calorías se recalculan solas."],
+      ["¿Puedo repetir algo que ya comí?", "Sí. Al abrir Subir comida aparecen tus recientes y los que más usás. Al buscar, primero salen tus alimentos con la última cantidad que usaste."],
       ["No encuentro un producto. ¿Qué hago?", "Tocá Buscar en productos de supermercado, escaneá el código de barras con el botón de al lado, o usá el lápiz para cargarlo a mano."],
       ["¿Cómo edito o borro algo que cargué?", "Tocá tu inicial arriba a la derecha, entrá a Días, abrí el día y tocá el lápiz de la comida. Para borrarla, entrá a Más opciones."],
       ["¿Puedo subir una comida sin que la vea el grupo?", "Sí. Antes de publicar, abrí Más opciones y activá Solo para mí. Si querés que todas sean así, cambialo en Ajustes, en Privacidad."],
@@ -30,6 +31,7 @@ const SECCIONES = [
       ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Retos y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
       ["¿Cómo veo otro día?", "En Imágenes, usá la tira de días o las flechas. Con las flechas podés ir tan atrás como quieras."],
       ["¿Cómo veo qué comió cada uno?", "Tocá Ver alimentos debajo de la foto: aparece cada alimento con su cantidad y sus macros."],
+      ["¿Cómo menciono a alguien?", "En el chat escribí @ y elegí a la persona. Le llega un aviso que dice que la mencionaste."],
       ["¿Cómo respondo una foto?", "Tocá Responder en el chat, debajo de la foto o al abrirla. Te lleva al chat con la foto citada: escribí y enviá."],
       ["¿Cómo entro al perfil de alguien?", "Tocá su nombre o su inicial, o el botón de personas al lado de Chat e Imágenes. Ahí están sus estadísticas, días, fotos y logros."],
     ],
@@ -65,9 +67,10 @@ const SECCIONES = [
   {
     titulo: "Apple Salud y WHOOP",
     preguntas: [
-      ["¿Cómo traigo lo que tengo en Apple Salud?", "Conectalo en Ajustes, en Apple Salud. Un Atajo del iPhone manda tus calorías y macros de cada día."],
+      ["¿Cómo traigo lo que tengo en Apple Salud?", "En Ajustes, en Apple Salud: creá tu llave, instalá el Atajo y pegala cuando la pida. Después dejalo automático todas las noches."],
       ["¿Por qué WHOOP no me pasa lo que comí?", "WHOOP no ofrece esos datos a otras apps. Solo entrega recuperación, sueño, esfuerzo y calorías quemadas. Lo que comés se toma de Apple Salud."],
-      ["¿Se suma con lo que cargo en la app?", "No. Lo de Apple Salud y lo que cargás acá quedan guardados por separado. Para el total del día se usa el valor mayor de cada dato, así no cuenta doble."],
+      ["¿Se suma con lo que cargo en la app?", "No. Lo de Apple Salud y lo que cargás acá quedan guardados por separado, y por defecto el total del día es el de Salud. En Ajustes, en Apple Salud, podés elegir usar el valor mayor o sumar todo."],
+      ["¿Trae cada alimento desde Apple Salud?", "No: Salud solo le pasa a la app los totales del día. Para tener cada alimento con su cantidad y macros, importá la captura o el texto de tu app de comidas."],
     ],
   },
   {

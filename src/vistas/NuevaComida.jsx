@@ -6,6 +6,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
+import { alimentosUsados, buscarEnHistorial } from "../lib/historial.js";
 import { fechaLocal, tipoSegunHora } from "../lib/fechas.js";
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
@@ -28,7 +29,7 @@ export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia 
 }
 
 function Formulario({ carga, onGuardar, onImportarDia }) {
-  const { usuario, yo, comidas, fotos, cargarComidas, extras } = useDatos();
+  const { usuario, yo, comidas, comidasLogros, fotos, cargarComidas, extras } = useDatos();
   const original = carga.comida;
 
   const [tipo, setTipo] = useState(original?.tipo || carga.tipo || tipoSegunHora());
@@ -55,20 +56,13 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   const calculado = useMemo(() => sumarItems(items), [items]);
   const total = ajuste ? { kcal: Number(ajuste.kcal) || 0, p: Number(ajuste.p) || 0, c: Number(ajuste.c) || 0, g: Number(ajuste.g) || 0 } : calculado;
 
-  const recientes = useMemo(() => {
-    const vistos = new Map();
-    for (const c of comidas) {
-      if (c.usuario_id !== usuario.id) continue;
-      for (const a of c.alimentos || []) if (a.por100 && !vistos.has(a.nombre)) vistos.set(a.nombre, a);
-      if (vistos.size >= 5) break;
-    }
-    return [...vistos.values()].slice(0, 5);
-  }, [comidas, usuario.id]);
+  const historial = useMemo(() => alimentosUsados(comidasLogros || comidas, usuario.id), [comidasLogros, comidas, usuario.id]);
 
   useEffect(() => () => { if (vistaFoto?.startsWith("blob:")) URL.revokeObjectURL(vistaFoto); }, [vistaFoto]);
 
   function agregar(alimento) {
-    setItems((prev) => [...prev, { ...prepararItem(alimento), id: crypto.randomUUID() }]);
+    // Lo que viene sin valores por 100 g (importado o a mano) se repite tal cual.
+    setItems((prev) => [...prev, { ...(alimento.por100 ? prepararItem(alimento) : alimento), id: crypto.randomUUID() }]);
     setTexto("");
     setPanel(null);
     setImportado(null);
@@ -212,7 +206,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
       </div>
 
       {buscando ? (
-        <Resultados texto={texto} onElegir={agregar} />
+        <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
       ) : (
         <>
           {!original && !items.length && (
@@ -238,19 +232,41 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
             ))}
           </AnimatePresence>
 
-          {!items.length && !panel && (extras.favoritas.length > 0 || recientes.length > 0) && (
-            <ul className="resultados">
-              {extras.favoritas.slice(0, 4).map((f) => (
-                <li key={f.id}>
-                  <button className="favorita-chip" onClick={() => usarFavorita(f)}>
-                    <Star size={15} fill="currentColor" />
-                    <span className="resultado-datos"><strong>{f.nombre}</strong></span>
-                    <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
-                  </button>
-                </li>
-              ))}
-              {recientes.map((a) => <FilaResultado key={a.nombre} alimento={a} onElegir={agregar} />)}
-            </ul>
+          {!items.length && !panel && (extras.favoritas.length > 0 || historial.recientes.length > 0) && (
+            <div className="historial">
+              {extras.favoritas.length > 0 && (
+                <>
+                  <h3 className="titulo-lista">Favoritas</h3>
+                  <ul className="resultados">
+                    {extras.favoritas.slice(0, 4).map((f) => (
+                      <li key={f.id}>
+                        <button className="favorita-chip" onClick={() => usarFavorita(f)}>
+                          <Star size={15} fill="currentColor" />
+                          <span className="resultado-datos"><strong>{f.nombre}</strong></span>
+                          <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {historial.recientes.length > 0 && (
+                <>
+                  <h3 className="titulo-lista">Recientes</h3>
+                  <ul className="resultados">
+                    {historial.recientes.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={agregar} />)}
+                  </ul>
+                </>
+              )}
+              {historial.frecuentes.length > 0 && (
+                <>
+                  <h3 className="titulo-lista">Los que más usás</h3>
+                  <ul className="resultados">
+                    {historial.frecuentes.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={agregar} />)}
+                  </ul>
+                </>
+              )}
+            </div>
           )}
 
           <div className="foto-y-nota">
@@ -334,6 +350,24 @@ function FilaItem({ item, onCambiar, onQuitar }) {
   );
 }
 
+function FilaHistorial({ uso, onElegir }) {
+  const { alimento, veces } = uso;
+  const item = alimento.por100 ? prepararItem(alimento) : alimento;
+  const m = macrosDeItem(item);
+  const medida = item.por100 ? (item.unidad?.g === 1 ? `${Math.round(item.gramos)} g` : `${item.cantidad} ${item.unidad?.nombre}`) : item.medida;
+  return (
+    <li>
+      <button onClick={() => onElegir(alimento)}>
+        <span className="resultado-datos">
+          <strong>{alimento.nombre}</strong>
+          <span>{medida ? `${medida} · ` : ""}{Math.round(m.kcal)} kcal{veces > 1 ? ` · ${veces} veces` : ""}</span>
+        </span>
+        <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
+      </button>
+    </li>
+  );
+}
+
 function FilaResultado({ alimento, onElegir }) {
   const inicial = prepararItem(alimento);
   const kcal = Math.round((alimento.por100.kcal * inicial.gramos) / 100);
@@ -351,7 +385,8 @@ function FilaResultado({ alimento, onElegir }) {
   );
 }
 
-function Resultados({ texto, onElegir }) {
+function Resultados({ texto, onElegir, propios }) {
+  const tuyos = useMemo(() => buscarEnHistorial(propios, texto), [propios, texto]);
   const locales = useMemo(() => buscarTipicos(texto), [texto]);
   const [productos, setProductos] = useState([]);
   const [buscando, setBuscando] = useState(false);
@@ -389,6 +424,15 @@ function Resultados({ texto, onElegir }) {
 
   return (
     <div className="buscador">
+      {tuyos.length > 0 && (
+        <>
+          <h3 className="titulo-lista">Tus alimentos</h3>
+          <ul className="resultados">
+            {tuyos.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={onElegir} />)}
+          </ul>
+        </>
+      )}
+
       {locales.length > 0 && (
         <ul className="resultados">
           {locales.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} />)}

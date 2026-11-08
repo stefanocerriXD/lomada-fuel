@@ -113,7 +113,7 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
     <div className="formulario">
       {aviso ? <p className="error" role="alert">{aviso}</p> : <p className="nota">Revisá que los números estén bien antes de guardar.</p>}
       {filas.some((f) => f.tipo === "resumen") && yaCargadas > 0 && (
-        <p className="nota">Este día ya tenés {yaCargadas.toLocaleString("es-AR")} kcal cargadas. No se suman: se usa el total mayor.</p>
+        <p className="nota">Este día ya tenés {yaCargadas.toLocaleString("es-AR")} kcal cargadas. No se suman: por defecto manda el total importado. Lo cambiás en Ajustes, en Apple Salud.</p>
       )}
       {filas.map((f, i) => (
         <section key={i} className="tarjeta fila-importada">
