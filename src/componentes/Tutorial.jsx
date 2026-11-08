@@ -4,6 +4,7 @@ const SECCIONES = [
     preguntas: [
       ["¿Cómo subo una comida?", "Tocá el botón + o el + de la comida en Resumen. Escribí qué comiste, elegí el resultado y tocá Publicar. La foto es opcional."],
       ["¿Cómo cambio la medida de un alimento?", "Después de agregarlo, usá los botones − y + o escribí la cantidad. En el desplegable elegís unidad, cucharada, porción o gramos, y las calorías se recalculan solas."],
+      ["¿Puedo repetir una comida completa de otro día?", "Sí. Al tocar el + de desayuno, almuerzo, merienda o cena aparecen tus comidas anteriores de ese momento. Tocá una y se cargan todos sus alimentos con las mismas cantidades; después podés cambiar lo que quieras."],
       ["¿Puedo repetir algo que ya comí?", "Sí. Al abrir Subir comida aparecen tus recientes y los que más usás. Al buscar, primero salen tus alimentos con la última cantidad que usaste."],
       ["No encuentro un producto. ¿Qué hago?", "Tocá Buscar en productos de supermercado, escaneá el código de barras con el botón de al lado, o usá el lápiz para cargarlo a mano."],
       ["¿Cómo edito o borro algo que cargué?", "Tocá tu inicial arriba a la derecha, entrá a Días, abrí el día y tocá el lápiz de la comida. Para borrarla, entrá a Más opciones."],

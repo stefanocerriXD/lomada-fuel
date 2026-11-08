@@ -6,8 +6,8 @@ import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
-import { alimentosUsados, buscarEnHistorial } from "../lib/historial.js";
-import { fechaLocal, tipoSegunHora } from "../lib/fechas.js";
+import { alimentosUsados, buscarEnHistorial, combosDe } from "../lib/historial.js";
+import { fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
@@ -18,6 +18,7 @@ import Escaner from "./Escaner.jsx";
 
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
+const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", resumen: "días" };
 
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia }) {
   const editando = carga?.comida;
@@ -65,6 +66,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   const total = ajuste ? { kcal: Number(ajuste.kcal) || 0, p: Number(ajuste.p) || 0, c: Number(ajuste.c) || 0, g: Number(ajuste.g) || 0 } : calculado;
 
   const historial = useMemo(() => alimentosUsados(comidasLogros || comidas, usuario.id), [comidasLogros, comidas, usuario.id]);
+  const combos = useMemo(() => combosDe(comidasLogros || comidas, usuario.id, tipo), [comidasLogros, comidas, usuario.id, tipo]);
 
   useEffect(() => () => { if (vistaFoto?.startsWith("blob:")) URL.revokeObjectURL(vistaFoto); }, [vistaFoto]);
 
@@ -136,6 +138,14 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
     if (original.foto_path) await supabase.storage.from("fotos").remove([original.foto_path]);
     await cargarComidas();
     onGuardar("borrada");
+  }
+
+  // Repite una comida anterior completa, con sus cantidades.
+  function usarCombo(combo) {
+    setItems(combo.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() })));
+    setDescripcion((d) => d || combo.nombre);
+    setError("");
+    vibrar(10);
   }
 
   const cambiarItem = (id, nuevo) => setItems((prev) => prev.map((i) => (i.id === id ? nuevo : i)));
@@ -258,8 +268,26 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
             ))}
           </AnimatePresence>
 
-          {!items.length && !panel && (extras.favoritas.length > 0 || historial.recientes.length > 0) && (
+          {!items.length && !panel && (combos.length > 0 || extras.favoritas.length > 0 || historial.recientes.length > 0) && (
             <div className="historial">
+              {combos.length > 0 && (
+                <>
+                  <h3 className="titulo-lista">Tus {PLURALES[tipo]} anteriores</h3>
+                  <ul className="resultados">
+                    {combos.map((c) => (
+                      <li key={c.id}>
+                        <button onClick={() => usarCombo(c)}>
+                          <span className="resultado-datos">
+                            <strong>{c.nombre}</strong>
+                            <span>{nombreDia(c.fecha)} · {c.kcal.toLocaleString("es-AR")} kcal · {c.alimentos.length} {c.alimentos.length === 1 ? "alimento" : "alimentos"}</span>
+                          </span>
+                          <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
               {extras.favoritas.length > 0 && (
                 <>
                   <h3 className="titulo-lista">Favoritas</h3>

@@ -27,6 +27,25 @@ export function alimentosUsados(comidas, usuarioId) {
   return { todos: lista, recientes, frecuentes };
 }
 
+// Las comidas completas que cada uno ya cargó para ese momento del día, para repetirlas con un toque.
+export function combosDe(comidas, usuarioId, tipo, tope = 5) {
+  const vistos = new Set();
+  const combos = [];
+  const propias = comidas
+    .filter((c) => c.usuario_id === usuarioId && c.tipo === tipo)
+    .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1));
+  for (const c of propias) {
+    const alimentos = (c.alimentos || []).filter((a) => a.nombre && a.fuente !== "foto" && !GENERICOS.test(a.nombre));
+    if (!alimentos.length) continue;
+    const firma = alimentos.map((a) => normal(a.nombre)).sort().join("|");
+    if (vistos.has(firma)) continue;
+    vistos.add(firma);
+    combos.push({ id: c.id, fecha: c.fecha, nombre: c.descripcion || alimentos.map((a) => a.nombre).join(", "), kcal: Number(c.calorias) || 0, alimentos: alimentos.map(limpio) });
+    if (combos.length >= tope) break;
+  }
+  return combos;
+}
+
 export function buscarEnHistorial(lista, texto) {
   const partes = normal(texto).split(/\s+/).filter((p) => p.length > 1);
   if (!partes.length) return [];
