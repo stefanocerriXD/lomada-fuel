@@ -35,9 +35,8 @@ export const URL_SALUD = `${window.location.origin}/api/salud`;
 // Enlace de iCloud del Atajo compartido, sin ninguna llave adentro.
 export const ATAJO_SALUD = "https://www.icloud.com/shortcuts/cb157d1bd83242408043eb22360f3d7c";
 
-// El Atajo se tiene que llamar así para que el botón lo encuentre.
+// Nombre con el que se instala el Atajo compartido.
 export const NOMBRE_ATAJO = "Lomada fuel";
-export const CORRER_ATAJO = `shortcuts://run-shortcut?name=${encodeURIComponent(NOMBRE_ATAJO)}`;
 
 const memoria = new Map();
 

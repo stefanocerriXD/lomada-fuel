@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, HeartPulse, Moon, Plus, UserRound, Zap } from "lucide-react";
+import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
-import { CORRER_ATAJO } from "../lib/api.js";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
@@ -42,8 +41,6 @@ function ResumenDia({ onCargar, onImportar }) {
   const total = sumarComidas(mias);
   const restante = yo.meta_calorias - Math.round(total.kcal);
   const resumenDia = mias.find((c) => c.tipo === "resumen");
-  // Si alguna vez llegó algo de Apple Salud, se ofrece actualizarlo a mano.
-  const usaSalud = useMemo(() => comidas.some((c) => c.usuario_id === usuario.id && c.descripcion === "Resumen de Apple Salud"), [comidas, usuario.id]);
   const racha = calcularRacha(comidas.filter((c) => c.usuario_id === usuario.id).map((c) => c.fecha));
 
   const amigos = Object.values(perfiles)
@@ -119,12 +116,6 @@ function ResumenDia({ onCargar, onImportar }) {
           <ClipboardPaste size={22} />
           <span><strong>Importar el día</strong><small>Captura o texto</small></span>
         </motion.button>
-        {usaSalud && fecha === hoy && (
-          <motion.a className="tarjeta accion" whileTap={{ scale: 0.97 }} href={CORRER_ATAJO}>
-            <HeartPulse size={22} />
-            <span><strong>Actualizar Salud</strong><small>Trae lo de ahora</small></span>
-          </motion.a>
-        )}
       </div>
 
       <Habitos fecha={fecha} />
