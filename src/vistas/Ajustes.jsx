@@ -1,9 +1,10 @@
 import AppleSalud from "../componentes/AppleSalud.jsx";
 import Mejoras from "../componentes/Mejoras.jsx";
+import MisRecetas from "../componentes/MisRecetas.jsx";
 import Tutorial from "../componentes/Tutorial.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChevronRight, HeartPulse, KeyRound, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Sprout, Sun, Target, Unplug, UserRound, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Sprout, Sun, Target, Unplug, UserRound, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -62,6 +63,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
 
   const SECCIONES = [
     { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
+    { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
     { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
     { id: "salud", titulo: "Apple Salud", detalle: "Traer calorías y macros", icono: HeartPulse },
@@ -168,6 +170,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
       {seccion === "whoop" && <ConexionWhoop avisar={avisar} />}
       {seccion === "tutorial" && <Tutorial />}
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}
+      {seccion === "recetas" && <MisRecetas avisar={avisar} />}
 
       {seccion === "apariencia" && (
         <section className="tarjeta ajuste">

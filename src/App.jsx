@@ -256,7 +256,8 @@ function Principal({ recuperando, onRecuperado }) {
           const nivel = [...nuevas].reverse().find((c) => nombreDeCodigo(c));
           if (nivel) {
             setLogroNuevo(nivel);
-            avisarGrupo("medalla", nivel, nombreDeCodigo(nivel));
+            // El primer nivel de cada logro se festeja solo en tu celular; al grupo se le avisa desde el segundo.
+            if (Number(nivel.split(":")[1]) >= 2) avisarGrupo("medalla", nivel, nombreDeCodigo(nivel));
           }
           setFestejo((n) => n + 1);
           vibrar(30);

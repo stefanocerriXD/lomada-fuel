@@ -7,6 +7,7 @@ import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
 import { alimentosUsados, buscarEnHistorial, combosDe } from "../lib/historial.js";
+import { buscarRecetas, recetaComoAlimento } from "../lib/recetasPropias.js";
 import { fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
@@ -286,8 +287,16 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
             ))}
           </AnimatePresence>
 
-          {!items.length && !panel && (combos.length > 0 || extras.favoritas.length > 0 || historial.recientes.length > 0) && (
+          {!items.length && !panel && (combos.length > 0 || extras.favoritas.length > 0 || historial.recientes.length > 0 || extras.recetas?.length > 0) && (
             <div className="historial">
+              {extras.recetas?.length > 0 && (
+                <>
+                  <h3 className="titulo-lista">Tus recetas</h3>
+                  <ul className="resultados">
+                    {extras.recetas.slice(0, 4).map((r) => <FilaResultado key={r.id} alimento={recetaComoAlimento(r)} onElegir={agregar} />)}
+                  </ul>
+                </>
+              )}
               {combos.length > 0 && (
                 <>
                   <h3 className="titulo-lista">Tus {PLURALES[tipo]} anteriores</h3>
@@ -350,8 +359,11 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
           </div>
 
           {tipo !== "resumen" && otrosIntegrantes.length > 0 && (!original || !original.grupo_comida || original.grupo_comida === original.id) && (
-            <div className="comida-grupal">
-              <span className="comida-grupal-titulo"><Users size={16} /> ¿Comiste con alguien?</span>
+            <details className="comida-grupal" open={Boolean(original?.grupo_comida) || undefined}>
+              <summary className="comida-grupal-titulo">
+                <Users size={15} /> Comida grupal
+                {companeros.length > 0 && <small> · {companeros.length} {companeros.length === 1 ? "persona" : "personas"}</small>}
+              </summary>
               <div className="comida-grupal-lista" role="group" aria-label="Sumar integrantes a la comida">
                 {otrosIntegrantes.map((p) => {
                   const estado = estadoCompanero(p.id);
@@ -366,7 +378,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
                 })}
               </div>
               {companeros.length > 0 && <p className="nota">Les llega una solicitud. Cuando la acepten, la comida se suma a su día y cada uno puede ajustar su porción.</p>}
-            </div>
+            </details>
           )}
 
           <details className="mas-opciones">
@@ -428,7 +440,7 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
   );
 }
 
-function FilaItem({ item, onCambiar, onQuitar }) {
+export function FilaItem({ item, onCambiar, onQuitar }) {
   const m = macrosDeItem(item);
   return (
     <motion.div className="fila-item" layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
@@ -488,7 +500,9 @@ function FilaResultado({ alimento, onElegir }) {
   );
 }
 
-function Resultados({ texto, onElegir, propios }) {
+export function Resultados({ texto, onElegir, propios }) {
+  const { extras } = useDatos();
+  const recetas = useMemo(() => buscarRecetas(extras.recetas || [], texto).map(recetaComoAlimento), [extras.recetas, texto]);
   const tuyos = useMemo(() => buscarEnHistorial(propios, texto), [propios, texto]);
   const locales = useMemo(() => buscarTipicos(texto), [texto]);
   const [productos, setProductos] = useState([]);
@@ -496,7 +510,7 @@ function Resultados({ texto, onElegir, propios }) {
   const [pedidos, setPedidos] = useState(false);
   const [falla, setFalla] = useState(false);
   const limpio = texto.trim();
-  const automatico = locales.length === 0 && limpio.length >= 2;
+  const automatico = locales.length === 0 && recetas.length === 0 && limpio.length >= 2;
   const conMarcas = pedidos || automatico;
 
   useEffect(() => {
@@ -532,6 +546,15 @@ function Resultados({ texto, onElegir, propios }) {
           <h3 className="titulo-lista">Tus alimentos</h3>
           <ul className="resultados">
             {tuyos.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={onElegir} />)}
+          </ul>
+        </>
+      )}
+
+      {recetas.length > 0 && (
+        <>
+          <h3 className="titulo-lista">Tus recetas</h3>
+          <ul className="resultados">
+            {recetas.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} />)}
           </ul>
         </>
       )}

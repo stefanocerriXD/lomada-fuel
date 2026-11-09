@@ -1185,9 +1185,21 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* Cada persona con su color en el chat, oscurecido o aclarado para que se lea */
 .burbuja .autor { color: var(--acento); }
 
+/* Recetas propias */
+.editor-receta .gramos { max-width: 100%; }
+.resumen-receta { padding: 12px 14px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.88rem; line-height: 1.4; }
+.resumen-receta p { margin: 0; }
+.resumen-receta p + p { margin-top: 4px; }
+.lista-recetas { margin-top: 12px; }
+.lista-recetas button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; }
+
 /* Comidas grupales */
-.comida-grupal { display: flex; flex-direction: column; gap: 8px; }
-.comida-grupal-titulo { display: flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 700; color: var(--tinta-2); }
+.comida-grupal { display: flex; flex-direction: column; gap: 0; }
+.comida-grupal-titulo { display: flex; align-items: center; gap: 6px; width: fit-content; min-height: 36px; font-size: 0.84rem; font-weight: 650; color: var(--tinta-2); cursor: pointer; list-style: none; }
+.comida-grupal-titulo::-webkit-details-marker { display: none; }
+.comida-grupal-titulo::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform 0.2s; }
+.comida-grupal[open] > .comida-grupal-titulo::after { transform: rotate(225deg) translateY(-2px); }
+.comida-grupal[open] { gap: 8px; }
 .comida-grupal-lista { display: flex; flex-wrap: wrap; gap: 6px; }
 .persona-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 12px 4px 5px; border-radius: 999px; background: var(--superficie); color: var(--tinta); font-size: 0.86rem; font-weight: 650; }
 .persona-chip.activo { background: var(--acento); color: var(--sobre-acento); }

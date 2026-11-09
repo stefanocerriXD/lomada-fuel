@@ -42,6 +42,9 @@ function validar(kcal, p, c, g) {
   return { kcal: Math.round(kcal), p: macros[0], c: macros[1], g: macros[2] };
 }
 
+// La yerba, el café molido y el té en hebras traen los valores del producto seco: tomarlos no suma esas calorías.
+const SE_TOMA_SIN_CALORIAS = /\byerba\b|cafe (molido|en grano|torrado|tostado)|te en hebras/i;
+
 function desdeOFF(prod) {
   const n = prod.nutriments || {};
   const kj = numero(n.energy_100g);
@@ -51,6 +54,7 @@ function desdeOFF(prod) {
   // Algunos productos están cargados sin nombre pero con marca y valores completos.
   const nombre = (typeof prod.product_name === "string" && prod.product_name.trim()) || marca;
   if (!por100 || !nombre) return null;
+  if (SE_TOMA_SIN_CALORIAS.test(sinAcentos(nombre))) return null;
   const paises = [].concat(prod.countries_tags || []).join(" ");
   const argentino = paises.includes("argentina") || String(prod.code || "").startsWith("779");
   const porcion = numero(prod.serving_quantity);

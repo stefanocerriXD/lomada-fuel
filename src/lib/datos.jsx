@@ -212,11 +212,12 @@ export function DatosProvider({ usuario, children }) {
 
   const cargarExtras = useCallback(async () => {
     const desde = haceDias(VENTANA_DIAS);
-    const [desafios, favoritas, agua, medallas] = await Promise.all([
+    const [desafios, favoritas, agua, medallas, recetas] = await Promise.all([
       supabase.from("desafios").select("*").gte("fin", haceDias(VENTANA_DIAS)).order("inicio", { ascending: false }),
       supabase.from("favoritas").select("*").eq("usuario_id", usuario.id).order("creado_en", { ascending: false }),
       supabase.from("agua").select("*").gte("fecha", desde),
       supabase.from("medallas").select("*"),
+      supabase.from("recetas_propias").select("*").eq("usuario_id", usuario.id).order("nombre"),
     ]);
     if (desafios.error) return; // Las tablas todavía no existen.
     setExtras({
@@ -225,6 +226,8 @@ export function DatosProvider({ usuario, children }) {
       favoritas: favoritas.data || [],
       agua: agua.data || [],
       medallas: medallas.data || [],
+      // Si la tabla todavía no existe, no hay recetas.
+      recetas: recetas.error ? [] : recetas.data || [],
     });
   }, [usuario.id]);
 

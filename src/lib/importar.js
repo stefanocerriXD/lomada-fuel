@@ -203,6 +203,16 @@ function ordenarColumnas([kcal, a, b, c]) {
 const esNombre = (linea, nombre) =>
   /^\W{0,3}\p{L}/u.test(linea) && nombre.replace(/[^\p{L}]/gu, "").length >= 3 && !NO_ES_ALIMENTO.test(linea) && !ES_DATO.test(linea) && !IGNORAR.test(linea);
 
+// Un alimento de la lista que se llama así (no alcanza con que la palabra aparezca entre sus términos de búsqueda).
+const sinTildes = (t) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const esAlimentoConocido = (t) => buscarTipicos(t).some((a) => sinTildes(a.nombre).startsWith(sinTildes(t).replace(/e?s$/, "")));
+
+// Una o dos palabras sin números que no son un alimento de la lista: "Festa", "La Serenísima".
+const esMarcaSuelta = (linea) => {
+  const t = linea.trim();
+  return /^\p{Lu}[\p{L}'’.&-]*(\s\p{L}[\p{L}'’.&-]*)?$/u.test(t) && t.length <= 24 && !esAlimentoConocido(t) && !COMIDAS.some(([, re]) => re.test(t));
+};
+
 const conDatos = (a) => a.kcal !== undefined || a.p !== undefined || a.c !== undefined || a.g !== undefined || a.gramos !== undefined || a.cantidad !== undefined;
 
 // Varias apps muestran los alimentos en inglés y la lista propia está en español.
@@ -226,7 +236,7 @@ function completarAlimento(a) {
   const base = tieneMacros ? null : enLaLista(a.nombre);
   const gramos = a.gramos ?? (base?.porcion && a.cantidad ? a.cantidad * Number(base.porcion.g) : undefined);
   let factor = 0;
-  if (base) factor = a.kcal ? a.kcal / base.por100.kcal : (gramos || 0) / 100;
+  if (base) factor = a.kcal && base.por100.kcal ? a.kcal / base.por100.kcal : (gramos || 0) / 100;
   const macro = (k) => Math.round((a[k] ?? (base ? base.por100[k] * factor : 0)) * 10) / 10;
   const p = macro("p");
   const c = macro("c");
@@ -260,6 +270,11 @@ export function leerAlimentos(lineas) {
       agregadas += 1;
       continue;
     }
+    // "Queso cottage" y abajo solo "Festa": una palabra suelta que no es un alimento conocido es la marca del de arriba.
+    if (actual && !conDatos(actual) && !conDatos(d) && esMarcaSuelta(linea)) {
+      actual.marca = actual.marca ? `${actual.marca} ${linea.trim()}` : linea.trim();
+      continue;
+    }
     if (esNombre(linea, d.nombre)) {
       actual = { ...d };
       hallados.push(actual);
@@ -281,7 +296,7 @@ export function leerAlimentos(lineas) {
     .filter(({ alimento }) => alimento.kcal > 0);
   const conCaloriasPropias = new Set(completos.filter((x) => x.propias).map((x) => nombreDe(x.alimento)));
   const vistos = new Set();
-  return completos
+  const unicos = completos
     .filter(({ alimento, propias }) => {
       const nombre = nombreDe(alimento);
       if (!propias && conCaloriasPropias.has(nombre)) return false;
@@ -291,6 +306,18 @@ export function leerAlimentos(lineas) {
       return true;
     })
     .map(({ alimento }) => alimento);
+  return sinFilaDeTotal(unicos);
+}
+
+// Muchas apps muestran al final el total de la comida como si fuera otra fila: si una fila suma exactamente lo de las demás, es el total.
+function sinFilaDeTotal(lista) {
+  if (lista.length < 3) return lista;
+  const total = lista.reduce((t, a) => t + a.kcal, 0);
+  const i = lista.findIndex((a) => {
+    const resto = total - a.kcal;
+    return Math.abs(a.kcal - resto) <= Math.max(5, resto * 0.02);
+  });
+  return i >= 0 ? lista.filter((_, j) => j !== i) : lista;
 }
 
 function sumarAlimentos(alimentos) {
