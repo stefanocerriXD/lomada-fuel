@@ -10,6 +10,7 @@ import { Indicador, Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx"
 import DetalleLogro from "../componentes/DetalleLogro.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import NivelGeneral from "../componentes/NivelGeneral.jsx";
+import { inicioSemana } from "../lib/multas.js";
 import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 import Visor from "../componentes/Visor.jsx";
 
@@ -67,6 +68,7 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
     ...(avance && (propio || !SOLO_PROPIOS.has(l.codigo)) ? { cantidad: avance[l.codigo] || 0 } : {}),
   })), [avance, niveles, propio]);
 
+  const multasSemana = (extras.multas || []).filter((m) => m.usuario_id === perfil.id && m.fecha >= inicioSemana()).length;
   const abrirFoto = (comida) => setVisor({ lista: conFoto, inicio: Math.max(conFoto.findIndex((c) => c.id === comida.id), 0) });
 
   return (
@@ -76,6 +78,7 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
         <div>
           {perfil.usuario && <strong>@{perfil.usuario}</strong>}
           <small>Meta: {numero(perfil.meta_calorias)} kcal por día</small>
+          {multasSemana > 0 && <span className="sello-multas">{multasSemana} {multasSemana === 1 ? "multa" : "multas"} esta semana</span>}
           {propio && <button className="boton-texto" onClick={onEditar}><Pencil size={14} /> Editar perfil</button>}
         </div>
       </div>

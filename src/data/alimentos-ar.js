@@ -279,6 +279,7 @@ const FILAS = [
   ["Mango", 60, 0.8, 15, 0.4, "unidad 200"],
   ["Pomelo", 42, 0.8, 10.7, 0.1, "mitad 125"],
   ["Higo", 74, 0.8, 19, 0.3, "unidad 50"],
+  ["Maracuyá", 97, 2.2, 23, 0.7, "pulpa de 1 unidad 18|taza 235", "maracuya pasionaria"],
   ["Palta", 160, 2, 8.5, 15, "unidad 150|media palta 75|cucharada 15", "aguacate"],
   ["Limón", 29, 1.1, 9, 0.3, "unidad 60"],
   ["Dátiles", 280, 2.5, 75, 0.4, "porción de 3 unidades 24|unidad 8"],

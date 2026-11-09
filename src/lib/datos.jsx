@@ -212,12 +212,16 @@ export function DatosProvider({ usuario, children }) {
 
   const cargarExtras = useCallback(async () => {
     const desde = haceDias(VENTANA_DIAS);
-    const [desafios, favoritas, agua, medallas, recetas] = await Promise.all([
+    const [desafios, favoritas, agua, medallas, recetas, multas, comodines, ajustes, admin] = await Promise.all([
       supabase.from("desafios").select("*").gte("fin", haceDias(VENTANA_DIAS)).order("inicio", { ascending: false }),
       supabase.from("favoritas").select("*").eq("usuario_id", usuario.id).order("creado_en", { ascending: false }),
       supabase.from("agua").select("*").gte("fecha", desde),
       supabase.from("medallas").select("*"),
       supabase.from("recetas_propias").select("*").eq("usuario_id", usuario.id).order("nombre"),
+      supabase.from("multas").select("*").gte("fecha", haceDias(14)),
+      supabase.from("comodines").select("*").gte("fecha", haceDias(14)),
+      supabase.from("ajustes_grupo").select("*"),
+      supabase.from("administradores").select("usuario_id").eq("usuario_id", usuario.id).maybeSingle(),
     ]);
     if (desafios.error) return; // Las tablas todavía no existen.
     setExtras({
@@ -228,6 +232,12 @@ export function DatosProvider({ usuario, children }) {
       medallas: medallas.data || [],
       // Si la tabla todavía no existe, no hay recetas.
       recetas: recetas.error ? [] : recetas.data || [],
+      // Multas: si las tablas todavía no existen, la sección no aparece.
+      multasActivas: !multas.error,
+      multas: multas.error ? [] : multas.data || [],
+      comodines: comodines.error ? [] : comodines.data || [],
+      prenda: ajustes.error ? "" : ajustes.data?.find((a) => a.clave === "prenda")?.valor || "",
+      admin: !admin.error && Boolean(admin.data),
     });
   }, [usuario.id]);
 
@@ -326,7 +336,7 @@ export function DatosProvider({ usuario, children }) {
     canal = tabla(canal, "comidas", () => enTanda("comidas", cargarComidas));
     canal = tabla(canal, "reacciones", () => enTanda("reacciones", cargarReacciones));
     canal = tabla(canal, "perfiles", () => enTanda("perfiles", cargarPerfiles));
-    for (const nombre of ["medallas", "desafios", "agua"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
+    for (const nombre of ["medallas", "desafios", "agua", "multas", "comodines"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
     for (const nombre of ["reacciones_mensajes", "lecturas"]) canal = tabla(canal, nombre, () => enTanda("social", cargarSocial));
     canal = tabla(canal, "invitaciones_comida", () => enTanda("invitaciones", cargarInvitaciones));
     canal = tabla(canal, "mensajes", ({ eventType, new: nuevo }) => {

@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Zap } from "lucide-react";
+import { Activity, Camera, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
 import { Indicador, Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
 import InvitacionesComida from "../componentes/InvitacionesComida.jsx";
+import { FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
 import Habitos from "../componentes/Habitos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
@@ -33,11 +34,12 @@ export default function Resumen({ onCargar, onImportar, onEditarCuerpo, avisar }
 }
 
 function ResumenDia({ onCargar, onImportar, avisar }) {
-  const { usuario, yo, perfiles, comidas, fotos, whoop, salud } = useDatos();
+  const { usuario, yo, perfiles, comidas, fotos, whoop, salud, extras } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
 
   const delDia = useMemo(() => comidas.filter((c) => c.fecha === fecha), [comidas, fecha]);
+  const fotosHoy = fotosDelDia(comidas, usuario.id, hoy);
   const mias = delDia.filter((c) => c.usuario_id === usuario.id);
   const total = sumarComidas(mias);
   const restante = yo.meta_calorias - Math.round(total.kcal);
@@ -53,7 +55,14 @@ function ResumenDia({ onCargar, onImportar, avisar }) {
 
   return (
     <>
-      <p className="dia-titulo">{fecha === hoy ? `${saludo()}, ${yo.nombre}` : nombreDia(fecha)}</p>
+      <div className="dia-encabezado">
+        <p className="dia-titulo">{fecha === hoy ? `${saludo()}, ${yo.nombre}` : nombreDia(fecha)}</p>
+        {extras.multasActivas && fecha === hoy && (
+          <span className={fotosHoy >= FOTOS_POR_DIA ? "fotos-hoy completas" : "fotos-hoy"} title="Fotos de comidas de hoy">
+            {fotosHoy >= FOTOS_POR_DIA ? <Check size={14} /> : <Camera size={14} />} {Math.min(fotosHoy, FOTOS_POR_DIA)}/{FOTOS_POR_DIA} fotos
+          </span>
+        )}
+      </div>
 
       <InvitacionesComida avisar={avisar} />
 

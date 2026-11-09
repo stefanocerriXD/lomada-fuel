@@ -16,7 +16,7 @@ const COMIDAS = [
   ["almuerzo", /^\W*(almuerzo|comida|lunch)\b/i],
   ["merienda", /^\W*(merienda)\b/i],
   ["cena", /^\W*(cena|dinner)\b/i],
-  ["colacion", /^\W*(colaci[oó]n(es)?|snacks?|tentempi[eé]s?)\b/i],
+  ["colacion", /^\W*(colaci[oó]n(es)?|snacks?|tentempi[eé]s?|aperitivos?|refrigerios?)\b/i],
 ];
 
 // Líneas que hablan de metas o de lo que queda, no de lo comido.
@@ -147,6 +147,8 @@ const NUMERO_SUELTO = /\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?(?!\s*%)/g;
 
 // Lo que aparece en cualquier pantalla y no es un alimento.
 const NO_ES_ALIMENTO = /^\W*(total(es)?|resumen|summary|daily|hoy|today|ayer|yesterday|ma[nñ]ana|agregar|a[nñ]adir|add|buscar|search|diario|diary|fecha|date|consumidas|ingeridas|consumed|eaten|comidas|meals|nutrici[oó]n|nutrition|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/i;
+// "C 22g G 1g P 9g": los macros del encabezado de una comida, solo letras de macro y números.
+const SOLO_MACROS = /^\W*([CPGF]\s*\d+(?:[.,]\d+)?\s*g?\s*){2,4}\W*$/i;
 const ES_DATO = /^\W*(calor|prote|prot\b|carbo|carbs|hidrat|grasa|l[ií]pido|\bfat|kcal|cal\b|energ|fibra|fiber|sodio|sodium|az[uú]car|sugar|colesterol)/i;
 
 const UNA_DE = (texto, re) => {
@@ -255,15 +257,19 @@ export function leerAlimentos(lineas) {
   const hallados = [];
   let actual = null;
   let agregadas = 0;
+  let macrosDeLaComida = null;
   for (const linea of lineas) {
-    if (COMIDAS.some(([, re]) => re.test(linea)) || NO_ES_ALIMENTO.test(linea) || IGNORAR.test(linea)) {
+    // Los macros sueltos sin un alimento abierto son los del encabezado de la comida.
+    const deLaComida = !actual && SOLO_MACROS.test(linea);
+    if (deLaComida && !macrosDeLaComida) macrosDeLaComida = leerMacrosSueltos(linea);
+    if (COMIDAS.some(([, re]) => re.test(linea)) || NO_ES_ALIMENTO.test(linea) || IGNORAR.test(linea) || deLaComida) {
       actual = null;
       continue;
     }
     const d = datosDeLinea(linea);
     // MyFitnessPal pone debajo del alimento la marca y la porción: "Festa, 1 porción". Es el mismo alimento.
     const marca = actual && actual.medida === undefined && actual.gramos === undefined && actual.cantidad === undefined
-      && linea.match(/^\W{0,3}(\p{L}[\p{L}\d .&'’-]{1,38}),\s*\d/u);
+      && linea.match(/^\W{0,3}(\p{L}[\p{L}\d.&'’]*(?:\s[\p{L}\d.&'’]+){0,4})\s*[,•·+\-–—]\s*\d/u);
     if (marca) {
       actual.marca = marca[1].trim();
       for (const k of ["kcal", "p", "c", "g", "medida", "gramos", "cantidad"]) if (actual[k] === undefined && d[k] !== undefined) actual[k] = d[k];
@@ -306,7 +312,33 @@ export function leerAlimentos(lineas) {
       return true;
     })
     .map(({ alimento }) => alimento);
-  return sinFilaDeTotal(unicos);
+  return ajustarEstimados(sinFilaDeTotal(unicos), macrosDeLaComida);
+}
+
+function leerMacrosSueltos(linea) {
+  const valor = (letras) => {
+    const m = linea.match(new RegExp(`[${letras}]\\s*(\\d+(?:[.,]\\d+)?)`, "i"));
+    return m ? Number(m[1].replace(",", ".")) : undefined;
+  };
+  return { p: valor("P"), c: valor("C"), g: valor("GF") };
+}
+
+// Si la captura trae los macros de toda la comida, los alimentos estimados se corrigen para que la suma dé igual.
+function ajustarEstimados(lista, objetivo) {
+  if (!objetivo || !lista.some((a) => a.estimado)) return lista;
+  const factores = {};
+  for (const k of ["p", "c", "g"]) {
+    if (objetivo[k] === undefined) continue;
+    const propios = lista.filter((a) => !a.estimado).reduce((t, a) => t + a[k], 0);
+    const estimados = lista.filter((a) => a.estimado).reduce((t, a) => t + a[k], 0);
+    if (estimados > 0) factores[k] = Math.max(0, objetivo[k] - propios) / estimados;
+  }
+  return lista.map((a) => {
+    if (!a.estimado) return a;
+    const nuevo = { ...a };
+    for (const [k, f] of Object.entries(factores)) nuevo[k] = Math.round(a[k] * f * 10) / 10;
+    return nuevo;
+  });
 }
 
 // Muchas apps muestran al final el total de la comida como si fuera otra fila: si una fila suma exactamente lo de las demás, es el total.

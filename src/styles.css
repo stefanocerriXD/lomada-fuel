@@ -1185,6 +1185,26 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* Cada persona con su color en el chat, oscurecido o aclarado para que se lea */
 .burbuja .autor { color: var(--acento); }
 
+/* Multas */
+.dia-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fotos-hoy { display: inline-flex; flex: none; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--peligro) 14%, transparent); color: var(--peligro); font-size: 0.8rem; font-weight: 700; }
+.fotos-hoy.completas { background: var(--acento-suave); color: var(--sobre-acento-suave); }
+.multas { display: flex; flex-direction: column; gap: 12px; }
+.multas-hoy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.multas-hoy small, .multas-prenda > span { font-size: 0.8rem; color: var(--tinta-2); }
+.multas-tabla { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.multas-tabla li { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--borde); }
+.multas-tabla li:last-child { border-bottom: 0; }
+.multas-nombre { flex: 1; font-weight: 600; }
+.multas-nombre small { font-weight: 500; color: var(--tinta-2); }
+.multas-tabla strong { min-width: 28px; font-size: 1.1rem; text-align: right; color: var(--tinta-2); }
+.multas-tabla .con-multas strong { color: var(--peligro); }
+.multas-prenda { display: flex; flex-direction: column; gap: 4px; }
+.multas-prenda strong { display: flex; align-items: center; gap: 4px; }
+.multas-prenda-editar { display: flex; gap: 8px; }
+.multas-prenda-editar input { flex: 1; min-width: 0; }
+.sello-multas { align-self: flex-start; width: fit-content; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--peligro) 14%, transparent); color: var(--peligro); font-size: 0.76rem; font-weight: 700; }
+
 /* Recetas propias */
 .editor-receta .gramos { max-width: 100%; }
 .resumen-receta { padding: 12px 14px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.88rem; line-height: 1.4; }

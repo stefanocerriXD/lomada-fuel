@@ -10,6 +10,7 @@ import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
 import DetalleLogro from "../componentes/DetalleLogro.jsx";
 import NivelGeneral from "../componentes/NivelGeneral.jsx";
 import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
+import Multas from "../componentes/Multas.jsx";
 
 function DesafioIcono({ tipo, size = 18 }) {
   const Icono = tipo.icono;
@@ -43,6 +44,13 @@ export default function Retos({ avisar }) {
         </div>
         <button className="boton-chico" onClick={() => setCreando(true)}><Plus size={15} /> Nuevo</button>
       </header>
+
+      {extras.multasActivas && (
+        <section>
+          <h2 className="titulo-seccion">Multas de la semana</h2>
+          <Multas avisar={avisar} />
+        </section>
+      )}
 
       {activos.length === 0 ? (
         <Vacio icono={Swords} titulo="No hay desafíos en curso" texto="Armá uno y que gane el más constante.">
