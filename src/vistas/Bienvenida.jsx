@@ -4,11 +4,11 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal } from "../lib/fechas.js";
-import { calcularPlan, nivelActividad, RITMOS } from "../lib/cuerpo.js";
+import { CAMPOS_A_MEDIDA, calcularPlan, macrosAMedidaValidos, nivelActividad, objetivoDe, OBJETIVOS, PRIORIDADES, RITMOS, tieneMacrosAMedida } from "../lib/cuerpo.js";
 import { Hoja, vibrar } from "../componentes/Base.jsx";
 
 const PASOS = ["Sobre vos", "Tus medidas", "Tu actividad", "Tu objetivo", "Tu plan"];
-const VACIO = { sexo: "", anio_nacimiento: "", altura_cm: "", peso_kg: "", dias_actividad: 3, peso_objetivo: "", ritmo: 0.5 };
+const VACIO = { sexo: "", anio_nacimiento: "", altura_cm: "", peso_kg: "", dias_actividad: 3, peso_objetivo: "", ritmo: 0.5, objetivo: null, prioridad: "equilibrado", proteinas_propias: null, carbos_propios: null, grasas_propias: null };
 
 const anioActual = new Date().getFullYear();
 const entre = (v, min, max) => Number(v) >= min && Number(v) <= max;
@@ -23,7 +23,10 @@ export default function Bienvenida({ abierta, onCerrar, onGuardar }) {
 
 function Asistente({ onGuardar }) {
   const { usuario, salud, yo, cargarSalud, cargarPerfiles } = useDatos();
-  const [d, setD] = useState(() => (salud ? { ...VACIO, ...salud } : VACIO));
+  const [d, setD] = useState(() => {
+    const previo = salud ? { ...VACIO, ...salud } : VACIO;
+    return { ...previo, objetivo: salud ? objetivoDe(previo) : previo.objetivo || "mantener" };
+  });
   const [paso, setPaso] = useState(0);
   const [direccion, setDireccion] = useState(1);
   const [usarMeta, setUsarMeta] = useState(true);
@@ -31,15 +34,24 @@ function Asistente({ onGuardar }) {
   const [error, setError] = useState("");
 
   const cambiar = (campo) => (e) => setD({ ...d, [campo]: e.target.value });
-  const plan = useMemo(() => (paso === 4 ? calcularPlan(d) : null), [paso, d]);
+  // Para mantener, el peso objetivo es el de hoy.
+  const conPeso = (x) => (x.objetivo === "mantener" && !entre(x.peso_objetivo, 30, 300) ? { ...x, peso_objetivo: x.peso_kg } : x);
+  const plan = useMemo(() => (paso === 4 ? calcularPlan(conPeso(d)) : null), [paso, d]);
+  const aMedida = tieneMacrosAMedida(d);
 
   const valido = [
     d.sexo && entre(d.anio_nacimiento, 1930, Math.min(2015, anioActual)),
     entre(d.altura_cm, 120, 230) && entre(d.peso_kg, 30, 300),
     true,
-    entre(d.peso_objetivo, 30, 300),
-    true,
+    d.objetivo === "mantener" || entre(d.peso_objetivo, 30, 300),
+    !aMedida || macrosAMedidaValidos(d),
   ][paso];
+
+  // Arranca con los gramos del plan sugerido y cada uno los cambia como quiera.
+  function alternarAMedida(activo) {
+    if (!activo) return setD({ ...d, proteinas_propias: null, carbos_propios: null, grasas_propias: null });
+    setD({ ...d, proteinas_propias: plan.proteinas, carbos_propios: plan.carbohidratos, grasas_propias: plan.grasas });
+  }
 
   function mover(delta) {
     setDireccion(delta);
@@ -50,15 +62,19 @@ function Asistente({ onGuardar }) {
   async function guardar() {
     setGuardando(true);
     setError("");
-    const { actualizado_en, ...fila } = d;
+    const { actualizado_en, ...fila } = conPeso(d);
+    const gramos = (v) => (aMedida ? Math.round(Number(v)) : null);
     const datos = {
       ...fila,
+      proteinas_propias: gramos(d.proteinas_propias),
+      carbos_propios: gramos(d.carbos_propios),
+      grasas_propias: gramos(d.grasas_propias),
       usuario_id: usuario.id,
       anio_nacimiento: Number(d.anio_nacimiento),
       altura_cm: Number(d.altura_cm),
       peso_kg: Number(d.peso_kg),
       dias_actividad: Number(d.dias_actividad),
-      peso_objetivo: Number(d.peso_objetivo),
+      peso_objetivo: Number(fila.peso_objetivo),
       ritmo: Number(d.ritmo),
       actualizado_en: new Date().toISOString(),
     };
@@ -148,6 +164,19 @@ function Asistente({ onGuardar }) {
 
           {paso === 3 && (
             <>
+              <div className="campo">
+                <span id="etiqueta-objetivo">¿Qué querés lograr?</span>
+                <div className="opciones-objetivo" role="radiogroup" aria-labelledby="etiqueta-objetivo">
+                  {OBJETIVOS.map((o) => (
+                    <button key={o.id} role="radio" aria-checked={d.objetivo === o.id} className={d.objetivo === o.id ? "activo" : ""} onClick={() => setD({ ...d, objetivo: o.id })}>
+                      <strong>{o.texto}</strong>
+                      <small>{o.detalle}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {d.objetivo !== "mantener" && (
+              <>
               <label className="campo">
                 <span>Peso objetivo (kg)</span>
                 <input type="number" inputMode="decimal" value={d.peso_objetivo} onChange={cambiar("peso_objetivo")} placeholder={String(d.peso_kg)} />
@@ -163,6 +192,8 @@ function Asistente({ onGuardar }) {
                   ))}
                 </div>
               </div>
+              </>
+              )}
             </>
           )}
 
@@ -180,10 +211,43 @@ function Asistente({ onGuardar }) {
               <ul className="plan-datos">
                 <li><span>Quemás por día</span><strong>{plan.gasto.toLocaleString("es-AR")} kcal</strong></li>
                 <li><span>En reposo</span><strong>{plan.basal.toLocaleString("es-AR")} kcal</strong></li>
-                <li><span>Proteínas</span><strong>{plan.proteinas} g</strong></li>
-                <li><span>Carbos</span><strong>{plan.carbohidratos} g</strong></li>
-                <li><span>Grasas</span><strong>{plan.grasas} g</strong></li>
+                {!aMedida && (
+                  <>
+                    <li><span>Proteínas</span><strong>{plan.proteinas} g</strong></li>
+                    <li><span>Carbos</span><strong>{plan.carbohidratos} g</strong></li>
+                    <li><span>Grasas</span><strong>{plan.grasas} g</strong></li>
+                  </>
+                )}
               </ul>
+
+              {!aMedida && (
+                <div className="campo">
+                  <span id="etiqueta-prioridad">¿Qué priorizás?</span>
+                  <div className="opciones-dobles tres" role="radiogroup" aria-labelledby="etiqueta-prioridad">
+                    {PRIORIDADES.map((o) => (
+                      <button key={o.id} role="radio" aria-checked={plan.prioridad === o.id} className={plan.prioridad === o.id ? "activo" : ""} onClick={() => setD({ ...d, prioridad: o.id })}>
+                        {o.texto}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <label className="interruptor">
+                <input type="checkbox" checked={aMedida} onChange={(e) => alternarAMedida(e.target.checked)} />
+                <span>Poner mis macros a medida</span>
+              </label>
+              {aMedida && (
+                <div className="macros-a-medida">
+                  {CAMPOS_A_MEDIDA.map(({ campo, texto, min, max }) => (
+                    <label key={campo} className="campo">
+                      <span>{texto} (g)</span>
+                      <input type="number" inputMode="numeric" min={min} max={max} value={d[campo] ?? ""} onChange={cambiar(campo)} aria-invalid={!entre(d[campo], min, max)} />
+                    </label>
+                  ))}
+                  <p className="nota">Tu meta queda en {plan.calorias.toLocaleString("es-AR")} kcal: 4 kcal por gramo de proteína y de carbos, 9 por gramo de grasa.</p>
+                </div>
+              )}
               <label className="interruptor">
                 <input type="checkbox" checked={usarMeta} onChange={(e) => setUsarMeta(e.target.checked)} />
                 <span>Usar {plan.calorias.toLocaleString("es-AR")} kcal como mi meta</span>
@@ -203,7 +267,7 @@ function Asistente({ onGuardar }) {
         {paso < 4 ? (
           <button className="boton boton-grande" onClick={() => mover(1)} disabled={!valido}>Seguir <ArrowRight size={18} /></button>
         ) : (
-          <button className="boton boton-grande" onClick={guardar} disabled={guardando}>{guardando ? "Guardando…" : "Guardar mi plan"}</button>
+          <button className="boton boton-grande" onClick={guardar} disabled={guardando || !valido}>{guardando ? "Guardando…" : "Guardar mi plan"}</button>
         )}
       </div>
     </div>

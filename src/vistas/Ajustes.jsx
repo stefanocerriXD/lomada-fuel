@@ -8,7 +8,7 @@ import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
 import { accionWhoop } from "../lib/api.js";
-import { calcularPlan } from "../lib/cuerpo.js";
+import { calcularPlan, OBJETIVOS, PRIORIDADES } from "../lib/cuerpo.js";
 import { FormularioContrasena } from "../componentes/Contrasena.jsx";
 import { activarAvisos, avisosActivos, desactivarAvisos, estadoAvisos } from "../lib/avisos.js";
 import { Avatar } from "../componentes/Base.jsx";
@@ -20,6 +20,13 @@ const TEMAS = [
   { id: "claro", texto: "Claro", icono: Sun },
   { id: "oscuro", texto: "Oscuro", icono: Moon },
 ];
+
+function textoObjetivo(salud) {
+  const plan = calcularPlan(salud);
+  const objetivo = OBJETIVOS.find((o) => o.id === plan.objetivo).texto;
+  const detalle = plan.aMedida ? "macros a medida" : PRIORIDADES.find((o) => o.id === plan.prioridad).texto.toLowerCase();
+  return `${objetivo} · ${detalle} · P ${plan.proteinas} g · C ${plan.carbohidratos} g · G ${plan.grasas} g`;
+}
 
 export default function Ajustes({ avisar, onEditarCuerpo }) {
   const { usuario, yo, cargarPerfiles, salud } = useDatos();
@@ -142,6 +149,8 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
               <h3 className="perfil-subtitulo">Tu cuerpo y objetivo</h3>
               {salud ? (
                 <p className="ajuste-texto">
+                  <strong>{textoObjetivo(salud)}</strong>
+                  <br />
                   {Number(salud.altura_cm)} cm · {Number(salud.peso_kg).toLocaleString("es-AR")} kg · objetivo {Number(salud.peso_objetivo).toLocaleString("es-AR")} kg. Quemás unas {calcularPlan(salud).gasto.toLocaleString("es-AR")} kcal por día. Solo lo ves vos.
                 </p>
               ) : (

@@ -28,6 +28,10 @@ const esAudio = (ruta) => /\.(m4a|mp4|webm|ogg|aac)$/i.test(ruta || "");
 const resumenDe = (m) => m.texto || (m.sticker ? `Sticker ${m.sticker}` : esAudio(m.adjunto_path) ? "Audio" : m.adjunto_path ? "Foto" : "");
 const ESCRIBIENDO_MS = 4000;
 
+// Cada integrante con un color fijo y distinto en el chat; siempre el mismo para la misma persona.
+const COLORES_NOMBRES = 8;
+const colorDeNombre = (perfiles, id) => `var(--nombre-${(Object.keys(perfiles).sort().indexOf(id) % COLORES_NOMBRES) + 1})`;
+
 const listaDeNombres = (nombres) => (nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}` : nombres[0]);
 
 // "Nacho está escribiendo…" o "Juli está publicando su comida…", en vivo.
@@ -256,7 +260,7 @@ function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onRespo
               if (gesto.offset.x > DESLIZAR_PARA_RESPONDER) onResponder(m);
             }}
           >
-            {!propio && inicio && <strong className="autor" style={{ "--autor": perfil?.color }}>{perfil?.nombre || "Amigo"}</strong>}
+            {!propio && inicio && <strong className="autor" style={{ color: colorDeNombre(perfiles, m.usuario_id) }}>{perfil?.nombre || "Amigo"}</strong>}
             {m.respuesta_mensaje && <CitaMensaje id={m.respuesta_mensaje} />}
             {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={onZoom} />}
             {m.adjunto_path && esAudio(m.adjunto_path) && (

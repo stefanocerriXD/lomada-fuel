@@ -21,6 +21,42 @@ export const RITMOS = [
   { valor: 0.75, texto: "Rápido" },
 ];
 
+export const OBJETIVOS = [
+  { id: "definir", texto: "Definir", detalle: "Bajar grasa cuidando el músculo" },
+  { id: "mantener", texto: "Mantener", detalle: "Sostener tu peso" },
+  { id: "bulk", texto: "Bulkear", detalle: "Ganar masa muscular" },
+];
+
+export const PRIORIDADES = [
+  { id: "equilibrado", texto: "Equilibrado" },
+  { id: "proteina", texto: "Más proteína" },
+  { id: "carbos", texto: "Más carbos" },
+];
+
+// Gramos por kilo de peso según el objetivo: al definir y al bulkear sube la proteína.
+const GRAMOS_POR_KILO = { definir: { p: 2.2, g: 0.8 }, mantener: { p: 1.8, g: 0.9 }, bulk: { p: 2.2, g: 1 } };
+// Priorizar mueve calorías entre proteína y carbos; las grasas casi no cambian.
+const AJUSTE_PRIORIDAD = { equilibrado: { p: 0, g: 0 }, proteina: { p: 0.4, g: 0 }, carbos: { p: -0.4, g: -0.1 } };
+const MINIMOS_POR_KILO = { p: 1.6, g: 0.6 };
+export const CAMPOS_A_MEDIDA = [
+  { campo: "proteinas_propias", texto: "Proteínas", kcal: 4, min: 20, max: 500 },
+  { campo: "carbos_propios", texto: "Carbos", kcal: 4, min: 0, max: 1000 },
+  { campo: "grasas_propias", texto: "Grasas", kcal: 9, min: 10, max: 400 },
+];
+
+const definido = (v) => v !== null && v !== undefined && v !== "" && Number.isFinite(Number(v));
+export const tieneMacrosAMedida = (d) => CAMPOS_A_MEDIDA.every(({ campo }) => definido(d[campo]));
+export const macrosAMedidaValidos = (d) => CAMPOS_A_MEDIDA.every(({ campo, min, max }) => definido(d[campo]) && Number(d[campo]) >= min && Number(d[campo]) <= max);
+
+// El objetivo elegido; los planes viejos lo deducen del peso objetivo.
+export function objetivoDe(datos) {
+  if (OBJETIVOS.some((o) => o.id === datos.objetivo)) return datos.objetivo;
+  const diferencia = Number(datos.peso_objetivo) - Number(datos.peso_kg);
+  if (diferencia <= -MARGEN_OBJETIVO_KG) return "definir";
+  if (diferencia >= MARGEN_OBJETIVO_KG) return "bulk";
+  return "mantener";
+}
+
 export const nivelActividad = (dias) => NIVELES_ACTIVIDAD.find((n) => dias <= n.hasta);
 
 // Mifflin-St Jeor
@@ -35,31 +71,48 @@ export function calcularPlan(datos) {
   const diferencia = Number(datos.peso_objetivo) - Number(datos.peso_kg);
   const ritmo = Number(datos.ritmo);
 
-  let objetivo = "mantener";
+  const objetivo = objetivoDe(datos);
+  const prioridad = AJUSTE_PRIORIDAD[datos.prioridad] ? datos.prioridad : "equilibrado";
+  const redondear = (n) => Math.round(n / 10) * 10;
+
   let calorias = gasto;
-  if (diferencia <= -MARGEN_OBJETIVO_KG) {
-    objetivo = "bajar";
+  if (objetivo === "definir") {
     const recorte = Math.min((ritmo * KCAL_POR_KILO) / 7, gasto * RECORTE_MAXIMO);
     calorias = Math.max(gasto - recorte, basal, MINIMO_KCAL);
-  } else if (diferencia >= MARGEN_OBJETIVO_KG) {
-    objetivo = "subir";
+  } else if (objetivo === "bulk") {
     calorias = gasto + (Math.min(ritmo, 0.5) * KCAL_POR_KILO) / 7;
   }
+  calorias = redondear(calorias);
 
-  const redondear = (n) => Math.round(n / 10) * 10;
-  const proteinas = Math.round(1.8 * Number(datos.peso_kg));
-  const grasas = Math.round(0.8 * Number(datos.peso_kg));
-  const carbohidratos = Math.max(0, Math.round((calorias - proteinas * 4 - grasas * 9) / 4));
+  const peso = Number(datos.peso_kg);
+  const base = GRAMOS_POR_KILO[objetivo];
+  const extra = AJUSTE_PRIORIDAD[prioridad];
+  let proteinas = Math.round(Math.max(MINIMOS_POR_KILO.p, base.p + extra.p) * peso);
+  let grasas = Math.round(Math.max(MINIMOS_POR_KILO.g, base.g + extra.g) * peso);
+  let carbohidratos = Math.max(0, Math.round((calorias - proteinas * 4 - grasas * 9) / 4));
+
+  // A medida: los gramos que puso cada uno mandan y la meta sale de ellos.
+  const aMedida = tieneMacrosAMedida(datos);
+  if (aMedida) {
+    proteinas = Math.round(Number(datos.proteinas_propias));
+    carbohidratos = Math.round(Number(datos.carbos_propios));
+    grasas = Math.round(Number(datos.grasas_propias));
+    calorias = proteinas * 4 + carbohidratos * 4 + grasas * 9;
+  }
+
   const ritmoReal = (Math.abs(gasto - calorias) * 7) / KCAL_POR_KILO;
-  const semanas = objetivo !== "mantener" && ritmoReal > 0 ? Math.ceil(Math.abs(diferencia) / ritmoReal) : 0;
+  const vaHaciaElPeso = (diferencia < 0 && calorias < gasto) || (diferencia > 0 && calorias > gasto);
+  const semanas = objetivo !== "mantener" && vaHaciaElPeso && Math.abs(diferencia) >= MARGEN_OBJETIVO_KG && ritmoReal > 0 ? Math.ceil(Math.abs(diferencia) / ritmoReal) : 0;
   const llegada = new Date();
   llegada.setDate(llegada.getDate() + semanas * 7);
 
   return {
     objetivo,
+    prioridad,
+    aMedida,
     basal: redondear(basal),
     gasto: redondear(gasto),
-    calorias: redondear(calorias),
+    calorias,
     proteinas,
     grasas,
     carbohidratos,

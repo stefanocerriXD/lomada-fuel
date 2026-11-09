@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, Trophy, UserRound, Zap } from "lucide-react";
+import { Activity, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -53,19 +53,6 @@ function ResumenDia({ onCargar, onImportar }) {
   return (
     <>
       <p className="dia-titulo">{fecha === hoy ? `${saludo()}, ${yo.nombre}` : nombreDia(fecha)}</p>
-
-      {fecha === hoy && new Date().getDay() === 0 && (
-        <motion.section className="dia-partido" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}>
-          <span className="dia-partido-icono"><Trophy size={26} /></span>
-          <div>
-            <strong>Hoy juega Lomada</strong>
-            <span>Partido a las 16. Recomendación: almorzá fideos para cargar energía.</span>
-          </div>
-          {!mias.some((c) => c.tipo === "almuerzo") && (
-            <button className="boton-chico" onClick={() => onCargar({ tipo: "almuerzo", fecha, buscar: "fideos" })}>Cargar fideos</button>
-          )}
-        </motion.section>
-      )}
 
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
 
