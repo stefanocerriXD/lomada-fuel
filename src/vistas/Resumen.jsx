@@ -6,6 +6,7 @@ import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fec
 import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
 import { Indicador, Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
+import InvitacionesComida from "../componentes/InvitacionesComida.jsx";
 import Habitos from "../componentes/Habitos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
@@ -24,14 +25,14 @@ export default function Resumen({ onCargar, onImportar, onEditarCuerpo, avisar }
         ))}
         <Indicador indice={[["dia", "Por día"], ["semana", "Semana"], ["progreso", "Progreso"]].findIndex(([id]) => id === modo)} total={3} />
       </div>
-      {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} />}
+      {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} avisar={avisar} />}
       {modo === "semana" && <ResumenSemana />}
       {modo === "progreso" && <Progreso onEditarCuerpo={onEditarCuerpo} avisar={avisar} />}
     </>
   );
 }
 
-function ResumenDia({ onCargar, onImportar }) {
+function ResumenDia({ onCargar, onImportar, avisar }) {
   const { usuario, yo, perfiles, comidas, fotos, whoop, salud } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
@@ -53,6 +54,8 @@ function ResumenDia({ onCargar, onImportar }) {
   return (
     <>
       <p className="dia-titulo">{fecha === hoy ? `${saludo()}, ${yo.nombre}` : nombreDia(fecha)}</p>
+
+      <InvitacionesComida avisar={avisar} />
 
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
 

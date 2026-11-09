@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, Lock, Maximize2, Pencil, PenLine, Reply, Star, Trash2 } from "lucide-react";
+import { ChevronDown, Lock, Maximize2, Pencil, PenLine, Reply, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
@@ -39,8 +39,15 @@ export function Reacciones({ comidaId }) {
   );
 }
 
+const listaNombres = (n) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0]);
+
 export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
-  const { usuario, cargarComidas, extras, cargarExtras, abrirPerfil, responder } = useDatos();
+  const { usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder } = useDatos();
+  // Comida grupal: los que comieron lo mismo y, para quien la publicó, los que todavía no respondieron.
+  const grupo = comida.grupo_comida;
+  const nombresDe = (ids) => [...new Set(ids)].map((id) => (id === usuario.id ? "vos" : perfiles[id]?.nombre)).filter(Boolean);
+  const conQuien = grupo ? nombresDe(comidas.filter((c) => c.grupo_comida === grupo && c.usuario_id !== comida.usuario_id).map((c) => c.usuario_id)) : [];
+  const esperando = grupo && propia ? nombresDe(invitaciones.filter((i) => i.comida_id === comida.id && i.estado === "pendiente").map((i) => i.para_usuario)) : [];
   const [confirmar, setConfirmar] = useState(false);
   const [detalle, setDetalle] = useState(false);
   const tipo = tipoInfo(comida.tipo);
@@ -72,7 +79,8 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
     const { data, error } = await supabase.from("comidas").delete().eq("id", comida.id).select("id");
     // Sin permiso, la base responde sin error pero no borra nada.
     if (error || data?.length === 0) return avisar("No se pudo borrar");
-    if (comida.foto_path) await supabase.storage.from("fotos").remove([comida.foto_path]);
+    // La foto de una comida grupal la siguen usando los demás.
+    if (comida.foto_path && !comida.grupo_comida) await supabase.storage.from("fotos").remove([comida.foto_path]);
     await cargarComidas();
     avisar("Comida borrada");
   }
@@ -95,6 +103,14 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           </span>
         </button>
       </header>
+      {(conQuien.length > 0 || esperando.length > 0) && (
+        <p className="comida-grupal-linea">
+          <Users size={14} aria-hidden="true" />
+          {conQuien.length > 0 && `Con ${listaNombres(conQuien)}`}
+          {conQuien.length > 0 && esperando.length > 0 && " · "}
+          {esperando.length > 0 && `Esperando a ${listaNombres(esperando)}`}
+        </p>
+      )}
 
       {foto ? (
         <button className="comida-foto" onClick={() => onZoom({ src: foto, alt: texto })} aria-label={`Ampliar foto: ${texto}`}>

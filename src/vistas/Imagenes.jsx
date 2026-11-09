@@ -42,8 +42,18 @@ export default function Imagenes({ onCargar, avisar }) {
 
   const delDia = useMemo(() => {
     const base = antiguo ? viejos[fecha] || [] : comidas.filter((c) => c.fecha === fecha);
+    // Una comida grupal se muestra una vez, con todos los que comieron.
+    const ids = new Set(base.map((c) => c.id));
+    const vistas = new Set();
     return base
       .filter((c) => c.foto_path && c.tipo !== "resumen")
+      .filter((c) => {
+        if (!c.grupo_comida) return true;
+        if (ids.has(c.grupo_comida)) return c.id === c.grupo_comida;
+        if (vistas.has(c.grupo_comida)) return false;
+        vistas.add(c.grupo_comida);
+        return true;
+      })
       .sort((a, b) => new Date(a.creado_en) - new Date(b.creado_en));
   }, [antiguo, comidas, fecha, viejos]);
 

@@ -125,6 +125,20 @@ export function DatosProvider({ usuario, children }) {
     if (!l.error) setLecturas(l.data);
   }, []);
 
+  // Comidas grupales: las invitaciones que mandaste o te llegaron, y las comidas a las que te sumaron.
+  const [invitaciones, setInvitaciones] = useState([]);
+  const [comidasInvitadas, setComidasInvitadas] = useState({});
+  const cargarInvitaciones = useCallback(async () => {
+    const { data, error } = await supabase.from("invitaciones_comida").select("*").order("creado_en", { ascending: false }).limit(200);
+    if (error) return;
+    setInvitaciones(data);
+    const ids = [...new Set(data.filter((i) => i.estado === "pendiente" && i.para_usuario === usuario.id).map((i) => i.comida_id))];
+    if (!ids.length) return setComidasInvitadas({});
+    const { data: lista } = await supabase.from("comidas").select("*").in("id", ids);
+    await firmarFotos(lista || []);
+    setComidasInvitadas(Object.fromEntries((lista || []).map((c) => [c.id, c])));
+  }, [usuario.id, firmarFotos]);
+
   const alternarReaccionMensaje = useCallback(async (mensajeId, emoji) => {
     const clave = (r) => r.mensaje_id === mensajeId && r.usuario_id === usuario.id && r.emoji === emoji;
     const fila = { mensaje_id: mensajeId, usuario_id: usuario.id, emoji };
@@ -283,8 +297,8 @@ export function DatosProvider({ usuario, children }) {
   const refrescar = useCallback(async (forzar = false) => {
     if (!forzar && Date.now() - ultimoRefresco.current < 2000) return;
     ultimoRefresco.current = Date.now();
-    await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarExtras(), cargarSocial()]);
-  }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarExtras, cargarSocial]);
+    await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarExtras(), cargarSocial(), cargarInvitaciones()]);
+  }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarExtras, cargarSocial, cargarInvitaciones]);
 
   const canalRef = useRef(null);
   const estadoCanal = useRef("");
@@ -311,6 +325,7 @@ export function DatosProvider({ usuario, children }) {
     canal = tabla(canal, "perfiles", () => enTanda("perfiles", cargarPerfiles));
     for (const nombre of ["medallas", "desafios", "agua"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
     for (const nombre of ["reacciones_mensajes", "lecturas"]) canal = tabla(canal, nombre, () => enTanda("social", cargarSocial));
+    canal = tabla(canal, "invitaciones_comida", () => enTanda("invitaciones", cargarInvitaciones));
     canal = tabla(canal, "mensajes", ({ eventType, new: nuevo }) => {
       if (eventType !== "INSERT") return enTanda("mensajes", cargarMensajes);
       if (nuevo.adjunto_path) firmarRutas([nuevo.adjunto_path]).catch(() => {});
@@ -331,11 +346,12 @@ export function DatosProvider({ usuario, children }) {
         reintento.current = setTimeout(conectar, REINTENTO_MS);
       }
     });
-  }, [agregarMensaje, cargarComidas, cargarExtras, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar]);
+  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar]);
 
   useEffect(() => {
     cargarMensajes().catch(() => setMensajesListos(true));
     cargarSocial().catch(() => {});
+    cargarInvitaciones().catch(() => {});
     conectar();
 
     let ocultaDesde = document.visibilityState === "hidden" ? Date.now() : null;
@@ -452,6 +468,9 @@ export function DatosProvider({ usuario, children }) {
       alternarReaccionMensaje,
       lecturas,
       marcarLeido,
+      invitaciones,
+      comidasInvitadas,
+      cargarInvitaciones,
       firmarRutas,
       agregarMensaje,
       comidasLogros,
@@ -472,7 +491,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

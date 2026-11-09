@@ -24,6 +24,7 @@ export default async function handler(req, res) {
     const pedido = {
       medalla: () => rpc("aviso_medalla", { p_codigo: id, p_nombre: nombre || null }),
       mejora: () => rpc("aviso_mejora", { p_id: id }),
+      invitacion: () => rpc("aviso_invitacion", { p_id: id }),
     }[tipo];
     const resp = await (pedido ? pedido() : rpc("destinos_aviso", { p_tipo: tipo, p_id: id }));
     if (!resp.ok) return res.status(resp.status === 401 ? 401 : 400).json({ error: "No autorizado" });

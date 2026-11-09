@@ -1185,6 +1185,25 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* Cada persona con su color en el chat, oscurecido o aclarado para que se lea */
 .burbuja .autor { color: var(--acento); }
 
+/* Comidas grupales */
+.comida-grupal { display: flex; flex-direction: column; gap: 8px; }
+.comida-grupal-titulo { display: flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 700; color: var(--tinta-2); }
+.comida-grupal-lista { display: flex; flex-wrap: wrap; gap: 6px; }
+.persona-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 12px 4px 5px; border-radius: 999px; background: var(--superficie); color: var(--tinta); font-size: 0.86rem; font-weight: 650; }
+.persona-chip.activo { background: var(--acento); color: var(--sobre-acento); }
+.persona-chip:disabled { opacity: 0.75; }
+.persona-chip small { font-size: 0.72rem; font-weight: 600; opacity: 0.85; }
+.comida-grupal-linea { display: flex; align-items: center; gap: 6px; margin: -2px 14px 8px; font-size: 0.82rem; font-weight: 600; color: var(--tinta-2); }
+.invitacion-comida { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; padding: 14px; border-radius: 18px; background: var(--acento-suave); color: var(--sobre-acento-suave); overflow: hidden; }
+.invitacion-quien { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.9rem; }
+.invitacion-comida-datos { display: flex; align-items: center; gap: 10px; }
+.invitacion-comida-datos img, .invitacion-icono { flex: none; width: 54px; height: 54px; border-radius: 12px; object-fit: cover; }
+.invitacion-icono { display: grid; place-items: center; background: var(--superficie); }
+.invitacion-comida-datos > span { display: flex; flex-direction: column; min-width: 0; }
+.invitacion-comida-datos small { font-size: 0.78rem; opacity: 0.85; }
+.invitacion-botones { display: flex; justify-content: flex-end; gap: 8px; }
+.invitacion-botones .activo { background: var(--acento); color: var(--sobre-acento); }
+
 /* Apple Salud */
 .dato-copiable { display: flex; align-items: center; gap: 8px; }
 .dato-copiable code { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 11px; background: var(--superficie-2); font-size: 0.76rem; overflow-wrap: anywhere; }

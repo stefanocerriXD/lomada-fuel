@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Camera, ClipboardPaste, LoaderCircle, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, X } from "lucide-react";
+import { CalendarDays, Camera, ClipboardPaste, LoaderCircle, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
@@ -11,7 +11,7 @@ import { fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
-import { Hoja, Numero, vibrar } from "../componentes/Base.jsx";
+import { Avatar, Hoja, Numero, vibrar } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import Lector from "../componentes/Lector.jsx";
 import Escaner from "./Escaner.jsx";
@@ -30,7 +30,17 @@ export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia 
 }
 
 function Formulario({ carga, onGuardar, onImportarDia }) {
-  const { usuario, yo, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado } = useDatos();
+  const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones } = useDatos();
+  // Comida grupal: a quién sumar. Solo la comida original invita, no las copias de los que aceptaron.
+  const [companeros, setCompaneros] = useState([]);
+  const otrosIntegrantes = Object.values(perfiles).filter((p) => p.id !== usuario.id);
+  const estadoCompanero = (id) => {
+    if (!original) return "";
+    if (comidas.some((c) => c.grupo_comida === original.id && c.usuario_id === id)) return "Comió";
+    if (invitaciones.some((i) => i.comida_id === original.id && i.para_usuario === id && i.estado === "pendiente")) return "Pendiente";
+    return "";
+  };
+  const alternarCompanero = (id) => setCompaneros((lista) => (lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id]));
   const original = carga.comida;
 
   // Mientras arma una comida nueva, el grupo ve "está publicando su comida…".
@@ -135,7 +145,8 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
       setGuardando(false);
       return;
     }
-    if (original.foto_path) await supabase.storage.from("fotos").remove([original.foto_path]);
+    // La foto de una comida grupal la siguen usando los demás.
+    if (original.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path]);
     await cargarComidas();
     onGuardar("borrada");
   }
@@ -202,7 +213,14 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
         ? await supabase.from("comidas").update(fila).eq("id", id)
         : await supabase.from("comidas").insert({ ...fila, id, usuario_id: usuario.id, fecha: carga.fecha || fechaLocal() });
       if (errFila) throw errFila;
-      if (rutaNueva && original?.foto_path) await supabase.storage.from("fotos").remove([original.foto_path]);
+      if (rutaNueva && original?.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path]);
+      if (companeros.length) {
+        const { error: errInvitar } = await supabase.rpc("invitar_a_comida", { p_comida: id, p_para: companeros });
+        if (!errInvitar) {
+          avisarGrupo("invitacion", id);
+          cargarInvitaciones().catch(() => {});
+        }
+      }
       await cargarComidas();
       if (!original && !privada) avisarGrupo("comida", id);
       onGuardar(!original);
@@ -330,6 +348,26 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
             </label>
             <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Título de la comida" aria-label="Nota de la comida" maxLength={200} />
           </div>
+
+          {tipo !== "resumen" && otrosIntegrantes.length > 0 && (!original || !original.grupo_comida || original.grupo_comida === original.id) && (
+            <div className="comida-grupal">
+              <span className="comida-grupal-titulo"><Users size={16} /> ¿Comiste con alguien?</span>
+              <div className="comida-grupal-lista" role="group" aria-label="Sumar integrantes a la comida">
+                {otrosIntegrantes.map((p) => {
+                  const estado = estadoCompanero(p.id);
+                  const elegido = companeros.includes(p.id);
+                  return (
+                    <button key={p.id} type="button" className={elegido || estado ? "persona-chip activo" : "persona-chip"} aria-pressed={elegido || Boolean(estado)} disabled={Boolean(estado)} onClick={() => alternarCompanero(p.id)}>
+                      <Avatar perfil={p} tam={24} />
+                      <span>{p.nombre}</span>
+                      {estado && <small>{estado}</small>}
+                    </button>
+                  );
+                })}
+              </div>
+              {companeros.length > 0 && <p className="nota">Les llega una solicitud. Cuando la acepten, la comida se suma a su día y cada uno puede ajustar su porción.</p>}
+            </div>
+          )}
 
           <details className="mas-opciones">
             <summary>Más opciones</summary>
