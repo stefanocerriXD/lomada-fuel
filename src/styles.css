@@ -594,6 +594,13 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 .macros-faltan .pista-progreso span.s-p { background: var(--prot); }
 .macros-faltan .pista-progreso span.s-c { background: var(--carb); }
 .macros-faltan .pista-progreso span.s-g { background: var(--gras); }
+.macros-del-dia { margin-top: 11px; }
+.macros-del-dia .macros-faltan { margin-top: 6px; }
+.vista-macros { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vista-macros > span { color: var(--tinta-2); font-size: 0.78rem; font-weight: 650; }
+.vista-macros > div { display: flex; gap: 2px; }
+.vista-macros button { min-width: 44px; min-height: 36px; padding: 0 9px; border-radius: 999px; color: var(--tinta-2); font-size: 0.74rem; font-weight: 650; }
+.vista-macros button.activo { background: var(--superficie-2); color: var(--tinta); }
 
 /* Reacciones */
 .reacciones { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }

@@ -75,7 +75,28 @@ function leerMacros(lineas) {
   return v;
 }
 
-function completar(v) {
+// Los macros no pueden aportar más calorías que las que tiene la comida: "C 71g" leído como "C713".
+// Si un macro es imposible, se prueba sin el último dígito (la "g" mal leída) o con la coma perdida;
+// si sigue sin cerrar, se deja en lo que queda de calorías.
+const KCAL_POR_GRAMO = { p: 4, c: 4, g: 9 };
+const kcalDeMacros = (v) => (v.p || 0) * 4 + (v.c || 0) * 4 + (v.g || 0) * 9;
+const margen = (kcal) => Math.max(25, kcal * 0.25);
+export function macrosPosibles(v, kcal = v.kcal) {
+  if (!(kcal >= 20)) return v;
+  const r = { ...v };
+  for (let vuelta = 0; vuelta < 3 && kcalDeMacros(r) > kcal + margen(kcal); vuelta += 1) {
+    const peor = ["p", "c", "g"].sort((a, b) => (r[b] || 0) * KCAL_POR_GRAMO[b] - (r[a] || 0) * KCAL_POR_GRAMO[a])[0];
+    const valor = r[peor] || 0;
+    const libre = Math.max(0, (kcal - kcalDeMacros({ ...r, [peor]: 0 })) / KCAL_POR_GRAMO[peor]);
+    const candidatos = [Math.floor(valor / 10), valor / 10].filter((x) => x * KCAL_POR_GRAMO[peor] <= libre * KCAL_POR_GRAMO[peor] + margen(kcal));
+    const elegido = candidatos.sort((a, b) => Math.abs(a - libre) - Math.abs(b - libre))[0];
+    r[peor] = Math.round((elegido ?? libre) * 10) / 10;
+  }
+  return r;
+}
+
+function completar(entrada) {
+  const v = macrosPosibles(entrada);
   const p = v.p ?? 0;
   const c = v.c ?? 0;
   const g = v.g ?? 0;
@@ -240,10 +261,8 @@ function completarAlimento(a) {
   let factor = 0;
   if (base) factor = a.kcal && base.por100.kcal ? a.kcal / base.por100.kcal : (gramos || 0) / 100;
   const macro = (k) => Math.round((a[k] ?? (base ? base.por100[k] * factor : 0)) * 10) / 10;
-  const p = macro("p");
-  const c = macro("c");
-  const g = macro("g");
-  const kcal = Math.round(a.kcal ?? (base && factor ? base.por100.kcal * factor : p * 4 + c * 4 + g * 9));
+  const kcal = Math.round(a.kcal ?? (base && factor ? base.por100.kcal * factor : macro("p") * 4 + macro("c") * 4 + macro("g") * 9));
+  const { p, c, g } = macrosPosibles({ p: macro("p"), c: macro("c"), g: macro("g") }, kcal);
   return {
     nombre: a.marca ? `${a.nombre} (${a.marca})` : a.nombre,
     ...(a.medida ? { medida: a.medida } : {}),
@@ -324,8 +343,9 @@ function leerMacrosSueltos(linea) {
 }
 
 // Si la captura trae los macros de toda la comida, los alimentos estimados se corrigen para que la suma dé igual.
-function ajustarEstimados(lista, objetivo) {
-  if (!objetivo || !lista.some((a) => a.estimado)) return lista;
+function ajustarEstimados(lista, leido) {
+  if (!leido || !lista.some((a) => a.estimado)) return lista;
+  const objetivo = macrosPosibles(leido, lista.reduce((t, a) => t + a.kcal, 0));
   const factores = {};
   for (const k of ["p", "c", "g"]) {
     if (objetivo[k] === undefined) continue;
@@ -337,7 +357,7 @@ function ajustarEstimados(lista, objetivo) {
     if (!a.estimado) return a;
     const nuevo = { ...a };
     for (const [k, f] of Object.entries(factores)) nuevo[k] = Math.round(a[k] * f * 10) / 10;
-    return nuevo;
+    return { ...nuevo, ...macrosPosibles(nuevo) };
   });
 }
 

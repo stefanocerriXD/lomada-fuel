@@ -39,6 +39,8 @@ function validar(kcal, p, c, g) {
   if (p == null && c == null && g == null && kcal > 0) return null;
   const macros = [p ?? 0, c ?? 0, g ?? 0];
   if (macros.some((m) => m < 0 || m > 100) || macros.reduce((a, b) => a + b, 0) > 105) return null;
+  // Macros que aportan mucho más que las calorías del producto: error de carga.
+  if (kcal >= 20 && macros[0] * 4 + macros[1] * 4 + macros[2] * 9 > kcal * 1.6 + 40) return null;
   return { kcal: Math.round(kcal), p: macros[0], c: macros[1], g: macros[2] };
 }
 

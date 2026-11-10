@@ -158,26 +158,74 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
   );
 }
 
+// Cómo se ven los macros del día: lo que falta, lo que llevás o el porcentaje. Se recuerda en este teléfono.
+const VISTAS_MACROS = [["falta", "Faltan"], ["llevo", "Llevo"], ["porcentaje", "%"]];
+const CLAVE_VISTA_MACROS = "lomada-vista-macros";
+function vistaGuardada() {
+  try {
+    const v = localStorage.getItem(CLAVE_VISTA_MACROS);
+    return VISTAS_MACROS.some(([id]) => id === v) ? v : "falta";
+  } catch {
+    return "falta";
+  }
+}
+
 function MacrosRestantes({ total, plan, meta }) {
+  const [vista, setVista] = useState(vistaGuardada);
   // Los carbos completan la meta de calorías que se ve en el anillo.
   const carbos = Math.max(0, Math.round((meta - plan.proteinas * 4 - plan.grasas * 9) / 4));
-  const filas = [["Proteínas", "p", plan.proteinas], ["Carbos", "c", carbos], ["Grasas", "g", plan.grasas]];
+  const filas = [["Proteínas", "p", plan.proteinas, 4], ["Carbos", "c", carbos, 4], ["Grasas", "g", plan.grasas, 9]];
+  const kcalMacros = total.p * 4 + total.c * 4 + total.g * 9;
+
+  function elegir(id) {
+    setVista(id);
+    vibrar(5);
+    try {
+      localStorage.setItem(CLAVE_VISTA_MACROS, id);
+    } catch {
+      // Sin almacenamiento, la elección dura hasta cerrar la app.
+    }
+  }
+
+  function textos(clave, objetivo, porGramo) {
+    const llevo = Math.round(total[clave]);
+    const falta = Math.round(objetivo - total[clave]);
+    if (vista === "llevo") return [`${llevo} g`, `de ${objetivo} g`];
+    if (vista === "porcentaje") {
+      const parte = kcalMacros > 0 ? Math.round((total[clave] * porGramo * 100) / kcalMacros) : 0;
+      return [`${objetivo ? Math.round((total[clave] * 100) / objetivo) : 0}%`, kcalMacros > 0 ? `de ${objetivo} g · ${parte}% kcal` : `de ${objetivo} g`];
+    }
+    return falta >= 0 ? [`${falta} g`, `faltan de ${objetivo} g`] : [`+${Math.abs(falta)} g`, `de más sobre ${objetivo} g`];
+  }
+
   return (
-    <ul className="macros-faltan" aria-label="Lo que falta de cada macro">
-      {filas.map(([texto, clave, objetivo]) => {
-        const falta = Math.round(objetivo - total[clave]);
-        return (
-          <li key={clave}>
-            <span className="macro-nombre"><span className={`punto s-${clave}`} /> {texto}</span>
-            <strong>{falta >= 0 ? `${falta} g` : `+${Math.abs(falta)} g`}</strong>
-            <small>{falta >= 0 ? `faltan de ${objetivo} g` : `de más sobre ${objetivo} g`}</small>
-            <span className="pista-progreso">
-              <motion.span className={`s-${clave}`} initial={{ scaleX: 0 }} animate={{ scaleX: objetivo ? Math.min(total[clave] / objetivo, 1) : 1 }} transition={{ duration: 0.8 }} />
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="macros-del-dia">
+      <div className="vista-macros">
+        <span id="titulo-macros">Macros</span>
+        <div role="radiogroup" aria-labelledby="titulo-macros">
+          {VISTAS_MACROS.map(([id, texto]) => (
+            <button key={id} role="radio" aria-checked={vista === id} className={vista === id ? "activo" : ""} onClick={() => elegir(id)}>
+              {texto}
+            </button>
+          ))}
+        </div>
+      </div>
+      <ul className="macros-faltan" aria-label={vista === "falta" ? "Lo que falta de cada macro" : vista === "llevo" ? "Lo que llevás de cada macro" : "Porcentaje de cada macro"}>
+        {filas.map(([texto, clave, objetivo, porGramo]) => {
+          const [numero, detalle] = textos(clave, objetivo, porGramo);
+          return (
+            <li key={clave}>
+              <span className="macro-nombre"><span className={`punto s-${clave}`} /> {texto}</span>
+              <strong>{numero}</strong>
+              <small>{detalle}</small>
+              <span className="pista-progreso">
+                <motion.span className={`s-${clave}`} initial={{ scaleX: 0 }} animate={{ scaleX: objetivo ? Math.min(total[clave] / objetivo, 1) : 1 }} transition={{ duration: 0.8 }} />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
