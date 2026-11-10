@@ -1,6 +1,6 @@
 import {
   Beef, Bomb, Camera, Candy, CupSoda, Droplets, Dumbbell, Flame, Leaf, Moon, Pizza, Repeat, Scale, Soup, Sparkles,
-  Sunrise, Target, Trophy, Utensils, UtensilsCrossed, Wine, Crown,
+  Sunrise, Target, Utensils, UtensilsCrossed, Wine, Crown,
 } from "lucide-react";
 import { calcularPlan } from "./cuerpo.js";
 import { desafioTerminado, puntajes } from "./desafios.js";
@@ -22,7 +22,6 @@ export const LOGROS = [
   logro("racha", "objetivos", Flame, "días seguidos", [[7, "Semana completa"], [14, "Quincena firme"], [30, "Mes imparable"], [90, "Trimestre de hierro"], [365, "Un año sin fallar"]]),
   logro("proteina", "objetivos", Dumbbell, "días con tu proteína", [[7, "Modo proteína"], [20, "Proteico"], [50, "Constructor"], [120, "Bestia proteica"], [300, "Hecho de proteína"]]),
   logro("agua", "objetivos", Droplets, "días con 2 litros", [[7, "Bien hidratado"], [20, "Camello"], [50, "Manantial"], [120, "Río"], [300, "Océano"]]),
-  logro("reto", "objetivos", Trophy, "retos ganados", [[1, "Primera victoria"], [3, "Campeón"], [5, "Multicampeón"], [10, "Dinastía"], [25, "Leyenda del grupo"]]),
   logro("peso", "objetivos", Target, "kg hacia tu objetivo", [[1, "Primer kilo"], [3, "Buen ritmo"], [5, "Cambio real"], [10, "Transformación"], [20, "Otra persona"]]),
   logro("fotogenico", "objetivos", Sparkles, "reacciones recibidas", [[5, "Fotogénico"], [25, "Popular"], [100, "Influencer"], [300, "Celebridad"], [1000, "Ícono del grupo"]]),
 

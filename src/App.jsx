@@ -23,7 +23,7 @@ import Importar from "./vistas/Importar.jsx";
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
   { id: "grupo", texto: "Grupo", icono: Users },
-  { id: "retos", texto: "Desafíos", icono: Trophy },
+  { id: "retos", texto: "Logros", icono: Trophy },
   { id: "ajustes", texto: "Ajustes", icono: Settings },
 ];
 
@@ -245,7 +245,7 @@ function Principal({ recuperando, onRecuperado }) {
   useEffect(() => {
     if (!estado.listo || !extras.disponible || !comidasLogros || entregando.current) return;
     const yaGanadas = extras.medallas.filter((m) => m.usuario_id === usuario.id).map((m) => m.codigo);
-    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, desafios: extras.desafios, perfiles, salud, pesos, yaGanadas });
+    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, desafios: [], perfiles, salud, pesos, yaGanadas });
     if (!nuevas.length) return;
     entregando.current = true;
     supabase
@@ -337,7 +337,7 @@ function Principal({ recuperando, onRecuperado }) {
           >
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
             {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} sentido={sentido} />}
-            {vista === "retos" && <Retos avisar={avisar} />}
+            {vista === "retos" && <Retos />}
             {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
           </motion.div>
         </AnimatePresence>

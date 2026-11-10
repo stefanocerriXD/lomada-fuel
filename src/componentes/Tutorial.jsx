@@ -45,7 +45,7 @@ const SECCIONES = [
     titulo: "Grupo",
     preguntas: [
       ["¿Dónde están las fotos del grupo?", "En Grupo, arriba, elegí Imágenes. Están separadas por desayuno, almuerzo, merienda, cena y colaciones. Tocá una comida para abrirla."],
-      ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Desafíos y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
+      ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Logros y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
       ["¿Cómo veo otro día?", "En Imágenes, usá la tira de días o las flechas. Con las flechas podés ir tan atrás como quieras."],
       ["¿Cómo veo qué comió cada uno?", "Tocá Ver alimentos debajo de la foto: aparece cada alimento con su cantidad y sus macros."],
       ["¿Cómo respondo o reacciono a un mensaje?", "Para responder, deslizá el mensaje hacia la derecha. Para reaccionar o copiar, mantenelo apretado y soltá: se abren las opciones."],
@@ -68,12 +68,11 @@ const SECCIONES = [
     ],
   },
   {
-    titulo: "Desafíos y logros",
+    titulo: "Logros",
     preguntas: [
-      ["¿Cómo armo un reto?", "En Desafíos tocá Nuevo, elegí el tipo y los días. Participa todo el grupo."],
       ["¿Cómo se ganan los logros?", "Solos, a medida que usás la app. Cada logro tiene 5 niveles y cada nivel da un título mejor: por ejemplo, con 5 milanesas sos Bebé de la milanesa y con 250, Rey de la milanesa."],
-      ["¿Dónde veo cuánto me falta?", "En Desafíos, tocá cualquier logro: ves la barra de avance, cuánto falta y todos sus niveles."],
-      ["¿Qué es el nivel de cada uno?", "Cada nivel de cada logro suma un punto, y ese total es tu nivel general. Lo ves en Desafíos, en los perfiles y en Integrantes."],
+      ["¿Dónde veo cuánto me falta?", "En Logros, tocá cualquiera: ves la barra de avance, cuánto falta y todos sus niveles."],
+      ["¿Qué es el nivel de cada uno?", "Cada nivel de cada logro suma un punto, y ese total es tu nivel general. Lo ves en Logros, en los perfiles y en Integrantes."],
       ["¿Las comidas privadas cuentan?", "No para los logros de Alimentación, porque esos los ve el grupo."],
     ],
   },
