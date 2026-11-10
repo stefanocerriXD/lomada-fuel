@@ -4,6 +4,7 @@ import { accionWhoop } from "./api.js";
 import { haceDias } from "./fechas.js";
 import { cantidades } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
+import { castigoDe, marcaDeCaca } from "./multas.js";
 
 const Contexto = createContext(null);
 export const useDatos = () => useContext(Contexto);
@@ -29,6 +30,8 @@ async function traerTodo(armar) {
     if (data.length < PAGINA || filas.length >= HISTORIAL_MAXIMO) return filas;
   }
 }
+
+const valorDe = (consulta, clave) => (consulta.error ? null : consulta.data?.find((a) => a.clave === clave)?.valor || null);
 
 export function DatosProvider({ usuario, children }) {
   const [perfiles, setPerfiles] = useState({});
@@ -212,14 +215,14 @@ export function DatosProvider({ usuario, children }) {
 
   const cargarExtras = useCallback(async () => {
     const desde = haceDias(VENTANA_DIAS);
-    const [desafios, favoritas, agua, medallas, recetas, multas, comodines, ajustes, admin] = await Promise.all([
+    const [desafios, favoritas, agua, medallas, recetas, multas, bochaEvo, ajustes, admin] = await Promise.all([
       supabase.from("desafios").select("*").gte("fin", haceDias(VENTANA_DIAS)).order("inicio", { ascending: false }),
       supabase.from("favoritas").select("*").eq("usuario_id", usuario.id).order("creado_en", { ascending: false }),
       supabase.from("agua").select("*").gte("fecha", desde),
       supabase.from("medallas").select("*"),
       supabase.from("recetas_propias").select("*").eq("usuario_id", usuario.id).order("nombre"),
       supabase.from("multas").select("*").gte("fecha", haceDias(14)),
-      supabase.from("comodines").select("*").gte("fecha", haceDias(14)),
+      supabase.from("bocha_evo").select("*").gte("semana", haceDias(14)),
       supabase.from("ajustes_grupo").select("*"),
       supabase.from("administradores").select("usuario_id").eq("usuario_id", usuario.id).maybeSingle(),
     ]);
@@ -232,14 +235,15 @@ export function DatosProvider({ usuario, children }) {
       medallas: medallas.data || [],
       // Si la tabla todavía no existe, no hay recetas.
       recetas: recetas.error ? [] : recetas.data || [],
-      // Multas: si las tablas todavía no existen, la sección no aparece.
-      multasActivas: !multas.error,
+      // La caca: si las tablas todavía no existen, no aparece nada.
+      multasActivas: !multas.error && !bochaEvo.error,
       multas: multas.error ? [] : multas.data || [],
-      comodines: comodines.error ? [] : comodines.data || [],
-      prenda: ajustes.error ? "" : ajustes.data?.find((a) => a.clave === "prenda")?.valor || "",
+      bochaEvo: bochaEvo.error ? [] : bochaEvo.data || [],
+      imagenesBocha: { dia: valorDe(ajustes, "bocha"), evo: valorDe(ajustes, "bocha_evo") },
       admin: !admin.error && Boolean(admin.data),
     });
-  }, [usuario.id]);
+    firmarRutas([valorDe(ajustes, "bocha"), valorDe(ajustes, "bocha_evo")]).catch(() => {});
+  }, [usuario.id, firmarRutas]);
 
   const cambiarAgua = useCallback(
     async (fecha, ml) => {
@@ -336,7 +340,7 @@ export function DatosProvider({ usuario, children }) {
     canal = tabla(canal, "comidas", () => enTanda("comidas", cargarComidas));
     canal = tabla(canal, "reacciones", () => enTanda("reacciones", cargarReacciones));
     canal = tabla(canal, "perfiles", () => enTanda("perfiles", cargarPerfiles));
-    for (const nombre of ["medallas", "desafios", "agua", "multas", "comodines"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
+    for (const nombre of ["medallas", "desafios", "agua", "multas", "bocha_evo", "ajustes_grupo"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
     for (const nombre of ["reacciones_mensajes", "lecturas"]) canal = tabla(canal, nombre, () => enTanda("social", cargarSocial));
     canal = tabla(canal, "invitaciones_comida", () => enTanda("invitaciones", cargarInvitaciones));
     canal = tabla(canal, "mensajes", ({ eventType, new: nuevo }) => {
@@ -460,11 +464,23 @@ export function DatosProvider({ usuario, children }) {
     return cantidades({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, perfiles, salud: salud || null, pesos, victorias });
   }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, salud, usuario.id]);
 
+  // La caca de cada uno se ve al lado del nombre en toda la app.
+  const perfilesConCaca = useMemo(() => {
+    if (!extras.multasActivas) return perfiles;
+    return Object.fromEntries(Object.entries(perfiles).map(([id, p]) => [id, { ...p, caca: marcaDeCaca({ usuarioId: id, multas: extras.multas, bochaEvo: extras.bochaEvo }) }]));
+  }, [perfiles, extras]);
+  const castigo = useMemo(
+    () => (extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, diario: false, activo: false }),
+    [extras, comidas, usuario.id],
+  );
+
   const valor = useMemo(
     () => ({
       usuario,
-      yo: perfiles[usuario.id] || { ...AVATAR_BASE, id: usuario.id, nombre: "" },
-      perfiles,
+      yo: perfilesConCaca[usuario.id] || { ...AVATAR_BASE, id: usuario.id, nombre: "" },
+      perfiles: perfilesConCaca,
+      castigo,
+      imagenesBocha: extras.imagenesBocha || {},
       comidas,
       fotos,
       estado,
@@ -504,7 +520,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfiles, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

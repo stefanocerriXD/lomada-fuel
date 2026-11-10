@@ -9,6 +9,7 @@ import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./comp
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import InstalarApp from "./componentes/InstalarApp.jsx";
+import Bocha from "./componentes/Bocha.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Grupo from "./vistas/Grupo.jsx";
@@ -391,6 +392,7 @@ function Principal({ recuperando, onRecuperado }) {
       </Hoja>
       <Festejo key={festejo} activo={festejo > 0} />
       <NuevoLogro codigo={logroNuevo} onTerminar={terminarLogro} />
+      <Bocha />
       <Aviso texto={aviso} />
     </div>
   );

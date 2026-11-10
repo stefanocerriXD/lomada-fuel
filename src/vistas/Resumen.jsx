@@ -59,7 +59,7 @@ function ResumenDia({ onCargar, onImportar, avisar }) {
         <p className="dia-titulo">{fecha === hoy ? `${saludo()}, ${yo.nombre}` : nombreDia(fecha)}</p>
         {extras.multasActivas && fecha === hoy && (
           <span className={fotosHoy >= FOTOS_POR_DIA ? "fotos-hoy completas" : "fotos-hoy"} title="Fotos de comidas de hoy">
-            {fotosHoy >= FOTOS_POR_DIA ? <Check size={14} /> : <Camera size={14} />} {Math.min(fotosHoy, FOTOS_POR_DIA)}/{FOTOS_POR_DIA} fotos
+            {fotosHoy >= FOTOS_POR_DIA ? <><Check size={14} /> Foto de hoy</> : <><Camera size={14} /> Sin foto hoy</>}
           </span>
         )}
       </div>

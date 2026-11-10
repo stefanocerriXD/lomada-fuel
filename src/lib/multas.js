@@ -1,7 +1,8 @@
-// Multas: menos de 2 fotos de comidas en el día suma una multa. Un comodín por semana (de lunes a domingo).
+// La caca: el que no sube ninguna foto de comida en el día amanece con la maldición del Bocha,
+// y el que más cacas junta en la semana se come al Bocha Evo toda la semana siguiente.
 import { aFecha, fechaLocal, haceDias } from "./fechas.js";
 
-export const FOTOS_POR_DIA = 2;
+export const FOTOS_POR_DIA = 1;
 
 // El lunes de la semana de esa fecha.
 export function inicioSemana(fecha = fechaLocal()) {
@@ -14,19 +15,26 @@ export function inicioSemana(fecha = fechaLocal()) {
 export const fotosDelDia = (comidas, usuarioId, fecha) =>
   comidas.filter((c) => c.usuario_id === usuarioId && c.fecha === fecha && c.tipo !== "resumen" && c.foto_path).length;
 
-export function multasDeLaSemana(multas, perfiles, fecha = fechaLocal()) {
+// Cacas de la semana en curso, de más a menos.
+export function cacasDeLaSemana(multas, perfiles, fecha = fechaLocal()) {
   const lunes = inicioSemana(fecha);
   return Object.values(perfiles)
-    .map((perfil) => ({ perfil, multas: multas.filter((m) => m.usuario_id === perfil.id && m.fecha >= lunes && m.fecha <= fecha).length }))
-    .sort((a, b) => b.multas - a.multas || a.perfil.nombre.localeCompare(b.perfil.nombre));
+    .map((perfil) => ({ perfil, cacas: multas.filter((m) => m.usuario_id === perfil.id && m.fecha >= lunes && m.fecha <= fecha).length }))
+    .sort((a, b) => b.cacas - a.cacas || a.perfil.nombre.localeCompare(b.perfil.nombre));
 }
 
-// Para qué día se puede usar el comodín ahora: ayer si te multaron, si no hoy si te faltan fotos. Uno por semana.
-export function usoDeComodin({ comodines, multas, comidas, usuarioId, hoy = fechaLocal() }) {
-  const ayer = haceDias(1, aFecha(hoy));
-  const usadoEn = (fecha) => comodines.some((c) => c.usuario_id === usuarioId && inicioSemana(c.fecha) === inicioSemana(fecha));
-  if (multas.some((m) => m.usuario_id === usuarioId && m.fecha === ayer) && !usadoEn(ayer)) return { fecha: ayer, texto: "Usar comodín para ayer" };
-  if (comodines.some((c) => c.usuario_id === usuarioId && c.fecha === hoy)) return null;
-  if (fotosDelDia(comidas, usuarioId, hoy) < FOTOS_POR_DIA && !usadoEn(hoy)) return { fecha: hoy, texto: "Usar comodín hoy" };
+// La marca de cada uno: "evo" toda la semana del castigo, "dia" el día después de no subir fotos.
+export function marcaDeCaca({ usuarioId, multas, bochaEvo, hoy = fechaLocal() }) {
+  if (bochaEvo.some((b) => b.usuario_id === usuarioId && b.semana === inicioSemana(hoy))) return "evo";
+  if (multas.some((m) => m.usuario_id === usuarioId && m.fecha === haceDias(1, aFecha(hoy)))) return "dia";
   return null;
+}
+
+// El castigo propio. El del día se levanta subiendo la foto de hoy; el Bocha Evo dura toda la semana.
+export function castigoDe({ usuarioId, multas, bochaEvo, comidas, hoy = fechaLocal() }) {
+  const marca = marcaDeCaca({ usuarioId, multas, bochaEvo, hoy });
+  const evo = marca === "evo";
+  const ayer = multas.some((m) => m.usuario_id === usuarioId && m.fecha === haceDias(1, aFecha(hoy)));
+  const subioHoy = fotosDelDia(comidas, usuarioId, hoy) >= FOTOS_POR_DIA;
+  return { marca, evo, diario: ayer && !subioHoy, activo: evo || (ayer && !subioHoy) };
 }

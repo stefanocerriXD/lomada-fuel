@@ -47,8 +47,8 @@ export default function Retos({ avisar }) {
 
       {extras.multasActivas && (
         <section>
-          <h2 className="titulo-seccion">Multas de la semana</h2>
-          <Multas avisar={avisar} />
+          <h2 className="titulo-seccion">Cacas de la semana</h2>
+          <Multas />
         </section>
       )}
 

@@ -260,7 +260,7 @@ function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onRespo
               if (gesto.offset.x > DESLIZAR_PARA_RESPONDER) onResponder(m);
             }}
           >
-            {!propio && inicio && <strong className="autor" style={{ color: colorDeNombre(perfiles, m.usuario_id) }}>{perfil?.nombre || "Amigo"}</strong>}
+            {!propio && inicio && <strong className="autor" style={{ color: colorDeNombre(perfiles, m.usuario_id) }}>{perfil?.nombre || "Amigo"}{perfil?.caca && " 💩"}</strong>}
             {m.respuesta_mensaje && <CitaMensaje id={m.respuesta_mensaje} />}
             {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={onZoom} />}
             {m.adjunto_path && esAudio(m.adjunto_path) && (
@@ -315,7 +315,7 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
 
 export default function Chat({ avisar }) {
   const {
-    usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, respuesta, responder,
+    castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, respuesta, responder,
     lecturas, marcarLeido, firmarRutas, avisarEstado,
   } = useDatos();
   const reposo = useRef(null);
@@ -579,21 +579,34 @@ export default function Chat({ avisar }) {
           </motion.div>
         )}
       </AnimatePresence>
+      {castigo.evo ? (
+        <div className="teclado-caca" role="status">
+          <span aria-hidden="true">💩💩💩</span>
+          <strong>El Bocha Evo te tapó el teclado de caca</strong>
+          <small>Volvés a escribir el lunes.</small>
+        </div>
+      ) : (
       <form className="chat-enviar" onSubmit={enviar}>
-        <label className={subiendo ? "boton-icono ocupado" : "boton-icono"} aria-label="Mandar foto o GIF">
-          <ImagePlus size={20} />
-          <input className="oculto" type="file" accept="image/*" multiple onChange={enviarFoto} disabled={subiendo} aria-label="Elegir foto o GIF" />
-        </label>
-        <button type="button" className={stickers ? "boton-icono activo" : "boton-icono"} onClick={() => setStickers(!stickers)} aria-pressed={stickers} aria-label="Stickers"><Smile size={20} /></button>
+        {castigo.diario ? null : (
+          <>
+            <label className={subiendo ? "boton-icono ocupado" : "boton-icono"} aria-label="Mandar foto o GIF">
+              <ImagePlus size={20} />
+              <input className="oculto" type="file" accept="image/*" multiple onChange={enviarFoto} disabled={subiendo} aria-label="Elegir foto o GIF" />
+            </label>
+            <button type="button" className={stickers ? "boton-icono activo" : "boton-icono"} onClick={() => setStickers(!stickers)} aria-pressed={stickers} aria-label="Stickers"><Smile size={20} /></button>
+          </>
+        )}
         <input ref={campo} value={texto} onChange={alEscribir} placeholder={respuesta || citado ? "Escribí tu respuesta…" : "Escribí algo…"} aria-label="Mensaje" maxLength={1000} />
-        {texto.trim() ? (
-          <motion.button className="boton-enviar" type="submit" whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} aria-label="Enviar">
+        {texto.trim() || castigo.diario ? (
+          <motion.button className="boton-enviar" type="submit" whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} disabled={!texto.trim()} aria-label="Enviar">
             <SendHorizontal size={20} />
           </motion.button>
         ) : (
           <Grabador onListo={enviarAudio} onError={setError} deshabilitado={subiendo} />
         )}
       </form>
+      )}
+      {castigo.diario && !castigo.evo && <p className="castigo-nota chat">Castigado por el Bocha: solo texto hasta que subas tu foto de hoy.</p>}
 
       <AccionesMensaje mensaje={acciones} onCerrar={() => setAcciones(null)} onResponder={responderMensaje} avisar={avisar} />
 

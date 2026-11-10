@@ -12,8 +12,9 @@ import IconoComida from "./IconoComida.jsx";
 const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷"];
 
 export function Reacciones({ comidaId }) {
-  const { usuario, salud, reacciones, alternarReaccion } = useDatos();
+  const { usuario, salud, reacciones, alternarReaccion, castigo } = useDatos();
   if (salud === undefined) return null; // Las reacciones llegan con la misma actualización de la base.
+  if (castigo.activo) return <p className="castigo-nota">Castigado por el Bocha: no podés reaccionar hasta que subas tu foto de hoy.</p>;
   const propias = reacciones.filter((r) => r.comida_id === comidaId);
 
   return (
@@ -42,7 +43,7 @@ export function Reacciones({ comidaId }) {
 const listaNombres = (n) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0]);
 
 export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
-  const { usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder } = useDatos();
+  const { castigo, usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder } = useDatos();
   // Comida grupal: los que comieron lo mismo y, para quien la publicó, los que todavía no respondieron.
   const grupo = comida.grupo_comida;
   const nombresDe = (ids) => [...new Set(ids)].map((id) => (id === usuario.id ? "vos" : perfiles[id]?.nombre)).filter(Boolean);
@@ -51,6 +52,8 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const [confirmar, setConfirmar] = useState(false);
   const [detalle, setDetalle] = useState(false);
   const tipo = tipoInfo(comida.tipo);
+  // Con la maldición del Bocha, las fotos del grupo se ven borrosas hasta subir la propia.
+  const tapada = castigo.diario && !propia;
   const alimentos = comida.alimentos || [];
   const texto = comida.descripcion || tipo.texto;
   // Foto de una comida cuyas calorías ya entraron con el total importado del día.
@@ -98,7 +101,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         <button className="comida-autor" onClick={() => abrirPerfil(comida.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}>
           <Avatar perfil={perfil} tam={38} />
           <span className="comida-autor-datos">
-            <strong>{perfil?.nombre || "Amigo"}</strong>
+            <strong>{perfil?.nombre || "Amigo"}{perfil?.caca && " 💩"}</strong>
             <span>{tipo.texto} · {haceCuanto(comida.creado_en)}{comida.privada && <><Lock size={12} className="candado" /> Solo vos</>}</span>
           </span>
         </button>
@@ -114,7 +117,8 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
 
       {foto ? (
         <button className="comida-foto" onClick={() => onZoom({ src: foto, alt: texto })} aria-label={`Ampliar foto: ${texto}`}>
-          <img src={foto} alt={texto} loading="lazy" />
+          <img src={foto} alt={texto} loading="lazy" className={tapada ? "foto-castigo" : undefined} />
+          {tapada && <span className="foto-castigo-texto">Subí tu foto de hoy para ver las del grupo</span>}
           <span className="comida-foto-ampliar" aria-hidden="true"><Maximize2 size={15} /></span>
         </button>
       ) : (

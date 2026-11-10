@@ -19,7 +19,9 @@ export default async function handler(req, res) {
     });
 
   try {
-    const resp = await rpc("destinos_programados", { p_clave: clave, p_tipo: tipo });
+    // La caca (aviso de las 22 y anuncio) tiene su propia función; el resto, la de siempre.
+    const funcion = ["caca", "anuncio_caca"].includes(tipo) ? "destinos_caca" : "destinos_programados";
+    const resp = await rpc(funcion, { p_clave: clave, p_tipo: tipo });
     if (!resp.ok) return res.status(401).json({ error: "No autorizado" });
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });

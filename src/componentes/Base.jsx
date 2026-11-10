@@ -21,6 +21,7 @@ export function Avatar({ perfil, tam = 40 }) {
       aria-hidden="true"
     >
       {(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}
+      {perfil?.caca && <span className={`avatar-caca ${perfil.caca}`}>💩</span>}
     </span>
   );
 }

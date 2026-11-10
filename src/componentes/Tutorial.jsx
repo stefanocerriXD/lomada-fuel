@@ -1,5 +1,17 @@
 const SECCIONES = [
   {
+    titulo: "La caca 💩",
+    preguntas: [
+      ["¿Cuál es la regla?", "Mínimo 1 foto de comida por día. La foto del resumen del día no cuenta. Se cuenta a la medianoche."],
+      ["¿Qué pasa si un día no subo ninguna?", ["Al día siguiente tenés 💩 al lado del nombre, y la ve todo el grupo.", "Te cae la maldición del Bocha: aparece al abrir la app, se asoma por los bordes, se ríe y te mancha la pantalla de caca.", "Ves borrosas las fotos del grupo, no podés reaccionar y en el chat solo podés mandar texto.", "El bot cuenta en el chat quiénes no subieron."]],
+      ["¿Puedo limpiar la caca de la pantalla?", "Sí. Tocá Limpiar, abajo a la izquierda, y frotá las manchas con el dedo hasta que se borren. Las del Bocha Evo cuestan el doble, y el Bocha sigue tirando más."],
+      ["¿Cómo me saco al Bocha?", "Subiendo tu foto del día. Se van el Bocha, las manchas y las restricciones. La 💩 al lado del nombre queda hasta el día siguiente."],
+      ["¿Qué es el Bocha Evo?", ["El domingo a la noche, el que más cacas juntó en la semana se come al BOCHA EVO de lunes a domingo. Si hay empate, le toca a todos los empatados.", "La app se le pone marrón, la pantalla se le llena de caca y el Bocha Evo aparece mucho más seguido.", "El teclado del chat queda tapado de caca: no puede mandar mensajes en toda la semana.", "Cargar comidas sigue funcionando, para no sumar más cacas."]],
+      ["¿Me avisan antes?", "Sí. A las 22 te llega una notificación si todavía no subiste ninguna foto ese día. En Resumen, arriba, ves si ya subiste la de hoy."],
+      ["¿Por qué no escucho al Bocha?", "En iPhone los sonidos suenan después de tocar algo en la app y no suenan con el celular en silencio."],
+    ],
+  },
+  {
     titulo: "Cargar comidas",
     preguntas: [
       ["¿Cómo subo una comida?", "Tocá el botón + o el + de la comida en Resumen. Escribí qué comiste, elegí el resultado y tocá Publicar. La foto es opcional."],
@@ -7,7 +19,6 @@ const SECCIONES = [
       ["¿Cómo cambio mi objetivo o mis macros?", ["Andá a Ajustes, Perfil y tocá Editar mi plan.", "En Tu objetivo elegí Definir, Mantener o Bulkear. Al definir y al bulkear sube la proteína.", "En Tu plan elegí qué priorizás: equilibrado, más proteína o más carbos.", "Si querés números exactos, prendé Poner mis macros a medida y escribí los gramos de proteína, carbos y grasas. Tu meta de calorías sale de esos gramos."]],
       ["¿Cómo publico una comida grupal?", ["Cargá la comida como siempre, con foto y alimentos.", "Abajo, en ¿Comiste con alguien?, tocá a los que comieron con vos y publicá.", "A cada uno le llega una solicitud. Cuando la acepta desde Resumen, la comida se suma a su día con los mismos alimentos.", "Después cada uno puede tocar su comida y ajustar su porción sin cambiar la de los demás."]],
       ["¿Cómo guardo una receta mía, como un budín?", ["Andá a Ajustes, Mis recetas, y tocá Nueva receta.", "Poné el nombre y en cuántas porciones la dividís.", "Agregá cada ingrediente con su cantidad, igual que cuando cargás una comida.", "Si la pesás terminada, poné el peso: el horno le saca agua y así cada porción queda más exacta.", "La próxima vez, al cargar una comida buscala por el nombre y elegí cuántas porciones comiste."]],
-      ["¿Cómo funcionan las multas?", ["Cada día hay que subir al menos 2 fotos de comidas. El contador de Resumen te muestra cuántas llevás.", "A la medianoche se cuentan: el que subió menos de 2 suma una multa y el bot lo cuenta en el chat.", "Cada uno tiene un comodín por semana para un día complicado. Se usa en Retos, para hoy o para sacarte la multa de ayer.", "El domingo a la noche se cierra la semana: el que más multas juntó cumple la prenda."]],
       ["¿Qué son las colaciones?", "Lo que comés entre comidas: una fruta, una barrita, un puñado de frutos secos. Tocá el + de Colaciones y cargá cada una cuando la comas; podés cargar varias en el mismo día y todas suman al total."],
       ["¿Puedo repetir una comida completa de otro día?", "Sí. Al tocar el + de desayuno, almuerzo, merienda, cena o colaciones aparecen tus comidas anteriores de ese momento. Tocá una y se cargan todos sus alimentos con las mismas cantidades; después podés cambiar lo que quieras."],
       ["¿Puedo repetir algo que ya comí?", "Sí. Al abrir Subir comida aparecen tus recientes y los que más usás. Al buscar, primero salen tus alimentos con la última cantidad que usaste."],

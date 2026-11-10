@@ -1185,25 +1185,59 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* Cada persona con su color en el chat, oscurecido o aclarado para que se lea */
 .burbuja .autor { color: var(--acento); }
 
-/* Multas */
+/* La caca */
 .dia-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .fotos-hoy { display: inline-flex; flex: none; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--peligro) 14%, transparent); color: var(--peligro); font-size: 0.8rem; font-weight: 700; }
 .fotos-hoy.completas { background: var(--acento-suave); color: var(--sobre-acento-suave); }
 .multas { display: flex; flex-direction: column; gap: 12px; }
 .multas-hoy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-.multas-hoy small, .multas-prenda > span { font-size: 0.8rem; color: var(--tinta-2); }
+.multas-hoy small, .multas-nota { font-size: 0.8rem; color: var(--tinta-2); }
+.multas-evo { margin: 0; padding: 10px 12px; border-radius: 12px; background: #5b3a1a; color: #f6e7d2; font-size: 0.88rem; }
 .multas-tabla { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .multas-tabla li { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--borde); }
 .multas-tabla li:last-child { border-bottom: 0; }
 .multas-nombre { flex: 1; font-weight: 600; }
-.multas-nombre small { font-weight: 500; color: var(--tinta-2); }
-.multas-tabla strong { min-width: 28px; font-size: 1.1rem; text-align: right; color: var(--tinta-2); }
-.multas-tabla .con-multas strong { color: var(--peligro); }
-.multas-prenda { display: flex; flex-direction: column; gap: 4px; }
-.multas-prenda strong { display: flex; align-items: center; gap: 4px; }
-.multas-prenda-editar { display: flex; gap: 8px; }
-.multas-prenda-editar input { flex: 1; min-width: 0; }
+.multas-tabla strong { font-size: 1rem; text-align: right; color: var(--tinta-2); letter-spacing: -0.15em; }
 .sello-multas { align-self: flex-start; width: fit-content; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--peligro) 14%, transparent); color: var(--peligro); font-size: 0.76rem; font-weight: 700; }
+.sello-multas.evo { background: #5b3a1a; color: #f6e7d2; }
+.avatar { position: relative; }
+.avatar-caca { position: absolute; right: -0.35em; bottom: -0.3em; font-size: 0.62em; line-height: 1; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 30%)); }
+.avatar-caca.evo { font-size: 0.85em; }
+.castigo-nota { margin: 0; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, #7a4e24 16%, transparent); color: var(--tinta); font-size: 0.82rem; font-weight: 600; }
+.castigo-nota.chat { margin: 6px 0 0; }
+.foto-castigo { filter: blur(18px) saturate(0.6); transform: scale(1.08); }
+.foto-castigo-texto { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; color: #fff; font-weight: 700; text-align: center; text-shadow: 0 1px 4px rgb(0 0 0 / 60%); }
+.teclado-caca { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px; border-radius: 18px; background: repeating-radial-gradient(circle at 30% 40%, #6b4420 0 14px, #5b3a1a 14px 26px); color: #f6e7d2; text-align: center; }
+.teclado-caca span { font-size: 1.6rem; letter-spacing: 0.2em; }
+.teclado-caca small { opacity: 0.85; }
+.capa-manchas { position: fixed; inset: 0; z-index: 70; overflow: hidden; pointer-events: none; }
+.mancha-caca { position: absolute; transform-origin: center; filter: drop-shadow(0 3px 4px rgb(0 0 0 / 35%)); opacity: 0.92; }
+.capa-manchas.limpiando { pointer-events: auto; touch-action: none; cursor: grab; background: rgb(255 255 255 / 6%); }
+.boton-limpiar { position: fixed; left: 14px; bottom: calc(88px + env(safe-area-inset-bottom)); z-index: 76; display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 999px; background: #f6e7d2; color: #4a2c10; font-weight: 700; box-shadow: 0 4px 14px rgb(0 0 0 / 25%); }
+.boton-limpiar.activo { background: #4a2c10; color: #f6e7d2; }
+.aviso-limpiar { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top)); z-index: 76; margin: 0; padding: 8px 14px; border-radius: 999px; background: #4a2c10; color: #f6e7d2; font-size: 0.84rem; font-weight: 600; white-space: nowrap; transform: translateX(-50%); pointer-events: none; }
+.bocha-asomado { position: fixed; z-index: 75; height: min(62dvh, 460px); pointer-events: none; filter: drop-shadow(0 8px 16px rgb(0 0 0 / 40%)); }
+.bocha-asomado.izquierda { left: 0; bottom: 12dvh; rotate: 12deg; }
+.bocha-asomado.derecha { right: 0; bottom: 12dvh; rotate: -12deg; }
+.bocha-asomado.abajo { left: 50%; bottom: 0; margin-left: calc(min(62dvh, 460px) * -0.22); }
+.cartel-bocha { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; background: radial-gradient(circle at 50% 35%, #7a4e24, #2a1a0b 70%); color: #f6e7d2; text-align: center; cursor: pointer; }
+.cartel-bocha img { max-height: 58dvh; max-width: 90vw; filter: drop-shadow(0 10px 24px rgb(0 0 0 / 50%)); }
+.cartel-bocha strong { font-family: var(--titulo); font-size: 1.6rem; font-weight: 800; text-transform: uppercase; }
+.cartel-bocha.evo strong { font-size: 2.4rem; color: #ff5a3c; text-shadow: 0 2px 0 #2a1a0b; }
+.cartel-bocha span { max-width: 340px; font-size: 0.95rem; line-height: 1.4; }
+.cartel-bocha small { opacity: 0.7; }
+.la-caca-reglas { display: flex; flex-direction: column; gap: 10px; margin: 0; padding-left: 18px; font-size: 0.9rem; line-height: 1.45; }
+.la-caca-imagenes { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.la-caca-imagen { display: flex; align-items: center; gap: 12px; }
+.la-caca-imagen img, .la-caca-vacia { flex: none; width: 52px; height: 72px; border-radius: 10px; object-fit: contain; background: var(--superficie-2); }
+.la-caca-vacia { display: grid; place-items: center; color: var(--tinta-2); font-weight: 800; }
+.la-caca-imagen > span { display: flex; flex: 1; flex-direction: column; min-width: 0; font-size: 0.86rem; }
+.la-caca-imagen small { color: var(--tinta-2); }
+:root[data-tema="caca"] {
+  color-scheme: light;
+  --fondo: #c9a77c; --superficie: #e3cba8; --superficie-2: #d4b48a; --pista: #b58e60; --tinta: #2b1a0a; --tinta-2: #4f3518; --tinta-3: #6d4b26;
+  --borde: #a67c4e; --acento: #5b3a1a; --sobre-acento: #f6e7d2; --acento-suave: #b8905f; --sobre-acento-suave: #2b1a0a;
+}
 
 /* Recetas propias */
 .editor-receta .gramos { max-width: 100%; }
