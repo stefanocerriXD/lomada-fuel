@@ -8,7 +8,7 @@ import { imagenPegada, leerPortapapeles } from "../lib/portapapeles.js";
 const SIN_PERMISO = "No pudimos abrir lo copiado. Mantené apretado el recuadro y elegí Pegar, o subí la captura.";
 
 // Entrada común de todo lo importado: captura, archivo o texto. Devuelve lo que pudo entender.
-export default function Lector({ nota, onLeido }) {
+export default function Lector({ nota, onLeido, interpretar = leerResumen, ejemplo }) {
   const [texto, setTexto] = useState("");
   const [progreso, setProgreso] = useState(null);
   const [error, setError] = useState("");
@@ -18,9 +18,9 @@ export default function Lector({ nota, onLeido }) {
     try {
       if (archivo.type.startsWith("image/")) {
         setProgreso(0);
-        onLeido(leerResumen(await leerImagen(archivo, setProgreso)));
+        onLeido(interpretar(await leerImagen(archivo, setProgreso)));
       } else {
-        onLeido(leerResumen(await archivo.text()));
+        onLeido(interpretar(await archivo.text()));
       }
     } catch {
       setError("No pudimos leerlo. Revisá tu conexión o pegá el texto.");
@@ -42,7 +42,7 @@ export default function Lector({ nota, onLeido }) {
       if (copiado.imagen) return leerArchivo(copiado.imagen);
       if (copiado.texto?.trim()) {
         setTexto(copiado.texto);
-        return onLeido(leerResumen(copiado.texto));
+        return onLeido(interpretar(copiado.texto));
       }
       setError("No hay nada copiado. Copiá una captura o el texto en tu otra app.");
     } catch {
@@ -80,10 +80,10 @@ export default function Lector({ nota, onLeido }) {
         </label>
       </div>
       <div className="separador"><span>o escribí el texto</span></div>
-      <textarea value={texto} onChange={(e) => setTexto(e.target.value)} onPaste={alPegar} rows={4} placeholder={"Calorías 1850\nProteínas 142 g\nCarbos 180 g\nGrasas 62 g"} aria-label="Texto del resumen" />
+      <textarea value={texto} onChange={(e) => setTexto(e.target.value)} onPaste={alPegar} rows={4} placeholder={ejemplo || "Calorías 1850\nProteínas 142 g\nCarbos 180 g\nGrasas 62 g"} aria-label="Texto del resumen" />
       {error && <p className="error" role="alert">{error}</p>}
       {texto.trim() && (
-        <button type="button" className="boton boton-secundario" onClick={() => onLeido(leerResumen(texto))}>Leer texto</button>
+        <button type="button" className="boton boton-secundario" onClick={() => onLeido(interpretar(texto))}>Leer texto</button>
       )}
     </div>
   );

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Copy, Download, HeartPulse } from "lucide-react";
+import { Check, Copy, Download, HeartPulse } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { ATAJO_SALUD, NOMBRE_ATAJO } from "../lib/api.js";
+import { nombreDia } from "../lib/fechas.js";
 
 const MODOS = [
   ["mayor", "Usar el valor mayor", "Compara cada dato y toma el más alto. Es lo recomendado."],
@@ -10,11 +11,36 @@ const MODOS = [
   ["sumar", "Sumar todo", "Suma Apple Salud y lo cargado en la app."],
 ];
 
+// Vinculado = ya llegaron datos del Atajo. Con la llave creada pero sin datos, falta terminar el Atajo.
+export function useEstadoSalud() {
+  const { usuario, extras } = useDatos();
+  const [estado, setEstado] = useState(null);
+  useEffect(() => {
+    if (!extras.disponible) return;
+    Promise.all([
+      supabase.from("tokens_salud").select("usuario_id").eq("usuario_id", usuario.id).maybeSingle(),
+      supabase.from("comidas").select("fecha").eq("usuario_id", usuario.id).eq("tipo", "resumen").eq("descripcion", "Resumen de Apple Salud").order("fecha", { ascending: false }).limit(1).maybeSingle(),
+    ]).then(([llave, ultimo]) => {
+      if (llave.error) return setEstado(null);
+      setEstado({ llave: Boolean(llave.data), ultimo: ultimo.data?.fecha || null });
+    });
+  }, [extras.disponible, usuario.id]);
+  return estado;
+}
+
+export function textoEstadoSalud(estado) {
+  if (!estado) return "";
+  if (estado.ultimo) return `Vinculado · último dato ${nombreDia(estado.ultimo).toLowerCase()}`;
+  if (estado.llave) return "Llave creada · falta el primer envío del Atajo";
+  return "Sin vincular";
+}
+
 export default function AppleSalud({ avisar }) {
   const { usuario, yo, extras, cargarPerfiles } = useDatos();
   const [conectado, setConectado] = useState(null);
   const [token, setToken] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  const estado = useEstadoSalud();
 
   useEffect(() => {
     if (!extras.disponible) return;
@@ -53,6 +79,11 @@ export default function AppleSalud({ avisar }) {
   return (
     <section className="tarjeta ajuste salud">
       <h2>Apple Salud</h2>
+      {estado && (
+        <span className={estado.ultimo ? "estado-salud vinculado" : "estado-salud"} role="status">
+          {estado.ultimo ? <Check size={15} /> : null} {textoEstadoSalud(estado)}
+        </span>
+      )}
       <p className="ajuste-texto">Solo en iPhone. Trae todos los días las calorías y los macros que tengas en Salud.</p>
 
       <ol className="pasos-salud">

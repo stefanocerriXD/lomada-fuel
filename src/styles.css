@@ -1256,6 +1256,12 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 /* Recetas propias */
 .editor-receta .gramos { max-width: 100%; }
+.porciones-rapidas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.porciones-rapidas button { min-width: 38px; min-height: 36px; padding: 0 8px; border-radius: 10px; background: var(--superficie); color: var(--tinta); font-weight: 650; }
+.porciones-rapidas button.activo { background: var(--acento); color: var(--sobre-acento); }
+.ingredientes-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.estado-salud { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 5px 11px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta-2); font-size: 0.82rem; font-weight: 700; }
+.estado-salud.vinculado { background: var(--acento-suave); color: var(--sobre-acento-suave); }
 .resumen-receta { padding: 12px 14px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.88rem; line-height: 1.4; }
 .resumen-receta p { margin: 0; }
 .resumen-receta p + p { margin-top: 4px; }

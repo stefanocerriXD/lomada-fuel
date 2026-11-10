@@ -1,4 +1,4 @@
-import AppleSalud from "../componentes/AppleSalud.jsx";
+import AppleSalud, { textoEstadoSalud, useEstadoSalud } from "../componentes/AppleSalud.jsx";
 import Mejoras from "../componentes/Mejoras.jsx";
 import MisRecetas from "../componentes/MisRecetas.jsx";
 import LaCaca from "../componentes/LaCaca.jsx";
@@ -62,13 +62,14 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
     guardarTema(nuevo);
   }
 
+  const estadoSalud = useEstadoSalud();
   const SECCIONES = [
     { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
     { id: "caca", titulo: "La caca 💩", detalle: "La regla de las fotos y el Bocha", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
     { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
-    { id: "salud", titulo: "Apple Salud", detalle: "Traer calorías y macros", icono: HeartPulse },
+    { id: "salud", titulo: "Apple Salud", detalle: estadoSalud?.ultimo ? textoEstadoSalud(estadoSalud) : "Traer calorías y macros", icono: HeartPulse },
     { id: "whoop", titulo: "WHOOP", detalle: "Recuperación, sueño y esfuerzo", icono: Watch },
     { id: "apariencia", titulo: "Apariencia", detalle: "Lomada, claro u oscuro", icono: Palette },
     { id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
