@@ -5,6 +5,7 @@ import { haceDias } from "./fechas.js";
 import { cantidades } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
 import { castigoDe, marcaDeCaca } from "./multas.js";
+import { marcarActividad } from "./vivo.js";
 
 const Contexto = createContext(null);
 export const useDatos = () => useContext(Contexto);
@@ -142,29 +143,73 @@ export function DatosProvider({ usuario, children }) {
     setComidasInvitadas(Object.fromEntries((lista || []).map((c) => [c.id, c])));
   }, [usuario.id, firmarFotos]);
 
-  const alternarReaccionMensaje = useCallback(async (mensajeId, emoji) => {
-    const clave = (r) => r.mensaje_id === mensajeId && r.usuario_id === usuario.id && r.emoji === emoji;
-    const fila = { mensaje_id: mensajeId, usuario_id: usuario.id, emoji };
-    let tenia = false;
+  // El chat en vivo va por un canal directo entre teléfonos (broadcast): llega al instante.
+  // Los cambios de la base siguen llegando por su lado como respaldo.
+  const chatRef = useRef(null);
+  const emitirChat = useCallback((evento, datos) => {
+    chatRef.current?.send({ type: "broadcast", event: evento, payload: datos })?.catch?.(() => {});
+  }, []);
+
+  const ponerReaccion = useCallback(({ mensaje_id, usuario_id, emoji, activa }) => {
+    const clave = (r) => r.mensaje_id === mensaje_id && r.usuario_id === usuario_id && r.emoji === emoji;
     setReaccionesMensajes((prev) => {
-      tenia = prev.some(clave);
-      return tenia ? prev.filter((r) => !clave(r)) : [...prev, fila];
+      const tiene = prev.some(clave);
+      if (activa === tiene) return prev;
+      return activa ? [...prev, { mensaje_id, usuario_id, emoji }] : prev.filter((r) => !clave(r));
     });
+  }, []);
+
+  const reaccionesRef = useRef(reaccionesMensajes);
+  reaccionesRef.current = reaccionesMensajes;
+  const alternarReaccionMensaje = useCallback(async (mensajeId, emoji) => {
+    const fila = { mensaje_id: mensajeId, usuario_id: usuario.id, emoji };
+    const tenia = reaccionesRef.current.some((r) => r.mensaje_id === mensajeId && r.usuario_id === usuario.id && r.emoji === emoji);
+    ponerReaccion({ ...fila, activa: !tenia });
+    emitirChat("reaccion", { ...fila, activa: !tenia });
     const consulta = supabase.from("reacciones_mensajes");
     const { error } = await (tenia
       ? consulta.delete().eq("mensaje_id", mensajeId).eq("usuario_id", usuario.id).eq("emoji", emoji)
       : consulta.insert(fila));
     if (error) cargarSocial().catch(() => {});
-  }, [usuario.id, cargarSocial]);
+  }, [usuario.id, cargarSocial, ponerReaccion, emitirChat]);
+
+  const ponerLectura = useCallback(({ usuario_id, hasta }) => {
+    setLecturas((prev) => {
+      const actual = prev.find((l) => l.usuario_id === usuario_id);
+      if (actual && actual.hasta >= hasta) return prev;
+      return [...prev.filter((l) => l.usuario_id !== usuario_id), { usuario_id, hasta }];
+    });
+  }, []);
 
   const marcarLeido = useCallback(async (hasta) => {
-    setLecturas((prev) => [...prev.filter((l) => l.usuario_id !== usuario.id), { usuario_id: usuario.id, hasta }]);
+    ponerLectura({ usuario_id: usuario.id, hasta });
+    emitirChat("leido", { usuario_id: usuario.id, hasta });
     await supabase.from("lecturas").upsert({ usuario_id: usuario.id, hasta }, { onConflict: "usuario_id" });
-  }, [usuario.id]);
+  }, [usuario.id, ponerLectura, emitirChat]);
 
+  // Si ya estaba (por ejemplo, el mensaje que se mostró antes de que lo confirme la base), se reemplaza.
   const agregarMensaje = useCallback((nuevo) => {
-    setMensajes((prev) => (prev.some((m) => m.id === nuevo.id) ? prev : [...prev, nuevo]));
+    setMensajes((prev) => {
+      const i = prev.findIndex((m) => m.id === nuevo.id);
+      if (i < 0) return [...prev, nuevo].sort((a, b) => (a.creado_en < b.creado_en ? -1 : a.creado_en > b.creado_en ? 1 : 0));
+      if (!prev[i].pendiente) return prev;
+      const copia = [...prev];
+      copia[i] = { ...nuevo, pendiente: false };
+      return copia;
+    });
   }, []);
+
+  const quitarMensaje = useCallback((id) => setMensajes((prev) => prev.filter((m) => m.id !== id)), []);
+
+  // Escribiendo, grabando o mandando una foto: se avisa al cambiar y cada tanto mientras dura.
+  const actividadPropia = useRef({ que: null, cuando: 0 });
+  const avisarActividad = useCallback((que) => {
+    const ahora = Date.now();
+    const previa = actividadPropia.current;
+    if (previa.que === que && (!que || ahora - previa.cuando < 2500)) return;
+    actividadPropia.current = { que, cuando: ahora };
+    emitirChat("actividad", { usuario_id: usuario.id, que });
+  }, [usuario.id, emitirChat]);
 
   const cargarDia = useCallback(async (fecha) => {
     const { data, error } = await supabase.from("comidas").select("*").eq("fecha", fecha).limit(200);
@@ -350,6 +395,23 @@ export function DatosProvider({ usuario, children }) {
       if (nuevo.usuario_id && !perfilesRef.current[nuevo.usuario_id]) cargarPerfiles().catch(() => {});
     });
 
+    // Canal directo del chat: mensajes, reacciones, vistos y quién está escribiendo.
+    const chatAnterior = chatRef.current;
+    chatRef.current = null;
+    if (chatAnterior) supabase.removeChannel(chatAnterior);
+    const chat = supabase.channel("chat-vivo", { config: { broadcast: { self: false, ack: false } } });
+    chat.on("broadcast", { event: "mensaje" }, ({ payload }) => {
+      if (!payload?.id) return;
+      marcarActividad(payload.usuario_id, null);
+      if (payload.adjunto_path) firmarRutas([payload.adjunto_path]).catch(() => {});
+      agregarMensaje(payload);
+    });
+    chat.on("broadcast", { event: "reaccion" }, ({ payload }) => payload && ponerReaccion(payload));
+    chat.on("broadcast", { event: "leido" }, ({ payload }) => payload && ponerLectura(payload));
+    chat.on("broadcast", { event: "actividad" }, ({ payload }) => payload?.usuario_id && marcarActividad(payload.usuario_id, payload.que));
+    chat.subscribe();
+    chatRef.current = chat;
+
     canalRef.current = canal;
     canal.subscribe((estado) => {
       if (canalRef.current !== canal) return;
@@ -363,7 +425,7 @@ export function DatosProvider({ usuario, children }) {
         reintento.current = setTimeout(conectar, REINTENTO_MS);
       }
     });
-  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar]);
+  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura]);
 
   useEffect(() => {
     cargarMensajes().catch(() => setMensajesListos(true));
@@ -410,6 +472,9 @@ export function DatosProvider({ usuario, children }) {
       const canal = canalRef.current;
       canalRef.current = null;
       if (canal) supabase.removeChannel(canal);
+      const chat = chatRef.current;
+      chatRef.current = null;
+      if (chat) supabase.removeChannel(chat);
     };
   }, [cargarMensajes, cargarSocial, conectar, refrescar]);
 
@@ -502,6 +567,9 @@ export function DatosProvider({ usuario, children }) {
       cargarInvitaciones,
       firmarRutas,
       agregarMensaje,
+      quitarMensaje,
+      emitirChat,
+      avisarActividad,
       comidasLogros,
       aguaLogros,
       progreso,
@@ -520,7 +588,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

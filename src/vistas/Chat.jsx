@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Bell, Bot, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
+import { Bell, Bot, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
 import { useDatos } from "../lib/datos.jsx";
+import { useActividad } from "../lib/vivo.js";
 import { fechaLocal, hora, nombreDia } from "../lib/fechas.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { tipoInfo } from "../lib/macros.js";
@@ -196,19 +197,26 @@ function useToqueLargo(alAbrir) {
   };
 }
 
-function Reacciones({ mensajeId }) {
-  const { usuario, reaccionesMensajes, alternarReaccionMensaje } = useDatos();
-  const propias = reaccionesMensajes.filter((r) => r.mensaje_id === mensajeId);
-  if (!propias.length) return null;
-  const grupos = [...new Set(propias.map((r) => r.emoji))];
+const SIN_REACCIONES = [];
+const nombreDeQuien = (perfiles, yoId, id) => (id === yoId ? "vos" : perfiles[id]?.nombre || "Amigo");
+
+// Cada reacción muestra quién la puso: el emoji y las caritas de los que reaccionaron.
+function Reacciones({ mensajeId, lista, perfiles, yoId, onReaccion }) {
+  if (!lista.length) return null;
+  const grupos = [...new Set(lista.map((r) => r.emoji))];
   return (
     <div className="reacciones-mensaje">
       {grupos.map((e) => {
-        const cantidad = propias.filter((r) => r.emoji === e).length;
-        const mia = propias.some((r) => r.emoji === e && r.usuario_id === usuario.id);
+        const quienes = lista.filter((r) => r.emoji === e).map((r) => r.usuario_id);
+        const mia = quienes.includes(yoId);
+        const nombres = listaDeNombres(quienes.map((id) => nombreDeQuien(perfiles, yoId, id)));
         return (
-          <button key={e} className={mia ? "mia" : ""} onClick={() => alternarReaccionMensaje(mensajeId, e)} aria-pressed={mia} aria-label={`${e} ${cantidad}`}>
-            {e}{cantidad > 1 && <small>{cantidad}</small>}
+          <button key={e} className={mia ? "mia" : ""} onClick={() => onReaccion(mensajeId, e)} aria-pressed={mia} aria-label={`${e} de ${nombres}`} title={nombres}>
+            <span className="reaccion-emoji">{e}</span>
+            <span className="reaccion-quienes" aria-hidden="true">
+              {quienes.slice(0, 3).map((id) => <Avatar key={id} perfil={perfiles[id]} tam={16} />)}
+              {quienes.length > 3 && <small>+{quienes.length - 3}</small>}
+            </span>
           </button>
         );
       })}
@@ -216,28 +224,47 @@ function Reacciones({ mensajeId }) {
   );
 }
 
-function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onResponder, onZoom }) {
-  const { perfiles, fotos, abrirPerfil } = useDatos();
+// Quién está escribiendo, grabando o mandando una foto, como una burbuja al final del chat.
+const TEXTO_ACTIVIDAD = { escribiendo: "está escribiendo", grabando: "está grabando un audio", foto: "está mandando una foto" };
+function ActividadEnChat({ perfiles, yoId, alCambiar }) {
+  const actividad = useActividad();
+  const activos = Object.entries(actividad).filter(([id, que]) => id !== yoId && perfiles[id] && TEXTO_ACTIVIDAD[que]);
+  useEffect(() => { alCambiar(); }, [activos.length, alCambiar]);
+  return (
+    <AnimatePresence initial={false}>
+      {activos.map(([id, que]) => (
+        <motion.div key={id} className="chat-fila escribiendo-fila" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.18 }} role="status">
+          <span className="chat-avatar"><Avatar perfil={perfiles[id]} tam={30} /></span>
+          <div className="burbuja burbuja-escribiendo">
+            <span className="puntos" aria-hidden="true"><i /><i /><i /></span>
+            <small><strong style={{ color: colorDeNombre(perfiles, id) }}>{perfiles[id].nombre}</strong> {TEXTO_ACTIVIDAD[que]}</small>
+          </div>
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  );
+}
+
+// Memorizado: escribir o recibir algo no redibuja todos los mensajes, solo los que cambian.
+const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onReaccion, onPerfil, onAcciones, onResponder, onZoom }) {
   const { marcado, eventos } = useToqueLargo(() => onAcciones(m));
   // Deslizar a la derecha responde, como en WhatsApp.
   const x = useMotionValue(0);
   const flecha = useTransform(x, [0, DESLIZAR_PARA_RESPONDER], [0, 1]);
   const avisado = useRef(false);
-  const perfil = perfiles[m.usuario_id];
-  const foto = m.adjunto_path && fotos[m.adjunto_path];
   const soloSticker = m.sticker && !m.texto && !m.respuesta_mensaje && !m.respuesta_comida;
 
   return (
     <div className="chat-grupo">
-      {separador}
+      {dia && <p className="chat-dia"><span>{nombreDia(dia)}</span></p>}
       <motion.div
         id={`m-${m.id}`}
-        className={propio ? "chat-fila propia" : "chat-fila"}
+        className={`${propio ? "chat-fila propia" : "chat-fila"}${m.pendiente ? " pendiente" : ""}`}
         initial={{ opacity: 0, y: 10, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.16 }}
       >
-        {!propio && (fin ? <button className="chat-avatar" onClick={() => abrirPerfil(m.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}><Avatar perfil={perfil} tam={30} /></button> : <span className="chat-hueco" />)}
+        {!propio && (fin ? <button className="chat-avatar" onClick={() => onPerfil(m.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}><Avatar perfil={perfil} tam={30} /></button> : <span className="chat-hueco" />)}
         <div className="chat-columna">
           <motion.span className="deslizar-responder" style={{ opacity: flecha, scale: flecha }} aria-hidden="true"><Reply size={18} /></motion.span>
           <motion.div
@@ -273,20 +300,21 @@ function Mensaje({ m, propio, inicio, fin, separador, visto, onAcciones, onRespo
             )}
             {m.sticker && <span className="sticker" role="img" aria-label="Sticker">{m.sticker}</span>}
             {m.texto && <p><ConMenciones texto={m.texto} /></p>}
-            <time dateTime={m.creado_en}>{hora(m.creado_en)}</time>
+            <time dateTime={m.creado_en}>{m.pendiente ? <Clock3 size={11} aria-label="Enviando" /> : hora(m.creado_en)}</time>
           </motion.div>
-          <Reacciones mensajeId={m.id} />
+          <Reacciones mensajeId={m.id} lista={reacciones} perfiles={perfiles} yoId={yoId} onReaccion={onReaccion} />
           {visto && <p className="visto">{visto}</p>}
         </div>
       </motion.div>
     </div>
   );
-}
+});
 
 function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
-  const { usuario, reaccionesMensajes, alternarReaccionMensaje } = useDatos();
+  const { usuario, perfiles, reaccionesMensajes, alternarReaccionMensaje } = useDatos();
   if (!mensaje) return <Hoja abierta={false} onCerrar={onCerrar} titulo="Opciones" />;
-  const mias = new Set(reaccionesMensajes.filter((r) => r.mensaje_id === mensaje.id && r.usuario_id === usuario.id).map((r) => r.emoji));
+  const delMensaje = reaccionesMensajes.filter((r) => r.mensaje_id === mensaje.id);
+  const mias = new Set(delMensaje.filter((r) => r.usuario_id === usuario.id).map((r) => r.emoji));
 
   async function copiar() {
     try {
@@ -308,6 +336,17 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
         </div>
         <button className="accion-mensaje" onClick={() => { onResponder(mensaje); onCerrar(); }}><Reply size={19} /> Responder</button>
         {mensaje.texto && <button className="accion-mensaje" onClick={copiar}><Copy size={18} /> Copiar texto</button>}
+        {delMensaje.length > 0 && (
+          <ul className="quienes-reaccionaron" aria-label="Quién reaccionó">
+            {delMensaje.map((r) => (
+              <li key={`${r.usuario_id}${r.emoji}`}>
+                <Avatar perfil={perfiles[r.usuario_id]} tam={28} />
+                <span>{r.usuario_id === usuario.id ? "Vos" : perfiles[r.usuario_id]?.nombre || "Amigo"}</span>
+                <span className="reaccion-grande">{r.emoji}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </Hoja>
   );
@@ -315,9 +354,14 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
 
 export default function Chat({ avisar }) {
   const {
-    castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, respuesta, responder,
-    lecturas, marcarLeido, firmarRutas, avisarEstado,
+    castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, quitarMensaje, emitirChat, respuesta, responder,
+    lecturas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, alternarReaccionMensaje, abrirPerfil,
   } = useDatos();
+  const reaccionesPorMensaje = useMemo(() => {
+    const mapa = {};
+    for (const r of reaccionesMensajes) (mapa[r.mensaje_id] ||= []).push(r);
+    return mapa;
+  }, [reaccionesMensajes]);
   const reposo = useRef(null);
   const campo = useRef(null);
   const lista = useRef(null);
@@ -346,6 +390,18 @@ export default function Chat({ avisar }) {
     el?.scrollTo({ top: el.scrollHeight, behavior: cargado ? "smooth" : "auto" });
   }, [linea.length, cargado]);
 
+  // Si alguien empieza a escribir y estás abajo de todo, se muestra sin que tengas que bajar.
+  const bajarSiEstaAbajo = useCallback(() => {
+    const el = lista.current;
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 140) requestAnimationFrame(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }));
+  }, []);
+
+  // Mientras se sube una foto o un audio, los demás lo ven.
+  useEffect(() => {
+    if (subiendo) avisarActividad("foto");
+    else avisarActividad(null);
+  }, [subiendo, avisarActividad]);
+
   // Lo que está en pantalla queda visto.
   const miLectura = lecturas.find((l) => l.usuario_id === usuario.id)?.hasta;
   useEffect(() => {
@@ -373,9 +429,9 @@ export default function Chat({ avisar }) {
     const valor = e.target.value;
     setTexto(valor);
     // Los demás ven "escribiendo…" mientras haya texto y se siga tecleando.
-    avisarEstado({ escribiendo: Boolean(valor.trim()) });
+    avisarActividad(valor.trim() ? "escribiendo" : null);
     clearTimeout(reposo.current);
-    reposo.current = setTimeout(() => avisarEstado({ escribiendo: false }), ESCRIBIENDO_MS);
+    reposo.current = setTimeout(() => avisarActividad(null), ESCRIBIENDO_MS);
     const antes = valor.slice(0, e.target.selectionStart ?? valor.length);
     const hallado = antes.match(/(?:^|\s)@([\p{L}\d_.]*)$/u);
     setMencion(hallado ? normal(hallado[1]) : null);
@@ -395,31 +451,36 @@ export default function Chat({ avisar }) {
 
   const sugeridos = mencion === null ? [] : otros.filter((p) => normal(p.nombre).startsWith(mencion)).slice(0, 5);
 
-  function responderMensaje(m) {
+  const responderMensaje = useCallback((m) => {
     responder(null);
     setCitado(m);
     campo.current?.focus();
-  }
+  }, [responder]);
 
+  // El mensaje aparece al instante (con un relojito) y se confirma cuando lo guarda la base.
   async function mandar(extra, textoEnviado = "") {
     setError("");
+    const id = crypto.randomUUID();
     const fila = {
+      id,
       usuario_id: usuario.id,
       texto: textoEnviado,
       ...extra,
       ...(respuesta ? { respuesta_comida: respuesta.id } : {}),
       ...(citado ? { respuesta_mensaje: citado.id } : {}),
     };
+    responder(null);
+    setCitado(null);
+    if (fila.adjunto_path) await firmarRutas([fila.adjunto_path]).catch(() => {});
+    agregarMensaje({ ...fila, creado_en: new Date().toISOString(), pendiente: true });
     const { data, error: err } = await supabase.from("mensajes").insert(fila).select().single();
     if (err) {
+      quitarMensaje(id);
       setError("No se pudo enviar. Probá de nuevo.");
       return false;
     }
-    // Se suma enseguida aunque el tiempo real tarde o esté caído.
-    responder(null);
-    setCitado(null);
-    if (data.adjunto_path) await firmarRutas([data.adjunto_path]);
     agregarMensaje(data);
+    emitirChat("mensaje", data);
     avisarGrupo("mensaje", data.id);
     return true;
   }
@@ -431,14 +492,14 @@ export default function Chat({ avisar }) {
     setTexto("");
     setMencion(null);
     clearTimeout(reposo.current);
-    avisarEstado({ escribiendo: false });
+    avisarActividad(null);
     if (!(await mandar({}, limpio))) setTexto(limpio);
   }
 
   useEffect(() => () => {
     clearTimeout(reposo.current);
-    avisarEstado({ escribiendo: false });
-  }, [avisarEstado]);
+    avisarActividad(null);
+  }, [avisarActividad]);
 
   async function enviarAudio(blob) {
     setSubiendo(true);
@@ -510,6 +571,7 @@ export default function Chat({ avisar }) {
           const dia = fechaLocal(new Date(m.creado_en));
           const nuevoDia = !previo || fechaLocal(new Date(previo.creado_en)) !== dia;
           const separador = nuevoDia && <p className="chat-dia"><span>{nombreDia(dia)}</span></p>;
+          const fotoDe = m.adjunto_path ? fotos[m.adjunto_path] : undefined;
 
           if (!m.usuario_id) {
             return (
@@ -535,14 +597,22 @@ export default function Chat({ avisar }) {
               propio={m.usuario_id === usuario.id}
               inicio={nuevoDia || !mismoAutor(previo)}
               fin={!mismoAutor(siguiente)}
-              separador={separador}
-              visto={vistoDe(m, siguiente)}
+              dia={nuevoDia ? dia : null}
+              visto={m.pendiente ? "" : vistoDe(m, siguiente)}
+              perfil={perfiles[m.usuario_id]}
+              perfiles={perfiles}
+              foto={fotoDe}
+              yoId={usuario.id}
+              reacciones={reaccionesPorMensaje[m.id] || SIN_REACCIONES}
+              onReaccion={alternarReaccionMensaje}
+              onPerfil={abrirPerfil}
               onAcciones={setAcciones}
               onResponder={responderMensaje}
               onZoom={setZoom}
             />
           );
         })}
+        <ActividadEnChat perfiles={perfiles} yoId={usuario.id} alCambiar={bajarSiEstaAbajo} />
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
@@ -560,7 +630,6 @@ export default function Chat({ avisar }) {
           <button className="boton-icono chico" onClick={() => setCitado(null)} aria-label="Cancelar respuesta"><X size={16} /></button>
         </div>
       )}
-      <EnVivo que="escribiendo" />
       {sugeridos.length > 0 && (
         <ul className="chat-menciones" role="listbox" aria-label="Mencionar a">
           {sugeridos.map((p) => (
@@ -602,7 +671,7 @@ export default function Chat({ avisar }) {
             <SendHorizontal size={20} />
           </motion.button>
         ) : (
-          <Grabador onListo={enviarAudio} onError={setError} deshabilitado={subiendo} />
+          <Grabador onListo={enviarAudio} onError={setError} deshabilitado={subiendo} onGrabando={(si) => avisarActividad(si ? "grabando" : null)} />
         )}
       </form>
       )}

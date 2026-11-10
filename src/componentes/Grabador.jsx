@@ -16,7 +16,7 @@ function formato() {
 export const extensionAudio = (tipo) => (tipo.includes("mp4") ? "m4a" : "webm");
 
 // Botón de micrófono: tocar empieza a grabar; después se manda o se descarta.
-export default function Grabador({ onListo, onError, deshabilitado }) {
+export default function Grabador({ onListo, onError, deshabilitado, onGrabando }) {
   const [grabando, setGrabando] = useState(false);
   const [segundos, setSegundos] = useState(0);
   const grabador = useRef(null);
@@ -40,6 +40,7 @@ export default function Grabador({ onListo, onError, deshabilitado }) {
         flujo.getTracks().forEach((t) => t.stop());
         clearInterval(reloj.current);
         setGrabando(false);
+        onGrabando?.(false);
         if (descartar.current || !partes.current.length) return;
         const blob = new Blob(partes.current, { type: g.mimeType || tipo || "audio/webm" });
         onListo(blob);
@@ -48,6 +49,7 @@ export default function Grabador({ onListo, onError, deshabilitado }) {
       grabador.current = g;
       setSegundos(0);
       setGrabando(true);
+      onGrabando?.(true);
       vibrar(12);
       reloj.current = setInterval(() => {
         setSegundos((s) => {

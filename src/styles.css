@@ -1516,3 +1516,17 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
   .esqueleto i { animation: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Chat en vivo: quién escribe, mensajes en camino y quién reaccionó */
+.chat-fila.pendiente .burbuja { opacity: 0.72; }
+.escribiendo-fila { align-self: flex-start; }
+.burbuja-escribiendo { display: flex; align-items: center; gap: 8px; padding: 9px 12px; }
+.burbuja-escribiendo small { color: var(--tinta-2); font-size: 0.78rem; }
+.reacciones-mensaje button { gap: 4px; }
+.reaccion-quienes { display: inline-flex; align-items: center; }
+.reaccion-quienes > * { margin-left: -4px; box-shadow: 0 0 0 1.5px var(--superficie); border-radius: 50%; }
+.reaccion-quienes > :first-child { margin-left: 0; }
+.reaccion-quienes small { padding-left: 6px; box-shadow: none; }
+.quienes-reaccionaron { display: flex; flex-direction: column; margin: 6px 0 0; padding: 0; list-style: none; }
+.quienes-reaccionaron li { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-top: 1px solid var(--borde); font-weight: 600; }
+.quienes-reaccionaron .reaccion-grande { margin-left: auto; font-size: 1.2rem; }
