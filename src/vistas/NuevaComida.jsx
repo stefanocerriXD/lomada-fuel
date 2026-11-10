@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
+import { BookmarkPlus, CalendarDays, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
@@ -16,21 +16,25 @@ import { Avatar, Hoja, Numero, vibrar } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import Lector from "../componentes/Lector.jsx";
 import Escaner from "./Escaner.jsx";
+import EditorReceta from "../componentes/EditorReceta.jsx";
+import { createPortal } from "react-dom";
 
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
-export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta }) {
+export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, avisar }) {
   const editando = carga?.comida;
   return (
     <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={editando ? "Editar comida" : "Subir comida"} ancha>
-      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} onFiesta={onFiesta} />}
+      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} onFiesta={onFiesta} avisar={avisar} />}
     </Hoja>
   );
 }
 
-function Formulario({ carga, onGuardar, onImportarDia, onFiesta }) {
+function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
+  // Lo que se está cargando se puede guardar como receta propia (un budín, el desayuno de siempre).
+  const [recetaNueva, setRecetaNueva] = useState(null);
   const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones } = useDatos();
   // Comida grupal: a quién sumar. Solo la comida original invita, no las copias de los que aceptaron.
   const [companeros, setCompaneros] = useState([]);
@@ -292,6 +296,13 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta }) {
             ))}
           </AnimatePresence>
 
+          {items.length > 0 && !panel && (
+            <button type="button" className="boton-texto guardar-receta" onClick={() => setRecetaNueva({ nombre: descripcion.trim().slice(0, 80), ingredientes: items, porciones: 1 })}>
+              <BookmarkPlus size={15} /> Guardar como receta
+            </button>
+          )}
+          {createPortal(<EditorReceta receta={recetaNueva} onCerrar={() => setRecetaNueva(null)} avisar={avisar || (() => {})} />, document.body)}
+
           {!items.length && !panel && (combos.length > 0 || extras.favoritas.length > 0 || historial.recientes.length > 0 || extras.recetas?.length > 0) && (
             <div className="historial">
               {extras.recetas?.length > 0 && (
@@ -506,8 +517,14 @@ function FilaResultado({ alimento, onElegir }) {
 }
 
 export function Resultados({ texto, onElegir, propios }) {
-  const { extras } = useDatos();
-  const recetas = useMemo(() => buscarRecetas(extras.recetas || [], texto).map(recetaComoAlimento), [extras.recetas, texto]);
+  const { extras, perfiles } = useDatos();
+  const recetas = useMemo(
+    () => [
+      ...buscarRecetas(extras.recetas || [], texto).map((r) => recetaComoAlimento(r)),
+      ...buscarRecetas((extras.recetasGrupo || []).filter((r) => perfiles[r.usuario_id]), texto).map((r) => recetaComoAlimento(r, perfiles[r.usuario_id].nombre)),
+    ],
+    [extras.recetas, extras.recetasGrupo, perfiles, texto],
+  );
   const tuyos = useMemo(() => buscarEnHistorial(propios, texto), [propios, texto]);
   const locales = useMemo(() => buscarTipicos(texto), [texto]);
   const [productos, setProductos] = useState([]);
@@ -557,7 +574,7 @@ export function Resultados({ texto, onElegir, propios }) {
 
       {recetas.length > 0 && (
         <>
-          <h3 className="titulo-lista">Tus recetas</h3>
+          <h3 className="titulo-lista">{recetas.some((a) => a.marca !== "Tu receta") ? "Recetas" : "Tus recetas"}</h3>
           <ul className="resultados">
             {recetas.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} />)}
           </ul>

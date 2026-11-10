@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Bell, Bot, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
+import { Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
@@ -12,6 +12,8 @@ import { tipoInfo } from "../lib/macros.js";
 import { Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
 import Grabador, { extensionAudio } from "../componentes/Grabador.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
+import VerReceta, { useReceta } from "../componentes/VerReceta.jsx";
+import { totalesDeReceta } from "../lib/recetasPropias.js";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
@@ -245,8 +247,23 @@ function ActividadEnChat({ perfiles, yoId, alCambiar }) {
   );
 }
 
+// Una receta compartida: se toca para verla y guardarla.
+function RecetaEnChat({ id, onVer }) {
+  const receta = useReceta(id);
+  if (receta === undefined) return <span className="receta-chat cargando" aria-hidden="true" />;
+  if (!receta) return <span className="receta-chat sin-datos">La receta ya no está disponible</span>;
+  const porciones = Math.max(1, Number(receta.porciones) || 1);
+  const kcal = Math.round(totalesDeReceta(receta.ingredientes || []).kcal / porciones);
+  return (
+    <button type="button" className="receta-chat" onClick={() => onVer(receta)} onPointerDown={(e) => e.stopPropagation()} aria-label={`Ver receta: ${receta.nombre}`}>
+      <span className="receta-chat-icono"><ChefHat size={20} aria-hidden="true" /></span>
+      <span><strong>{receta.nombre}</strong><small>{kcal.toLocaleString("es-AR")} kcal {porciones > 1 ? `la porción · ${porciones} porciones` : ""} · Ver receta</small></span>
+    </button>
+  );
+}
+
 // Memorizado: escribir o recibir algo no redibuja todos los mensajes, solo los que cambian.
-const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onReaccion, onPerfil, onAcciones, onResponder, onZoom }) {
+const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onReaccion, onPerfil, onAcciones, onResponder, onZoom, onVerReceta }) {
   const { marcado, eventos } = useToqueLargo(() => onAcciones(m));
   // Deslizar a la derecha responde, como en WhatsApp.
   const x = useMotionValue(0);
@@ -299,7 +316,7 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
               </button>
             )}
             {m.sticker && <span className="sticker" role="img" aria-label="Sticker">{m.sticker}</span>}
-            {m.texto && <p><ConMenciones texto={m.texto} /></p>}
+            {m.receta_id ? <RecetaEnChat id={m.receta_id} onVer={onVerReceta} /> : m.texto && <p><ConMenciones texto={m.texto} /></p>}
             <time dateTime={m.creado_en}>{m.pendiente ? <Clock3 size={11} aria-label="Enviando" /> : hora(m.creado_en)}</time>
           </motion.div>
           <Reacciones mensajeId={m.id} lista={reacciones} perfiles={perfiles} yoId={yoId} onReaccion={onReaccion} />
@@ -373,6 +390,7 @@ export default function Chat({ avisar }) {
   const [citado, setCitado] = useState(null);
   const [stickers, setStickers] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
+  const [verReceta, setVerReceta] = useState(null);
 
   const linea = mensajes.slice(-MAXIMO_EN_PANTALLA);
   const ultimo = linea[linea.length - 1];
@@ -609,6 +627,7 @@ export default function Chat({ avisar }) {
               onAcciones={setAcciones}
               onResponder={responderMensaje}
               onZoom={setZoom}
+              onVerReceta={setVerReceta}
             />
           );
         })}
@@ -677,6 +696,7 @@ export default function Chat({ avisar }) {
       )}
       {castigo.diario && !castigo.evo && <p className="castigo-nota chat">Castigado por el Bocha: solo texto hasta que subas tu foto de hoy.</p>}
 
+      <VerReceta receta={verReceta} onCerrar={() => setVerReceta(null)} avisar={avisar} />
       <AccionesMensaje mensaje={acciones} onCerrar={() => setAcciones(null)} onResponder={responderMensaje} avisar={avisar} />
 
       <AnimatePresence>

@@ -20,7 +20,8 @@ export function pesoDeReceta(receta) {
   return Number(receta.peso_final) || totalesDeReceta(receta.ingredientes).gramos || porciones * 100;
 }
 
-export function recetaComoAlimento(receta) {
+// autor: el nombre de quien la armó, si es de otro integrante del grupo.
+export function recetaComoAlimento(receta, autor = null) {
   const total = totalesDeReceta(receta.ingredientes);
   const porciones = Math.max(1, Number(receta.porciones) || 1);
   const peso = pesoDeReceta(receta);
@@ -30,7 +31,7 @@ export function recetaComoAlimento(receta) {
     id: `receta-${receta.id}`,
     receta_id: receta.id,
     nombre: receta.nombre,
-    marca: "Tu receta",
+    marca: autor ? `Receta de ${autor}` : "Tu receta",
     fuente: "receta",
     por100,
     medidas: porciones > 1 ? [{ nombre: `porción (1/${porciones})`, g: porcion }, { nombre: "receta entera", g: peso }] : [{ nombre: "receta entera", g: peso }],
@@ -44,4 +45,19 @@ export function buscarRecetas(recetas, texto) {
     const palabras = normal(r.nombre).split(/[\s,]+/);
     return partes.every((p) => palabras.some((w) => w.startsWith(p)));
   });
+}
+
+// Mandar una receta por el chat: un mensaje con su nombre que lleva la receta adentro.
+export async function compartirEnChat({ supabase, receta, usuarioId, agregarMensaje, emitirChat, avisarGrupo }) {
+  if (receta.usuario_id === usuarioId && receta.compartida === false) {
+    const { error } = await supabase.from("recetas_propias").update({ compartida: true }).eq("id", receta.id);
+    if (error) throw error;
+  }
+  const fila = { id: crypto.randomUUID(), usuario_id: usuarioId, texto: `Compartió una receta: ${receta.nombre}`.slice(0, 1000), receta_id: receta.id };
+  const { data, error } = await supabase.from("mensajes").insert(fila).select().single();
+  if (error) throw error;
+  agregarMensaje(data);
+  emitirChat("mensaje", data);
+  avisarGrupo("mensaje", data.id);
+  return data;
 }

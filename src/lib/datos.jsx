@@ -265,7 +265,8 @@ export function DatosProvider({ usuario, children }) {
       supabase.from("favoritas").select("*").eq("usuario_id", usuario.id).order("creado_en", { ascending: false }),
       supabase.from("agua").select("*").gte("fecha", desde),
       supabase.from("medallas").select("*"),
-      supabase.from("recetas_propias").select("*").eq("usuario_id", usuario.id).order("nombre"),
+      // Las propias y las que el resto del grupo compartió.
+      supabase.from("recetas_propias").select("*").order("nombre"),
       supabase.from("multas").select("*").gte("fecha", haceDias(14)),
       supabase.from("bocha_evo").select("*").gte("semana", haceDias(14)),
       supabase.from("ajustes_grupo").select("*"),
@@ -279,7 +280,8 @@ export function DatosProvider({ usuario, children }) {
       agua: agua.data || [],
       medallas: medallas.data || [],
       // Si la tabla todavía no existe, no hay recetas.
-      recetas: recetas.error ? [] : recetas.data || [],
+      recetas: recetas.error ? [] : (recetas.data || []).filter((r) => r.usuario_id === usuario.id),
+      recetasGrupo: recetas.error ? [] : (recetas.data || []).filter((r) => r.usuario_id !== usuario.id),
       // La caca: si las tablas todavía no existen, no aparece nada.
       multasActivas: !multas.error && !bochaEvo.error,
       multas: multas.error ? [] : multas.data || [],

@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence } from "motion/react";
-import { ImageUp, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { ImageUp, MessageCircle, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { avisarGrupo } from "../lib/api.js";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { prepararItem } from "../lib/unidades.js";
 import { macrosDeItem } from "../lib/macros.js";
-import { pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
+import { compartirEnChat, pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
 import { FilaItem, Resultados } from "../vistas/NuevaComida.jsx";
 import { leerIngredientes } from "../lib/ingredientes.js";
 import Lector from "./Lector.jsx";
@@ -23,9 +24,11 @@ export default function EditorReceta({ receta, onCerrar, avisar }) {
 }
 
 function Formulario({ receta, onListo, avisar }) {
-  const { usuario, cargarExtras } = useDatos();
+  const { usuario, cargarExtras, agregarMensaje, emitirChat } = useDatos();
+  const [compartida, setCompartida] = useState(receta.compartida !== false);
   const [nombre, setNombre] = useState(receta.nombre || "");
   const [porciones, setPorciones] = useState(receta.porciones || 8);
+  const desdeComida = !receta.id && (receta.ingredientes || []).length > 0;
   const [pesoFinal, setPesoFinal] = useState(receta.peso_final ? String(receta.peso_final) : "");
   const [importando, setImportando] = useState(false);
   const [leido, setLeido] = useState(null);
@@ -67,14 +70,31 @@ function Formulario({ receta, onListo, avisar }) {
       ingredientes: items.map(({ id, indice, medidas, ...i }) => ({ ...i, ...(i.por100 ? macrosDeItem(i) : {}) })),
       actualizado_en: new Date().toISOString(),
     };
-    const consulta = supabase.from("recetas_propias");
-    const { error: err } = await (receta.id ? consulta.update(fila).eq("id", receta.id) : consulta.insert({ ...fila, usuario_id: usuario.id }));
+    const escribir = (datos) => {
+      const consulta = supabase.from("recetas_propias");
+      return receta.id ? consulta.update(datos).eq("id", receta.id) : consulta.insert({ ...datos, usuario_id: usuario.id });
+    };
+    let { error: err } = await escribir({ ...fila, compartida });
+    // Si todavía no se corrió el SQL de recetas compartidas, se guarda igual.
+    if (err && /compartida/.test(err.message || "")) ({ error: err } = await escribir(fila));
     setGuardando(false);
     if (err) return setError("No se pudo guardar la receta.");
     await cargarExtras();
     vibrar(20);
     avisar(receta.id ? "Receta actualizada" : "Receta guardada. Buscala al cargar una comida.");
     onListo();
+  }
+
+  async function compartir() {
+    try {
+      await compartirEnChat({ supabase, receta: { ...receta, compartida }, usuarioId: usuario.id, agregarMensaje, emitirChat, avisarGrupo });
+      if (!compartida) await cargarExtras();
+      vibrar(15);
+      avisar("Receta compartida en el chat");
+      onListo();
+    } catch {
+      setError("No se pudo compartir.");
+    }
   }
 
   async function borrar() {
@@ -93,6 +113,7 @@ function Formulario({ receta, onListo, avisar }) {
         <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Budín de banana" maxLength={80} aria-label="Nombre de la receta" />
       </label>
 
+      {desdeComida && <p className="nota">Si es algo que dividís (un budín, una tarta), poné en cuántas porciones. Si es tu comida de siempre, dejá 1.</p>}
       <div className="campos-dobles">
         <div className="campo">
           <span id="etiqueta-porciones">Porciones que rinde</span>
@@ -157,6 +178,15 @@ function Formulario({ receta, onListo, avisar }) {
         </div>
       )}
 
+      <label className="interruptor">
+        <input type="checkbox" checked={compartida} onChange={(e) => setCompartida(e.target.checked)} />
+        <span>Que la vea el grupo</span>
+      </label>
+      {receta.id && (
+        <button type="button" className="boton boton-secundario" onClick={compartir} disabled={guardando}>
+          <MessageCircle size={17} /> Compartir en el chat
+        </button>
+      )}
       {error && <p className="error" role="alert">{error}</p>}
       <div className="asistente-botones">
         {receta.id && (
