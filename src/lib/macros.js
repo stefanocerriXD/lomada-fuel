@@ -22,11 +22,11 @@ const CLAVES = ["kcal", "p", "c", "g"];
 const sumar = (a, b) => Object.fromEntries(CLAVES.map((k) => [k, a[k] + b[k]]));
 
 // Cómo combina cada persona el total del día (Apple Salud o importado) con lo cargado.
-// Por defecto manda el total del día. Nada de lo guardado se modifica.
+// Por defecto cuenta el mayor entre lo de Apple Salud y lo cargado en la app. Nada de lo guardado se modifica.
 const MODOS = new Map();
 export function configurarTotales(perfiles) {
   MODOS.clear();
-  Object.values(perfiles).forEach((p) => MODOS.set(p.id, p.modo_total || "salud"));
+  Object.values(perfiles).forEach((p) => MODOS.set(p.id, p.modo_total || "mayor"));
 }
 
 const combinar = (modo, cargado, total) => {
@@ -49,7 +49,7 @@ export function sumarComidas(lista) {
   }
   let total = VACIO;
   for (const { cargado, total: delDia, conTotal, usuario } of dias.values()) {
-    const modo = MODOS.get(usuario) || "salud";
+    const modo = MODOS.get(usuario) || "mayor";
     total = sumar(total, conTotal ? Object.fromEntries(CLAVES.map((k) => [k, combinar(modo, cargado[k], delDia[k])])) : cargado);
   }
   return total;

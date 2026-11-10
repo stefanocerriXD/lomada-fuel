@@ -5,8 +5,8 @@ import { useDatos } from "../lib/datos.jsx";
 import { ATAJO_SALUD, NOMBRE_ATAJO } from "../lib/api.js";
 
 const MODOS = [
-  ["salud", "Usar lo de Apple Salud", "Lo que cargás en la app no cambia el total del día."],
-  ["mayor", "Usar el valor mayor", "Compara cada dato y toma el más alto."],
+  ["mayor", "Usar el valor mayor", "Compara cada dato y toma el más alto. Es lo recomendado."],
+  ["salud", "Usar solo lo de Apple Salud", "Lo que cargás en la app no cambia el total del día."],
   ["sumar", "Sumar todo", "Suma Apple Salud y lo cargado en la app."],
 ];
 
