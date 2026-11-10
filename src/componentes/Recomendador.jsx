@@ -15,54 +15,18 @@ export default function Recomendador({ yo, salud, total, cargadas, fecha, onCarg
   const sugerida = useMemo(() => comidaSugerida(cargadas), [cargadas]);
   const [abierto, setAbierto] = useState(false);
   const texto = queFalta(faltan, metas);
-  // La mejor opción para la próxima comida, a la vista sin abrir nada.
-  const destacada = useMemo(() => {
-    const r = recomendar({ tipo: sugerida, faltan, cargadas });
-    return r.opciones[0] ? { ...r, opcion: r.opciones[0] } : null;
-  }, [sugerida, faltan, cargadas]);
-  const pendientes = TIPOS.filter((t) => !cargadas.includes(t.id) && TIPOS.findIndex((x) => x.id === t.id) >= TIPOS.findIndex((x) => x.id === sugerida));
-  const tipoTexto = TIPOS.find((t) => t.id === sugerida)?.texto || "";
 
   return (
     <>
-      {destacada && (
-        <motion.section className="tarjeta sugerencia" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="sugerencia-contexto">
-            <IconoComida tipo={sugerida} size={16} /> Para tu {tipoTexto.toLowerCase()}
-            {!destacada.cerrado && pendientes.length > 1 && <span> · después {pendientes.length > 2 ? "te quedan" : "te queda"} {pendientes.slice(1).map((t) => `${["desayuno", "almuerzo"].includes(t.id) ? "el" : "la"} ${t.texto.toLowerCase()}`).join(", ").replace(/, ([^,]*)$/, " y $1")}</span>}
-          </p>
-          {destacada.cerrado ? (
-            <p className="sugerencia-falta">Ya llegaste a tu meta de hoy: algo liviano.</p>
-          ) : (
-            <p className="sugerencia-falta">
-              Te faltan <b className="t-p">{numero(faltan.p)} g prote</b>, <b className="t-c">{numero(faltan.c)} g carbos</b> y <b className="t-g">{numero(faltan.g)} g grasas</b>
-            </p>
-          )}
-          <h3>{destacada.opcion.receta.nombre}</h3>
-          <p className="sugerencia-detalle">
-            {destacada.opcion.partes.map((p) => `${p.ingrediente.nombre} ${textoCantidad(p)}`).join(" · ")}
-          </p>
-          <ul className="receta-macros">
-            <li><strong>{numero(destacada.opcion.macros.kcal)}</strong> kcal</li>
-            <li><span className="punto s-p" /><strong>{numero(destacada.opcion.macros.p)} g</strong> prote</li>
-            <li><span className="punto s-c" /><strong>{numero(destacada.opcion.macros.c)} g</strong> carbos</li>
-            <li><span className="punto s-g" /><strong>{numero(destacada.opcion.macros.g)} g</strong> grasas</li>
-          </ul>
-          <div className="sugerencia-botones">
-            <button className="boton" onClick={() => { vibrar(10); onCargar({ tipo: sugerida, fecha, receta: { descripcion: destacada.opcion.receta.nombre, items: comoItems(destacada.opcion) } }); }}>Cargar esta</button>
-            <button className="boton boton-secundario" onClick={() => { setAbierto(true); vibrar(8); }}>Otras opciones</button>
-          </div>
-        </motion.section>
-      )}
       <motion.button className="tarjeta accion accion-recomendar" whileTap={{ scale: 0.97 }} onClick={() => { setAbierto(true); vibrar(8); }}>
         <ChefHat size={22} />
         <span>
-          <strong>¿Qué como?</strong>
+          <strong>¿Qué puedo comer?</strong>
           <small>{faltan.kcal >= 150 ? `Faltan ${numero(faltan.kcal)} kcal${texto ? `, sobre todo ${texto.split(" y ")[0]}` : ""}` : "Opciones livianas"}</small>
         </span>
       </motion.button>
 
-      <Hoja abierta={abierto} onCerrar={() => setAbierto(false)} titulo="Qué comer" ancha>
+      <Hoja abierta={abierto} onCerrar={() => setAbierto(false)} titulo="¿Qué puedo comer?" ancha>
         {abierto && (
           <Opciones
             inicial={sugerida}

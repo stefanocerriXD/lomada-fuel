@@ -66,7 +66,7 @@ const SECCIONES = [
       ["¿Cómo calcula cuánto quemo?", "Usa tu edad, altura, peso y actividad para estimarlo. Con el tiempo lo ajusta según tus pesajes y lo que registrás."],
       ["¿Cómo actualizo mi plan?", "Entrá a Resumen, pestaña Progreso, y tocá Editar plan."],
       ["¿Qué significa lo que falta de cada macro?", "En Resumen ves cuántos gramos de proteínas, carbos y grasas te quedan para llegar a tu plan de hoy. Si aparece con un +, ya te pasaste por esa cantidad."],
-      ["¿Qué hace ¿Qué como?", "Mira lo que te falta para tu meta del día y te propone recetas simples, con cantidades ajustadas. Tocá una para cargarla."],
+      ["¿Cómo me recomienda qué comer?", "Mira lo que te falta de cada macro y las comidas que te quedan, y te propone recetas simples con cantidades ajustadas. Tocá una para cargarla."],
     ],
   },
   {

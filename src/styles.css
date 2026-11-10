@@ -1541,11 +1541,3 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .objetivo-macros strong { font-family: var(--titulo); font-size: 1.15rem; font-weight: 800; }
 .objetivo-macros small { color: var(--tinta-2); font-size: 0.74rem; }
 
-/* Sugerencia para la próxima comida */
-.sugerencia { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
-.sugerencia h3 { margin: 2px 0 0; font-family: var(--titulo); font-size: 1.08rem; font-weight: 800; line-height: 1.25; }
-.sugerencia-contexto { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0; color: var(--tinta-2); font-size: 0.8rem; font-weight: 650; }
-.sugerencia-falta { margin: 0; color: var(--tinta-2); font-size: 0.84rem; line-height: 1.4; }
-.sugerencia-falta b { color: var(--tinta); font-weight: 700; }
-.sugerencia-detalle { margin: 0; color: var(--tinta-2); font-size: 0.8rem; line-height: 1.4; }
-.sugerencia-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
