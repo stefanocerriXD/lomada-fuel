@@ -4,7 +4,7 @@ import { fechaLocal } from "../lib/fechas.js";
 import { cacasDeLaSemana, FOTOS_POR_DIA, fotosDelDia, inicioSemana } from "../lib/multas.js";
 import { Avatar } from "./Base.jsx";
 
-// Las cacas de la semana y quién carga con el Bocha Evo.
+// Las maldiciones de la semana y quién carga con el Bocha Evo.
 export default function Multas() {
   const { usuario, perfiles, comidas, extras } = useDatos();
   const hoy = fechaLocal();
@@ -28,11 +28,11 @@ export default function Multas() {
           <li key={perfil.id} className={cacas > 0 ? "con-multas" : ""}>
             <Avatar perfil={perfil} tam={30} />
             <span className="multas-nombre">{perfil.id === usuario.id ? "Vos" : perfil.nombre}</span>
-            <strong aria-label={`${cacas} ${cacas === 1 ? "caca" : "cacas"}`}>{cacas > 0 ? "💩".repeat(Math.min(cacas, 7)) : "0"}</strong>
+            <strong aria-label={`${cacas} ${cacas === 1 ? "maldición" : "maldiciones"}`}>{cacas > 0 ? "💩".repeat(Math.min(cacas, 7)) : "0"}</strong>
           </li>
         ))}
       </ul>
-      <small className="multas-nota">El domingo a la noche, el que más cacas juntó se come al Bocha Evo toda la semana siguiente.</small>
+      <small className="multas-nota">Cada día sin foto es una maldición del Bocha. El domingo a la noche, el que más juntó se come al Bocha Evo toda la semana siguiente.</small>
     </section>
   );
 }

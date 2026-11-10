@@ -4,9 +4,9 @@ const SECCIONES = [
     preguntas: [
       ["¿Cuál es la regla?", "Mínimo 1 foto de comida por día. La foto del resumen del día no cuenta. Se cuenta a la medianoche."],
       ["¿Qué pasa si un día no subo ninguna?", ["Al día siguiente tenés 💩 al lado del nombre, y la ve todo el grupo.", "Te cae la maldición del Bocha: aparece al abrir la app, se asoma por los bordes, se ríe y te mancha la pantalla de caca.", "Ves borrosas las fotos del grupo, no podés reaccionar y en el chat solo podés mandar texto.", "El bot cuenta en el chat quiénes no subieron."]],
-      ["¿Puedo limpiar la caca de la pantalla?", "Sí. Tocá Limpiar, abajo a la izquierda, y frotá las manchas con el dedo hasta que se borren. Las del Bocha Evo cuestan el doble, y el Bocha sigue tirando más."],
+      ["¿Puedo limpiar la caca de la pantalla?", "Sí, y es rápido. Tocá Limpiar, abajo a la izquierda, y tocá o frotá cada mancha: con dos toques se va."],
       ["¿Cómo me saco al Bocha?", "Subiendo tu foto del día. Se van el Bocha, las manchas y las restricciones. La 💩 al lado del nombre queda hasta el día siguiente."],
-      ["¿Qué es el Bocha Evo?", ["El domingo a la noche, el que más cacas juntó en la semana se come al BOCHA EVO de lunes a domingo. Si hay empate, le toca a todos los empatados.", "La app se le pone marrón, la pantalla se le llena de caca y el Bocha Evo aparece mucho más seguido.", "El teclado del chat queda tapado de caca: no puede mandar mensajes en toda la semana.", "Cargar comidas sigue funcionando, para no sumar más cacas."]],
+      ["¿Qué es el Bocha Evo?", ["El domingo a la noche, el que más maldiciones juntó en la semana se come al BOCHA EVO de lunes a domingo. Si hay empate, le toca a todos los empatados.", "La app se le pone marrón, le aparecen más manchas de caca y el Bocha Evo se asoma más seguido.", "El teclado del chat queda tapado de caca: no puede mandar mensajes en toda la semana.", "Cargar comidas sigue funcionando, para no sumar más cacas."]],
       ["¿Me avisan antes?", "Sí. A las 22 te llega una notificación si todavía no subiste ninguna foto ese día. En Resumen, arriba, ves si ya subiste la de hoy."],
       ["¿Por qué no escucho al Bocha?", "En iPhone los sonidos suenan después de tocar algo en la app y no suenan con el celular en silencio."],
     ],
@@ -45,7 +45,7 @@ const SECCIONES = [
     titulo: "Grupo",
     preguntas: [
       ["¿Dónde están las fotos del grupo?", "En Grupo, arriba, elegí Imágenes. Están separadas por desayuno, almuerzo, merienda, cena y colaciones. Tocá una comida para abrirla."],
-      ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Retos y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
+      ["¿Me puedo mover deslizando?", "Sí. Deslizá de costado para pasar entre Resumen, Chat, Imágenes, Desafíos y Ajustes. En una foto abierta, deslizá de costado para ver la siguiente y hacia abajo para cerrarla."],
       ["¿Cómo veo otro día?", "En Imágenes, usá la tira de días o las flechas. Con las flechas podés ir tan atrás como quieras."],
       ["¿Cómo veo qué comió cada uno?", "Tocá Ver alimentos debajo de la foto: aparece cada alimento con su cantidad y sus macros."],
       ["¿Cómo respondo o reacciono a un mensaje?", "Para responder, deslizá el mensaje hacia la derecha. Para reaccionar o copiar, mantenelo apretado y soltá: se abren las opciones."],
@@ -68,12 +68,12 @@ const SECCIONES = [
     ],
   },
   {
-    titulo: "Retos y logros",
+    titulo: "Desafíos y logros",
     preguntas: [
-      ["¿Cómo armo un reto?", "En Retos tocá Nuevo, elegí el tipo y los días. Participa todo el grupo."],
+      ["¿Cómo armo un reto?", "En Desafíos tocá Nuevo, elegí el tipo y los días. Participa todo el grupo."],
       ["¿Cómo se ganan los logros?", "Solos, a medida que usás la app. Cada logro tiene 5 niveles y cada nivel da un título mejor: por ejemplo, con 5 milanesas sos Bebé de la milanesa y con 250, Rey de la milanesa."],
-      ["¿Dónde veo cuánto me falta?", "En Retos, tocá cualquier logro: ves la barra de avance, cuánto falta y todos sus niveles."],
-      ["¿Qué es el nivel de cada uno?", "Cada nivel de cada logro suma un punto, y ese total es tu nivel general. Lo ves en Retos, en los perfiles y en Integrantes."],
+      ["¿Dónde veo cuánto me falta?", "En Desafíos, tocá cualquier logro: ves la barra de avance, cuánto falta y todos sus niveles."],
+      ["¿Qué es el nivel de cada uno?", "Cada nivel de cada logro suma un punto, y ese total es tu nivel general. Lo ves en Desafíos, en los perfiles y en Integrantes."],
       ["¿Las comidas privadas cuentan?", "No para los logros de Alimentación, porque esos los ve el grupo."],
     ],
   },

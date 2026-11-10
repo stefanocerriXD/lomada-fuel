@@ -23,7 +23,7 @@ import Importar from "./vistas/Importar.jsx";
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
   { id: "grupo", texto: "Grupo", icono: Users },
-  { id: "retos", texto: "Retos", icono: Trophy },
+  { id: "retos", texto: "Desafíos", icono: Trophy },
   { id: "ajustes", texto: "Ajustes", icono: Settings },
 ];
 

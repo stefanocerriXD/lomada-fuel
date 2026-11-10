@@ -24,6 +24,7 @@ export default async function handler(req, res) {
     const pedido = {
       medalla: () => rpc("aviso_medalla", { p_codigo: id, p_nombre: nombre || null }),
       mejora: () => rpc("aviso_mejora", { p_id: id }),
+      mejora_hecha: () => rpc("aviso_mejora_hecha", { p_id: id }),
       invitacion: () => rpc("aviso_invitacion", { p_id: id }),
     }[tipo];
     const resp = await (pedido ? pedido() : rpc("destinos_aviso", { p_tipo: tipo, p_id: id }));

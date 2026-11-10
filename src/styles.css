@@ -597,6 +597,21 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 
 /* Reacciones */
 .reacciones { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.comida-interacciones { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.reacciones-compactas { position: relative; display: flex; align-items: center; gap: 6px; }
+.reacciones-resumen { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 10px 0 8px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta); font-size: 0.95rem; letter-spacing: -0.12em; }
+.reacciones-resumen small { font-size: 0.8rem; font-weight: 700; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.boton-reaccionar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--superficie-2); color: var(--tinta-2); }
+.boton-reaccionar.activo { background: var(--acento-suave); color: var(--sobre-acento-suave); }
+.selector-reacciones { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 6; display: flex; gap: 2px; padding: 5px; border-radius: 999px; background: var(--superficie); box-shadow: 0 6px 20px rgb(0 0 0 / 18%); transform-origin: bottom left; }
+.selector-reacciones button { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; font-size: 1.35rem; }
+.selector-reacciones button.mia { background: var(--acento-suave); }
+.lista-reacciones { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.lista-reacciones li { display: flex; align-items: center; gap: 12px; padding: 8px 2px; border-bottom: 1px solid var(--borde); font-weight: 600; }
+.lista-reacciones li:last-child { border-bottom: 0; }
+.lista-reacciones-emojis { margin-left: auto; font-size: 1.2rem; }
+.visor-pie .reacciones-resumen, .visor-pie .boton-reaccionar { background: rgb(255 255 255 / 14%); color: #fff; }
+.visor-pie .selector-reacciones { background: #2a2420; }
 .reaccion { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 44px; min-height: 40px; padding: 0 8px; border-radius: 13px; background: var(--superficie-2); color: var(--tinta); font-size: 1.05rem; }
 .reaccion small { font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .reaccion.mia { background: var(--acento-suave); color: var(--sobre-acento-suave); box-shadow: inset 0 0 0 1.5px var(--acento); }

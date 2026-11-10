@@ -7,12 +7,12 @@ import { prepararSonidos, risa, splat } from "../lib/sonidos.js";
 
 // Cuánto molesta cada castigo. El Bocha Evo arranca con la pantalla ya llena y vuelve mucho más seguido.
 const MODOS = {
-  dia: { iniciales: 2, maximo: 8, cada: [45000, 90000], tamano: [70, 150], tiros: 1 },
-  evo: { iniciales: 14, maximo: 32, cada: [18000, 35000], tamano: [110, 260], tiros: 3 },
+  dia: { iniciales: 1, maximo: 3, cada: [90000, 150000], tamano: [60, 100], tiros: 1 },
+  evo: { iniciales: 4, maximo: 7, cada: [45000, 80000], tamano: [80, 140], tiros: 1 },
 };
 const AUSENCIA_PARA_VOLVER = 5 * 60 * 1000;
 // Cuántos píxeles hay que frotar para sacar una mancha entera. Las del Bocha Evo cuestan el doble.
-const FROTAR = { dia: 380, evo: 760 };
+const FROTAR = { dia: 120, evo: 200 };
 const azar = (a, b) => a + Math.random() * (b - a);
 
 // Cada mancha es un salpicón distinto: un centro irregular con puntas y gotitas alrededor.
@@ -162,7 +162,7 @@ export default function Bocha() {
   function cerrarCartel() {
     setCartel(false);
     risa({ evo: modo === "evo" });
-    setTimeout(() => tirar(modo === "evo" ? 4 : 2), 700);
+    setTimeout(() => tirar(1), 700);
   }
 
   return (
@@ -170,7 +170,13 @@ export default function Bocha() {
       <div
         className={limpiando ? "capa-manchas limpiando" : "capa-manchas"}
         aria-hidden="true"
-        onPointerDown={(e) => { ultimo.current = { x: e.clientX, y: e.clientY }; }}
+        onPointerDown={(e) => {
+          ultimo.current = { x: e.clientX, y: e.clientY };
+          // Con el modo limpiar, un toque ya saca la mitad de la mancha.
+          if (!limpiando) return;
+          const tocada = document.elementsFromPoint(e.clientX, e.clientY).map((el) => el.closest?.("[data-mancha]")?.dataset.mancha).find(Boolean);
+          if (tocada) setManchas((prev) => prev.map((m) => (m.id === tocada ? { ...m, suciedad: m.suciedad - 0.5 } : m)).filter((m) => m.suciedad > 0.01));
+        }}
         onPointerMove={limpiando ? frotar : undefined}
         onPointerUp={() => { ultimo.current = null; }}
         onPointerCancel={() => { ultimo.current = null; }}
@@ -216,7 +222,7 @@ export default function Bocha() {
             <strong>{modo === "evo" ? "BOCHA EVO" : "Te cayó la maldición del Bocha"}</strong>
             <span>
               {modo === "evo"
-                ? "Fuiste el que más cacas juntó la semana pasada. Hasta el lunes: pantalla llena de caca y sin chat."
+                ? "Fuiste el que más cacas juntó la semana pasada. Hasta el lunes: caca en la pantalla y sin chat."
                 : "Ayer no subiste ninguna foto. Subí la de hoy para sacártelo de encima."}
             </span>
             <small>Tocá para seguir</small>

@@ -50,6 +50,11 @@ export default function Mejoras({ avisar }) {
     const { error: err } = await supabase.from("mejoras").update({ hecha }).eq("id", pedido.id);
     if (err) return avisar("No se pudo guardar");
     setLista((prev) => prev.map((m) => (m.id === pedido.id ? { ...m, hecha } : m)));
+    // A quien lo pidió le llega un aviso de que ya está en la app.
+    if (hecha) {
+      avisarGrupo("mejora_hecha", pedido.id);
+      avisar(pedido.usuario_id === usuario.id ? "Marcada como hecha" : `Hecha. Le avisamos a ${perfiles[pedido.usuario_id]?.nombre || "quien la pidió"}`);
+    }
   }
 
   return (

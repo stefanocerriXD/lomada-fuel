@@ -25,7 +25,7 @@ export default function Retos({ avisar }) {
   const terminados = extras.desafios.filter(desafioTerminado).slice(0, 5);
 
   if (!extras.disponible) {
-    return <Vacio icono={Trophy} titulo="Retos todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." />;
+    return <Vacio icono={Trophy} titulo="Desafíos todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." />;
   }
 
   async function borrar(id) {
@@ -40,17 +40,11 @@ export default function Retos({ avisar }) {
       <header className="titulo-vista">
         <div>
           <p className="sobretitulo">Compiten todos los del grupo</p>
-          <h1>Retos</h1>
+          <h1>Desafíos</h1>
         </div>
         <button className="boton-chico" onClick={() => setCreando(true)}><Plus size={15} /> Nuevo</button>
       </header>
 
-      {extras.multasActivas && (
-        <section>
-          <h2 className="titulo-seccion">Cacas de la semana</h2>
-          <Multas />
-        </section>
-      )}
 
       {activos.length === 0 ? (
         <Vacio icono={Swords} titulo="No hay desafíos en curso" texto="Armá uno y que gane el más constante.">
@@ -89,6 +83,13 @@ export default function Retos({ avisar }) {
         <h2 className="titulo-seccion">Logros</h2>
         <Medallas />
       </section>
+
+      {extras.multasActivas && (
+        <section>
+          <h2 className="titulo-seccion">La maldición del Bocha</h2>
+          <Multas />
+        </section>
+      )}
 
       <NuevoDesafio abierto={creando} onCerrar={() => setCreando(false)} avisar={avisar} />
     </>

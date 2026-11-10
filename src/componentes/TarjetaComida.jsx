@@ -1,41 +1,80 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, Lock, Maximize2, Pencil, PenLine, Reply, Star, Trash2, Users } from "lucide-react";
+import { ChevronDown, Lock, Maximize2, PenLine, Pencil, Reply, SmilePlus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
-import { Avatar, vibrar } from "./Base.jsx";
+import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import IconoComida from "./IconoComida.jsx";
 
 const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷"];
 
-export function Reacciones({ comidaId }) {
-  const { usuario, salud, reacciones, alternarReaccion, castigo } = useDatos();
+// Las reacciones no ocupan lugar: un resumen con el total (que muestra quién reaccionó)
+// y un botón que abre los emojis solo cuando querés reaccionar.
+export function Reacciones({ comidaId, avisar }) {
+  const { usuario, perfiles, salud, reacciones, alternarReaccion, castigo } = useDatos();
+  const [eligiendo, setEligiendo] = useState(false);
+  const [quienes, setQuienes] = useState(false);
   if (salud === undefined) return null; // Las reacciones llegan con la misma actualización de la base.
-  if (castigo.activo) return <p className="castigo-nota">Castigado por el Bocha: no podés reaccionar hasta que subas tu foto de hoy.</p>;
   const propias = reacciones.filter((r) => r.comida_id === comidaId);
+  const mias = new Set(propias.filter((r) => r.usuario_id === usuario.id).map((r) => r.emoji));
+  const masUsados = OPCIONES.map((e) => [e, propias.filter((r) => r.emoji === e).length]).filter(([, n]) => n).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const porPersona = Object.values(
+    propias.reduce((t, r) => ({ ...t, [r.usuario_id]: { id: r.usuario_id, emojis: [...(t[r.usuario_id]?.emojis || []), r.emoji] } }), {}),
+  );
+
+  function abrir() {
+    if (castigo.activo) return avisar?.("Castigado por el Bocha: no podés reaccionar hasta que subas tu foto de hoy.");
+    setEligiendo(!eligiendo);
+  }
 
   return (
-    <div className="reacciones" role="group" aria-label="Reaccionar">
-      {OPCIONES.map((e) => {
-        const cantidad = propias.filter((r) => r.emoji === e).length;
-        const mia = propias.some((r) => r.emoji === e && r.usuario_id === usuario.id);
-        return (
-          <motion.button
-            key={e}
-            className={mia ? "reaccion mia" : "reaccion"}
-            whileTap={{ scale: 1.3 }}
-            onClick={() => { alternarReaccion(comidaId, e); vibrar(8); }}
-            aria-pressed={mia}
-            aria-label={`Reaccionar con ${e}`}
-          >
-            <span aria-hidden="true">{e}</span>
-            {cantidad > 0 && <motion.small key={cantidad} initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>{cantidad}</motion.small>}
-          </motion.button>
-        );
-      })}
+    <div className="reacciones-compactas">
+      {propias.length > 0 && (
+        <button className="reacciones-resumen" onClick={() => setQuienes(true)} aria-label={`${propias.length} ${propias.length === 1 ? "reacción" : "reacciones"}: ver quién reaccionó`}>
+          <span aria-hidden="true">{masUsados.map(([e]) => e).join("")}</span>
+          <small>{propias.length}</small>
+        </button>
+      )}
+      <button className={eligiendo ? "boton-reaccionar activo" : "boton-reaccionar"} onClick={abrir} aria-expanded={eligiendo} aria-label="Reaccionar">
+        <SmilePlus size={18} />
+      </button>
+      <AnimatePresence>
+        {eligiendo && (
+          <motion.div className="selector-reacciones" role="group" aria-label="Elegí una reacción" initial={{ opacity: 0, scale: 0.8, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8, y: 6 }} transition={{ type: "spring", stiffness: 500, damping: 28 }}>
+            {OPCIONES.map((e) => (
+              <motion.button
+                key={e}
+                whileTap={{ scale: 1.35 }}
+                className={mias.has(e) ? "mia" : undefined}
+                aria-pressed={mias.has(e)}
+                aria-label={`Reaccionar con ${e}`}
+                onClick={() => { alternarReaccion(comidaId, e); vibrar(8); setEligiendo(false); }}
+              >
+                {e}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Fuera de la tarjeta: con su animación, la hoja quedaría encerrada adentro. */}
+      {createPortal(
+      <Hoja abierta={quienes} onCerrar={() => setQuienes(false)} titulo="Reacciones">
+        <ul className="lista-reacciones">
+          {porPersona.map(({ id, emojis }) => (
+            <li key={id}>
+              <Avatar perfil={perfiles[id]} tam={34} />
+              <span>{id === usuario.id ? "Vos" : perfiles[id]?.nombre || "Amigo"}</span>
+              <span className="lista-reacciones-emojis">{emojis.join(" ")}</span>
+            </li>
+          ))}
+        </ul>
+      </Hoja>,
+      document.body,
+      )}
     </div>
   );
 }
@@ -155,8 +194,12 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
             </AnimatePresence>
           </>
         )}
-        {!comida.privada && <Reacciones comidaId={comida.id} />}
-        {!comida.privada && <button className="boton-texto" onClick={() => responder(comida)}><Reply size={15} /> Responder en el chat</button>}
+        {!comida.privada && (
+          <div className="comida-interacciones">
+            <Reacciones comidaId={comida.id} avisar={avisar} />
+            <button className="boton-texto" onClick={() => responder(comida)} aria-label="Responder en el chat"><Reply size={15} /> Responder</button>
+          </div>
+        )}
         {propia && (
           <div className="comida-acciones">
             <button className="boton-texto" onClick={onEditar}><Pencil size={15} /> Editar</button>
