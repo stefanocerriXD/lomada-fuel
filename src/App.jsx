@@ -10,6 +10,7 @@ import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import InstalarApp from "./componentes/InstalarApp.jsx";
 import Bocha from "./componentes/Bocha.jsx";
+import Fiesta from "./componentes/Fiesta.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Grupo from "./vistas/Grupo.jsx";
@@ -163,6 +164,7 @@ function Principal({ recuperando, onRecuperado }) {
   }, []);
 
   const abrirCarga = useCallback((datos = {}) => setCarga(datos), []);
+  const [fiesta, setFiesta] = useState(false);
 
   // Responder una foto lleva al chat desde cualquier pantalla.
   useEffect(() => {
@@ -335,7 +337,7 @@ function Principal({ recuperando, onRecuperado }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
           >
-            {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} avisar={avisar} />}
+            {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} onFiesta={() => setFiesta(true)} avisar={avisar} />}
             {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} sentido={sentido} />}
             {vista === "retos" && <Retos />}
             {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
@@ -363,7 +365,8 @@ function Principal({ recuperando, onRecuperado }) {
       </nav>
 
       <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
-      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} />
+      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} />
+      <Fiesta abierta={fiesta} onCerrar={() => setFiesta(false)} avisar={avisar} />
       <Importar
         pedido={importar}
         onCerrar={() => setImportar(null)}

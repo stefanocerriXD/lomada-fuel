@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, Camera, ClipboardPaste, LoaderCircle, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
+import { CalendarDays, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
@@ -21,16 +21,16 @@ const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
-export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia }) {
+export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta }) {
   const editando = carga?.comida;
   return (
     <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={editando ? "Editar comida" : "Subir comida"} ancha>
-      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} />}
+      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} onFiesta={onFiesta} />}
     </Hoja>
   );
 }
 
-function Formulario({ carga, onGuardar, onImportarDia }) {
+function Formulario({ carga, onGuardar, onImportarDia, onFiesta }) {
   const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones } = useDatos();
   // Comida grupal: a quién sumar. Solo la comida original invita, no las copias de los que aceptaron.
   const [companeros, setCompaneros] = useState([]);
@@ -274,6 +274,11 @@ function Formulario({ carga, onGuardar, onImportarDia }) {
                 <CalendarDays size={22} />
                 <span><strong>Todo el día</strong><small>Importar el total</small></span>
               </button>
+              {onFiesta && (
+                <button className="enlace-fiesta" onClick={onFiesta}>
+                  <Martini size={16} /> ¿Estás de fiesta? Cargá tus vasos
+                </button>
+              )}
             </div>
           )}
 

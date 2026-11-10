@@ -1200,6 +1200,36 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* Cada persona con su color en el chat, oscurecido o aclarado para que se lea */
 .burbuja .autor { color: var(--acento); }
 
+/* Modo fiesta */
+.fiesta-noche { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 16px; border-radius: 18px; background: linear-gradient(135deg, #2b1452, #5a1f6b); color: #f3e8ff; text-align: center; }
+.fiesta-noche span { font-size: 0.82rem; opacity: 0.85; }
+.fiesta-noche strong { font-family: var(--titulo); font-size: 2rem; font-weight: 800; }
+.fiesta-noche small { font-size: 0.84rem; }
+.tragos-rapidos { display: flex; flex-wrap: wrap; gap: 6px; }
+.tragos-rapidos button { display: inline-flex; align-items: center; gap: 5px; min-height: 38px; padding: 0 12px; border-radius: 999px; background: var(--superficie); color: var(--tinta); font-size: 0.84rem; font-weight: 650; }
+.tragos-rapidos button.activo { background: #5a1f6b; color: #f3e8ff; }
+.mezcla { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.mezcla-fila { display: flex; align-items: center; gap: 8px; }
+.mezcla-fila select { flex: 1; min-width: 0; }
+.mezcla-parte { display: flex; align-items: center; gap: 4px; font-weight: 650; }
+.mezcla-parte input { width: 64px; }
+.mezcla-botones { display: flex; justify-content: flex-end; gap: 8px; }
+.tamanos { display: flex; flex-wrap: wrap; gap: 6px; }
+.tamanos button { display: flex; flex-direction: column; align-items: center; min-width: 58px; padding: 6px 10px; border-radius: 13px; background: var(--superficie); color: var(--tinta); font-weight: 650; font-size: 0.86rem; }
+.tamanos button small { font-size: 0.7rem; font-weight: 500; opacity: 0.8; }
+.tamanos button.activo { background: #5a1f6b; color: #f3e8ff; }
+.tamano-libre { display: flex; align-items: center; gap: 4px; font-weight: 650; }
+.tamano-libre input { width: 76px; }
+.sumar-vaso { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 70px; background: #5a1f6b; color: #f3e8ff; }
+.sumar-vaso small { font-size: 0.78rem; font-weight: 500; opacity: 0.9; }
+.vasos-noche { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.vasos-noche li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--borde); }
+.vasos-noche li:last-child { border-bottom: 0; }
+.vasos-noche span { display: flex; flex-direction: column; }
+.vasos-noche small { font-size: 0.8rem; color: var(--tinta-2); }
+.enlace-fiesta { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; color: var(--tinta-2); font-size: 0.86rem; font-weight: 650; }
+.fiesta-accion svg { color: #7a2b8f; }
+
 /* La caca */
 .dia-encabezado { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .fotos-hoy { display: inline-flex; flex: none; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--peligro) 14%, transparent); color: var(--peligro); font-size: 0.8rem; font-weight: 700; }

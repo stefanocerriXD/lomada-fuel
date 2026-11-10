@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Camera, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Moon, Plus, UserRound, Zap } from "lucide-react";
+import { Activity, Camera, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -8,13 +8,14 @@ import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
 import { Indicador, Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
 import InvitacionesComida from "../componentes/InvitacionesComida.jsx";
 import { FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
+import { esDeNoche, fechaDeLaNoche } from "../componentes/Fiesta.jsx";
 import Habitos from "../componentes/Habitos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 
-export default function Resumen({ onCargar, onImportar, onEditarCuerpo, avisar }) {
+export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta, avisar }) {
   const [modo, setModo] = useState("dia");
   return (
     <>
@@ -26,14 +27,14 @@ export default function Resumen({ onCargar, onImportar, onEditarCuerpo, avisar }
         ))}
         <Indicador indice={[["dia", "Por día"], ["semana", "Semana"], ["progreso", "Progreso"]].findIndex(([id]) => id === modo)} total={3} />
       </div>
-      {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} avisar={avisar} />}
+      {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} onFiesta={onFiesta} avisar={avisar} />}
       {modo === "semana" && <ResumenSemana />}
       {modo === "progreso" && <Progreso onEditarCuerpo={onEditarCuerpo} avisar={avisar} />}
     </>
   );
 }
 
-function ResumenDia({ onCargar, onImportar, avisar }) {
+function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
   const { usuario, yo, perfiles, comidas, fotos, whoop, salud, extras } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
@@ -41,6 +42,8 @@ function ResumenDia({ onCargar, onImportar, avisar }) {
   const delDia = useMemo(() => comidas.filter((c) => c.fecha === fecha), [comidas, fecha]);
   const fotosHoy = fotosDelDia(comidas, usuario.id, hoy);
   const mias = delDia.filter((c) => c.usuario_id === usuario.id);
+  // Hoy, la fiesta de esta noche (sigue siendo la de anoche hasta las 6); otro día, la de ese día.
+  const nocheDeFiesta = fecha === hoy ? comidas.find((c) => c.usuario_id === usuario.id && c.tipo === "fiesta" && c.fecha === fechaDeLaNoche()) : mias.find((c) => c.tipo === "fiesta");
   const total = sumarComidas(mias);
   const restante = yo.meta_calorias - Math.round(total.kcal);
   const resumenDia = mias.find((c) => c.tipo === "resumen");
@@ -124,6 +127,15 @@ function ResumenDia({ onCargar, onImportar, avisar }) {
 
       <div className="acciones-rapidas">
         {fecha === hoy && <Recomendador yo={yo} salud={salud} total={total} cargadas={mias.map((c) => c.tipo)} fecha={fecha} onCargar={onCargar} />}
+        {(nocheDeFiesta || (fecha === hoy && esDeNoche())) && (
+          <motion.button className="tarjeta accion fiesta-accion" whileTap={{ scale: 0.97 }} onClick={onFiesta}>
+            <Martini size={22} />
+            <span>
+              <strong>Modo fiesta</strong>
+              <small>{nocheDeFiesta ? `${nocheDeFiesta.alimentos.length} ${nocheDeFiesta.alimentos.length === 1 ? "vaso" : "vasos"} · ${Math.round(nocheDeFiesta.calorias).toLocaleString("es-AR")} kcal` : "Cargá tus vasos"}</small>
+            </span>
+          </motion.button>
+        )}
         <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => onImportar(fecha)}>
           <ClipboardPaste size={22} />
           <span><strong>Importar el día</strong><small>Captura o texto</small></span>

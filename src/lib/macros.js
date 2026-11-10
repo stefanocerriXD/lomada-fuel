@@ -13,7 +13,9 @@ export const TIPOS = [...TIPOS_PRINCIPALES, { id: "colacion", texto: "Colación"
 
 export const TIPOS_TODOS = [{ id: "resumen", texto: "Todo el día" }, ...TIPOS];
 
-export const tipoInfo = (id) => TIPOS_TODOS.find((t) => t.id === id) || TIPOS[0];
+// La fiesta no es una comida para elegir: se carga desde el modo fiesta.
+const FIESTA = { id: "fiesta", texto: "Fiesta" };
+export const tipoInfo = (id) => (id === "fiesta" ? FIESTA : TIPOS_TODOS.find((t) => t.id === id) || TIPOS[0]);
 
 export const VACIO = { kcal: 0, p: 0, c: 0, g: 0 };
 
