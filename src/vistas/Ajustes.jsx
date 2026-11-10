@@ -3,6 +3,7 @@ import Mejoras from "../componentes/Mejoras.jsx";
 import MisRecetas from "../componentes/MisRecetas.jsx";
 import LaCaca from "../componentes/LaCaca.jsx";
 import Tutorial from "../componentes/Tutorial.jsx";
+import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Watch } from "lucide-react";
@@ -35,6 +36,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
   const [nombre, setNombre] = useState(yo.nombre);
   const [color, setColor] = useState(yo.color);
   const [meta, setMeta] = useState(yo.meta_calorias);
+  const [objetivosMFP, setObjetivosMFP] = useState(false);
   const [tema, setTema] = useState(leerTema());
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -162,8 +164,10 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
                 <p className="ajuste-texto">Cargá tus medidas, tu actividad y tu objetivo para calcular cuánto quemás y tu meta diaria.</p>
               )}
               <button className="boton boton-secundario" onClick={onEditarCuerpo}><Target size={17} /> {salud ? "Editar mi plan" : "Armar mi plan"}</button>
+              <button className="boton boton-secundario" onClick={() => setObjetivosMFP(true)}><RefreshCw size={17} /> Traer objetivos de MyFitnessPal</button>
             </section>
           )}
+          <ObjetivosMFP abierta={objetivosMFP} onCerrar={() => setObjetivosMFP(false)} onListo={(kcal) => { setMeta(kcal); setObjetivosMFP(false); }} avisar={avisar} />
         </>
       )}
 
