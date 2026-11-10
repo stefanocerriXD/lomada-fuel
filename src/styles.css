@@ -595,12 +595,25 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 .macros-faltan .pista-progreso span.s-c { background: var(--carb); }
 .macros-faltan .pista-progreso span.s-g { background: var(--gras); }
 .macros-del-dia { margin-top: 11px; }
-.macros-del-dia .macros-faltan { margin-top: 6px; }
-.vista-macros { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.vista-macros > span { color: var(--tinta-2); font-size: 0.78rem; font-weight: 650; }
-.vista-macros > div { display: flex; gap: 2px; }
-.vista-macros button { min-width: 44px; min-height: 36px; padding: 0 9px; border-radius: 999px; color: var(--tinta-2); font-size: 0.74rem; font-weight: 650; }
-.vista-macros button.activo { background: var(--superficie-2); color: var(--tinta); }
+.macro-vista { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.macro-con-anillo { display: flex; align-items: center; gap: 6px; margin: 2px 0 1px; }
+.mini-anillo { flex: none; }
+.trazo-p { stroke: var(--prot); }
+.trazo-c { stroke: var(--carb); }
+.trazo-g { stroke: var(--gras); }
+.pista-falta { background: var(--pista); }
+.pista-falta span { transform-origin: left; opacity: 0.55; }
+.reparto-kcal { display: flex; gap: 2px; height: 6px; margin-top: 10px; border-radius: 99px; overflow: hidden; }
+.reparto-kcal span { flex-basis: 0; min-width: 0; }
+.reparto-kcal .s-p { background: var(--prot); }
+.reparto-kcal .s-c { background: var(--carb); }
+.reparto-kcal .s-g { background: var(--gras); }
+.vista-macros { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
+.flecha-vista { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--tinta-2); }
+.flecha-vista:active { background: var(--superficie-2); }
+.puntos-vista { display: flex; gap: 5px; }
+.puntos-vista i { width: 6px; height: 6px; border-radius: 50%; background: var(--pista); transition: background 0.2s, width 0.2s; }
+.puntos-vista i.activo { width: 14px; border-radius: 99px; background: var(--tinta-2); }
 
 /* Reacciones */
 .reacciones { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }

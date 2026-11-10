@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Camera, Check, ChevronDown, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, Zap } from "lucide-react";
+import { Activity, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -159,7 +159,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
 }
 
 // Cómo se ven los macros del día: lo que falta, lo que llevás o el porcentaje. Se recuerda en este teléfono.
-const VISTAS_MACROS = [["falta", "Faltan"], ["llevo", "Llevo"], ["porcentaje", "%"]];
+const VISTAS_MACROS = [["falta"], ["llevo"], ["porcentaje"]];
 const CLAVE_VISTA_MACROS = "lomada-vista-macros";
 function vistaGuardada() {
   try {
@@ -172,6 +172,7 @@ function vistaGuardada() {
 
 function MacrosRestantes({ total, plan, meta }) {
   const [vista, setVista] = useState(vistaGuardada);
+  const [direccion, setDireccion] = useState(1);
   // Los carbos completan la meta de calorías que se ve en el anillo.
   const carbos = Math.max(0, Math.round((meta - plan.proteinas * 4 - plan.grasas * 9) / 4));
   const filas = [["Proteínas", "p", plan.proteinas, 4], ["Carbos", "c", carbos, 4], ["Grasas", "g", plan.grasas, 9]];
@@ -198,34 +199,86 @@ function MacrosRestantes({ total, plan, meta }) {
     return falta >= 0 ? [`${falta} g`, `faltan de ${objetivo} g`] : [`+${Math.abs(falta)} g`, `de más sobre ${objetivo} g`];
   }
 
+  const indice = VISTAS_MACROS.findIndex(([id]) => id === vista);
+  const mover = (paso) => {
+    setDireccion(paso);
+    elegir(VISTAS_MACROS[(indice + paso + VISTAS_MACROS.length) % VISTAS_MACROS.length][0]);
+  };
+  const nombreVista = vista === "falta" ? "Lo que te falta" : vista === "llevo" ? "Lo que llevás" : "Porcentaje de la meta";
+
   return (
     <div className="macros-del-dia">
-      <div className="vista-macros">
-        <span id="titulo-macros">Macros</span>
-        <div role="radiogroup" aria-labelledby="titulo-macros">
-          {VISTAS_MACROS.map(([id, texto]) => (
-            <button key={id} role="radio" aria-checked={vista === id} className={vista === id ? "activo" : ""} onClick={() => elegir(id)}>
-              {texto}
-            </button>
-          ))}
-        </div>
-      </div>
-      <ul className="macros-faltan" aria-label={vista === "falta" ? "Lo que falta de cada macro" : vista === "llevo" ? "Lo que llevás de cada macro" : "Porcentaje de cada macro"}>
+      <ul className="macros-faltan" aria-label={nombreVista} aria-live="polite">
         {filas.map(([texto, clave, objetivo, porGramo]) => {
           const [numero, detalle] = textos(clave, objetivo, porGramo);
+          const avance = objetivo ? total[clave] / objetivo : 1;
           return (
             <li key={clave}>
               <span className="macro-nombre"><span className={`punto s-${clave}`} /> {texto}</span>
-              <strong>{numero}</strong>
-              <small>{detalle}</small>
-              <span className="pista-progreso">
-                <motion.span className={`s-${clave}`} initial={{ scaleX: 0 }} animate={{ scaleX: objetivo ? Math.min(total[clave] / objetivo, 1) : 1 }} transition={{ duration: 0.8 }} />
-              </span>
+              <AnimatePresence mode="wait" initial={false} custom={direccion}>
+                <motion.span
+                  key={vista}
+                  className={`macro-vista vista-${vista}`}
+                  custom={direccion}
+                  initial={{ opacity: 0, x: direccion * 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: direccion * -14 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  {vista === "porcentaje" ? (
+                    <span className="macro-con-anillo">
+                      <MiniAnillo avance={avance} clave={clave} />
+                      <strong>{numero}</strong>
+                    </span>
+                  ) : (
+                    <strong>{numero}</strong>
+                  )}
+                  <small>{detalle}</small>
+                  {vista !== "porcentaje" && (
+                    <span className={`pista-progreso${vista === "falta" ? " pista-falta" : ""}`}>
+                      {/* Lo que falta se va vaciando; lo que llevás se va llenando. */}
+                      <motion.span
+                        className={`s-${clave}`}
+                        initial={{ scaleX: vista === "falta" ? 1 : 0 }}
+                        animate={{ scaleX: vista === "falta" ? Math.max(0, 1 - avance) : Math.min(avance, 1) }}
+                        transition={{ duration: 0.7 }}
+                      />
+                    </span>
+                  )}
+                </motion.span>
+              </AnimatePresence>
             </li>
           );
         })}
       </ul>
+      {vista === "porcentaje" && kcalMacros > 0 && (
+        <div className="reparto-kcal" role="img" aria-label={`De dónde vienen tus calorías: ${filas.map(([t, k, , g]) => `${t} ${Math.round((total[k] * g * 100) / kcalMacros)}%`).join(", ")}`}>
+          {filas.map(([, clave, , porGramo]) => (
+            <motion.span key={clave} className={`s-${clave}`} initial={{ flexGrow: 0 }} animate={{ flexGrow: (total[clave] * porGramo) / kcalMacros }} transition={{ duration: 0.6 }} />
+          ))}
+        </div>
+      )}
+      <div className="vista-macros">
+        <button className="flecha-vista" onClick={() => mover(-1)} aria-label="Vista anterior de los macros"><ChevronLeft size={18} /></button>
+        <span className="puntos-vista" aria-hidden="true">
+          {VISTAS_MACROS.map(([id]) => <i key={id} className={id === vista ? "activo" : ""} />)}
+        </span>
+        <button className="flecha-vista" onClick={() => mover(1)} aria-label="Vista siguiente de los macros"><ChevronRight size={18} /></button>
+      </div>
     </div>
+  );
+}
+
+function MiniAnillo({ avance, clave }) {
+  const r = 11;
+  return (
+    <svg className="mini-anillo" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
+      <circle cx="14" cy="14" r={r} fill="none" stroke="var(--pista)" strokeWidth="4" />
+      <motion.circle
+        cx="14" cy="14" r={r} fill="none" className={`trazo-${clave}`} strokeWidth="4" strokeLinecap="round" transform="rotate(-90 14 14)"
+        initial={{ pathLength: 0 }} animate={{ pathLength: Math.min(avance, 1), opacity: avance > 0 ? 1 : 0 }} transition={{ duration: 0.7 }}
+      />
+    </svg>
   );
 }
 
