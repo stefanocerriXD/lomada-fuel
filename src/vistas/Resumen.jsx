@@ -8,6 +8,7 @@ import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
 import { Indicador, Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
 import InvitacionesComida from "../componentes/InvitacionesComida.jsx";
 import { FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
+import { esDeAppleSalud } from "../lib/importar.js";
 import { esDeNoche, fechaDeLaNoche } from "../componentes/Fiesta.jsx";
 import Habitos from "../componentes/Habitos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
@@ -46,7 +47,8 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
   const nocheDeFiesta = fecha === hoy ? comidas.find((c) => c.usuario_id === usuario.id && c.tipo === "fiesta" && c.fecha === fechaDeLaNoche()) : mias.find((c) => c.tipo === "fiesta");
   const total = sumarComidas(mias);
   const restante = yo.meta_calorias - Math.round(total.kcal);
-  const resumenDia = mias.find((c) => c.tipo === "resumen");
+  // El de Apple Salud cuenta en el total pero no se muestra aparte: parecería sumado dos veces.
+  const resumenDia = mias.find((c) => c.tipo === "resumen" && !esDeAppleSalud(c));
   const racha = calcularRacha(comidas.filter((c) => c.usuario_id === usuario.id).map((c) => c.fecha));
 
   const amigos = Object.values(perfiles)
@@ -321,6 +323,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
   const { abrirPerfil } = useDatos();
   const [abierta, setAbierta] = useState(false);
   const total = sumarComidas(comidas);
+  const visibles = comidas.filter((c) => !esDeAppleSalud(c));
   const avance = Math.min(total.kcal / perfil.meta_calorias, 1);
   const conFoto = comidas.filter((c) => fotos[c.foto_path]).slice(0, 3);
 
@@ -332,7 +335,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
           <strong>{propio ? `${perfil.nombre} (vos)` : perfil.nombre}</strong>
           <span>
             {comidas.length
-              ? `${Math.round(total.kcal).toLocaleString("es-AR")} kcal · ${comidas.length} ${comidas.length === 1 ? "comida" : "comidas"}`
+              ? `${Math.round(total.kcal).toLocaleString("es-AR")} kcal${visibles.length ? ` · ${visibles.length} ${visibles.length === 1 ? "comida" : "comidas"}` : ""}`
               : "Todavía no subió nada"}
           </span>
           <span className="pista-progreso">
@@ -356,7 +359,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
             <div className="amigo-detalle-interno">
               <BarraMacros total={total} compacta />
               <ul>
-                {comidas.map((c) => (
+                {visibles.map((c) => (
                   <li key={c.id}>
                     <IconoComida tipo={c.tipo} size={16} />
                     <span className="amigo-comida">{c.descripcion || tipoInfo(c.tipo).texto}</span>

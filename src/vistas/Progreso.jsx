@@ -6,6 +6,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { aFecha, fechaLocal, nombreDia } from "../lib/fechas.js";
 import { analizarGastoReal, calcularPlan } from "../lib/cuerpo.js";
 import { Vacio, vibrar } from "../componentes/Base.jsx";
+import Viaje from "../componentes/Viaje.jsx";
 
 const kg = (n) => Number(n).toLocaleString("es-AR", { maximumFractionDigits: 1 });
 
@@ -15,13 +16,16 @@ export default function Progreso({ onEditarCuerpo, avisar }) {
   const [guardando, setGuardando] = useState(false);
 
   if (salud === undefined) {
-    return <Vacio icono={Scale} titulo="Progreso todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." />;
+    return <><Viaje /><Vacio icono={Scale} titulo="Progreso todavía no está activo" texto="Se activa al terminar la configuración de la base de datos." /></>;
   }
   if (!salud) {
     return (
-      <Vacio icono={Target} titulo="Armá tu plan" texto="Cargá tus medidas y tu objetivo para ver cuánto quemás y cómo vas.">
-        <button className="boton" onClick={onEditarCuerpo}>Empezar</button>
-      </Vacio>
+      <>
+        <Viaje />
+        <Vacio icono={Target} titulo="Armá tu plan" texto="Cargá tus medidas y tu objetivo para ver cuánto quemás y cómo vas.">
+          <button className="boton" onClick={onEditarCuerpo}>Empezar</button>
+        </Vacio>
+      </>
     );
   }
 
@@ -57,6 +61,8 @@ export default function Progreso({ onEditarCuerpo, avisar }) {
         </div>
         <button className="boton-chico" onClick={onEditarCuerpo}><Target size={15} /> Editar plan</button>
       </header>
+
+      <Viaje />
 
       <section className="tarjeta objetivo">
         <div className="objetivo-numeros">

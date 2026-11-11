@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { Award, Camera, Pencil, UtensilsCrossed } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
+import { esDeAppleSalud } from "../lib/importar.js";
 import { nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { cantidades, LOGROS, nivelesGuardados } from "../lib/medallas.js";
@@ -120,7 +121,7 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
                     <small>P {numero(d.total.p)} · C {numero(d.total.c)} · G {numero(d.total.g)}</small>
                   </summary>
                   <ul className="perfil-comidas">
-                    {d.lista.map((c) => (
+                    {d.lista.filter((c) => !esDeAppleSalud(c)).map((c) => (
                       <li key={c.id}>
                         {c.foto_path && fotos[c.foto_path] ? (
                           <button className="perfil-miniatura" onClick={() => abrirFoto(c)} aria-label={`Ver foto: ${c.descripcion || tipoInfo(c.tipo).texto}`}>

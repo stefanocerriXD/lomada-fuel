@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Check } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
 import { comprimirImagen } from "../lib/imagen.js";
-import { itemImportado, ranurasDeFotos } from "../lib/importar.js";
+import { descripcionImportada, destinosDeImportacion, itemImportado, ranurasDeFotos } from "../lib/importar.js";
 import { macrosDeItem } from "../lib/macros.js";
 import { prepararItem } from "../lib/unidades.js";
 import { nombreDia } from "../lib/fechas.js";
@@ -59,8 +59,11 @@ function Contenido({ fecha, filasIniciales, onGuardar }) {
   );
 }
 
+// Lo que se importó antes con una lista de alimentos también se puede renombrar.
+const esListaImportada = (c) => c.alimentos?.[0]?.fuente === "importado";
+
 function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
-  const { usuario, yo, comidas, cargarComidas, extras } = useDatos();
+  const { usuario, yo, comidas, fotos, cargarComidas, extras } = useDatos();
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,6 +71,8 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
   const total = Math.round(filas.reduce((t, f) => t + (Number(f.kcal) || 0), 0));
   const propias = comidas.filter((c) => c.usuario_id === usuario.id && c.fecha === fecha);
   const yaCargadas = Math.round(propias.filter((c) => c.tipo !== "resumen").reduce((t, c) => t + (Number(c.calorias) || 0), 0));
+  // Cada comida importada completa la que ya está en Lomada (con su foto), en vez de duplicarla.
+  const destinos = useMemo(() => destinosDeImportacion(filas, propias), [filas, propias]);
 
   async function guardar() {
     const validas = filas.filter((f) => Number(f.kcal) > 0);
@@ -77,27 +82,28 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
     try {
       const guardadas = [];
       for (const f of validas) {
+        const previa = destinos[filas.indexOf(f)];
         const macros = { kcal: Math.round(Number(f.kcal)), p: Number(f.p) || 0, c: Number(f.c) || 0, g: Number(f.g) || 0 };
+        // Si la comida de Lomada ya tenía un nombre propio ("Milanesa con puré"), se queda.
+        const generica = !previa?.descripcion || previa.descripcion === tipoInfo(previa.tipo).texto || / importado$/.test(previa.descripcion) || esListaImportada(previa);
         const fila = {
-          tipo: f.tipo,
+          tipo: previa?.tipo || f.tipo,
           fecha,
-          descripcion: f.tipo === "resumen" ? "Resumen importado" : `${tipoInfo(f.tipo).texto} importado`,
+          descripcion: f.tipo === "resumen" ? "Resumen importado" : generica ? descripcionImportada(f.alimentos, tipoInfo(f.tipo).texto) : previa.descripcion,
           calorias: macros.kcal,
           proteinas: macros.p,
           carbohidratos: macros.c,
           grasas: macros.g,
           macros_editados: Boolean(tocada(f)),
           alimentos: f.alimentos?.length ? alimentosParaGuardar(f) : [{ nombre: "Importado", fuente: "importado", ...macros }],
-          ...(extras.disponible ? { privada: yo.comidas_privadas ?? false } : {}),
+          ...(extras.disponible && !previa ? { privada: yo.comidas_privadas ?? false } : {}),
         };
-        // Importar de nuevo el mismo día reemplaza lo importado antes, no lo duplica.
-        const previa = propias.find((c) => c.tipo === f.tipo && (f.tipo === "resumen" || c.alimentos?.[0]?.fuente === "importado"));
         const id = previa?.id || crypto.randomUUID();
         const { error: err } = previa
           ? await supabase.from("comidas").update(fila).eq("id", id)
           : await supabase.from("comidas").insert({ ...fila, id, usuario_id: usuario.id });
         if (err) throw err;
-        guardadas.push({ ...fila, id, foto_path: previa?.foto_path || null, privada: fila.privada ?? false });
+        guardadas.push({ ...fila, id, foto_path: previa?.foto_path || null, privada: previa ? Boolean(previa.privada) : fila.privada ?? false });
       }
       await cargarComidas();
       vibrar(20);
@@ -128,6 +134,16 @@ function Revisar({ fecha, filas, setFilas, aviso, onVolver, onGuardadas }) {
               </label>
             ))}
           </div>
+          {destinos[i] && (
+            <p className="destino-importado">
+              {destinos[i].foto_path && fotos[destinos[i].foto_path] ? <img src={fotos[destinos[i].foto_path]} alt="" /> : <IconoComida tipo={destinos[i].tipo} size={18} />}
+              <span>
+                {destinos[i].foto_path ? "Completa tu " : "Reemplaza tu "}
+                {tipoInfo(destinos[i].tipo).texto.toLowerCase()}
+                {destinos[i].foto_path ? ` publicad${["merienda", "cena", "colacion"].includes(destinos[i].tipo) ? "a" : "o"} con foto` : Number(destinos[i].calorias) > 0 ? ` de ${Math.round(destinos[i].calorias).toLocaleString("es-AR")} kcal` : ""}
+              </span>
+            </p>
+          )}
           {f.alimentos?.length > 0 && <DetalleAlimentos alimentos={f.alimentos} />}
         </section>
       ))}

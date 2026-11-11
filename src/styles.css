@@ -1563,3 +1563,24 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .ingredientes-receta small { flex: none; color: var(--tinta-2); }
 .chat-fila.propia .receta-chat strong, .chat-fila.propia .receta-chat small { color: inherit; }
 .ver-receta-botones { display: flex; flex-direction: column; gap: 8px; }
+
+/* Importar: a qué comida va cada una */
+.destino-importado { display: flex; align-items: center; gap: 8px; margin: 2px 0 0; color: var(--tinta-2); font-size: 0.82rem; font-weight: 600; }
+.destino-importado img { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; }
+
+/* Viaje a Floripa */
+:root { --viaje-mar-1: #0a4f63; --viaje-mar-2: #0f7383; --viaje-arena: #f2cf7e; --viaje-texto: #f4fbfc; }
+.viaje { display: flex; flex-direction: column; gap: 12px; padding: 18px; background: linear-gradient(135deg, var(--viaje-mar-1), var(--viaje-mar-2)); color: var(--viaje-texto); overflow: hidden; }
+.viaje-cabecera p { margin: 0; }
+.viaje-sobretitulo { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 650; opacity: 0.92; }
+.viaje-cuenta { margin-top: 4px !important; font-size: 1rem; font-weight: 650; }
+.viaje-cuenta strong { font-family: var(--titulo); font-size: 2.6rem; font-weight: 800; line-height: 1; }
+.viaje-detalle { margin-top: 2px !important; font-size: 0.86rem; opacity: 0.92; }
+.viaje-cuerpo { display: flex; align-items: center; gap: 16px; }
+.viaje-pista { position: relative; flex: 1; height: 10px; border-radius: 99px; background: rgb(255 255 255 / 22%); }
+.viaje-pista span { position: absolute; inset: 0; border-radius: inherit; background: var(--viaje-arena); transform-origin: left; }
+.viaje-pista i { position: absolute; top: 50%; display: grid; place-items: center; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: var(--viaje-texto); color: var(--viaje-mar-1); box-shadow: 0 2px 6px rgb(0 0 0 / 25%); }
+.cuadraditos { display: grid; grid-template-columns: repeat(2, 14px); gap: 4px; flex: none; padding: 6px 8px; border-radius: 12px; background: rgb(255 255 255 / 14%); }
+.cuadraditos span { width: 14px; height: 12px; border-radius: 4px; background: rgb(255 255 255 / 25%); }
+.cuadraditos span.lleno { background: var(--viaje-arena); }
+.viaje-lema { margin: 0; font-weight: 700; font-size: 0.92rem; }

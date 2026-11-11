@@ -459,3 +459,38 @@ export function leerResumen(texto) {
   }
   return tieneDatos(general) ? [{ tipo: "resumen", ...completar(general) }] : [];
 }
+
+// El resumen que manda Apple Salud cuenta para el total del día, pero no se muestra como una comida más.
+export const esDeAppleSalud = (c) => c.tipo === "resumen" && c.descripcion === "Resumen de Apple Salud";
+
+const sinMacros = (c) => !(Number(c.calorias) > 0);
+const esImportada = (c) => c.alimentos?.[0]?.fuente === "importado";
+
+// La comida de Lomada que completa cada comida importada (el almuerzo de MyFitnessPal va al almuerzo ya publicado).
+// Primero lo importado antes, después la que tiene foto pero no calorías, después cualquiera del mismo tipo.
+// Los snacks de MyFitnessPal pueden ser la merienda que se publicó solo con foto.
+export function destinosDeImportacion(filas, propias) {
+  const usadas = new Set();
+  return filas.map((f) => {
+    const libres = propias.filter((c) => !usadas.has(c.id) && c.tipo !== "fiesta" && !esDeAppleSalud(c));
+    let destino;
+    if (f.tipo === "resumen") {
+      destino = libres.find((c) => c.tipo === "resumen");
+    } else {
+      const mismas = libres.filter((c) => c.tipo === f.tipo);
+      destino = mismas.find(esImportada) || mismas.find((c) => sinMacros(c) && c.foto_path) || mismas.find(sinMacros) || mismas.find((c) => c.foto_path) || mismas[0];
+      if (!destino && f.tipo === "colacion") destino = libres.find((c) => c.tipo === "merienda" && sinMacros(c));
+    }
+    if (destino) usadas.add(destino.id);
+    return destino || null;
+  });
+}
+
+// Un nombre que diga qué se comió: "Pollo, arroz y ensalada".
+export function descripcionImportada(alimentos, texto) {
+  const nombres = (alimentos || []).map((a) => String(a.nombre || "").replace(/\s*\(.*\)$/, "").trim()).filter(Boolean);
+  if (!nombres.length) return `${texto} importado`;
+  const primeros = nombres.slice(0, 3);
+  const lista = primeros.length > 1 ? `${primeros.slice(0, -1).join(", ")} y ${primeros[primeros.length - 1]}` : primeros[0];
+  return (nombres.length > 3 ? `${lista} y más` : lista).slice(0, 120);
+}
