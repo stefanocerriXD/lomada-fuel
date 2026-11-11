@@ -1,6 +1,6 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
+import { Award, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
@@ -14,6 +14,7 @@ import Grabador, { extensionAudio } from "../componentes/Grabador.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import VerReceta, { useReceta } from "../componentes/VerReceta.jsx";
 import { totalesDeReceta } from "../lib/recetasPropias.js";
+import { nombreDeCodigo } from "../lib/medallas.js";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
@@ -262,6 +263,18 @@ function RecetaEnChat({ id, onVer }) {
   );
 }
 
+// Los logros desde el nivel 2 aparecen en el chat como una línea chica. Solo los ganados desde que existe esto.
+const LOGROS_EN_CHAT_DESDE = "2026-11-11";
+function LineaLogro({ logro, perfil, onPerfil }) {
+  const nivel = logro.codigo.split(":")[1];
+  return (
+    <motion.button type="button" className="chat-logro" onClick={() => onPerfil(logro.usuario_id)} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+      <Award size={14} aria-hidden="true" />
+      <span><b>{perfil.nombre}</b> llegó a <em>{nombreDeCodigo(logro.codigo)}</em> · nivel {nivel}</span>
+    </motion.button>
+  );
+}
+
 // Memorizado: escribir o recibir algo no redibuja todos los mensajes, solo los que cambian.
 const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onReaccion, onPerfil, onAcciones, onResponder, onZoom, onVerReceta }) {
   const { marcado, eventos } = useToqueLargo(() => onAcciones(m));
@@ -372,8 +385,14 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
 export default function Chat({ avisar }) {
   const {
     castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, quitarMensaje, emitirChat, respuesta, responder,
-    lecturas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, alternarReaccionMensaje, abrirPerfil,
+    lecturas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, alternarReaccionMensaje, abrirPerfil, extras,
   } = useDatos();
+  const logrosChat = useMemo(
+    () => (extras.medallas || [])
+      .filter((m) => m.ganada_en && m.ganada_en >= LOGROS_EN_CHAT_DESDE && Number(String(m.codigo).split(":")[1]) >= 2 && perfiles[m.usuario_id] && nombreDeCodigo(m.codigo))
+      .sort((a, b) => (a.ganada_en < b.ganada_en ? -1 : 1)),
+    [extras.medallas, perfiles],
+  );
   const reaccionesPorMensaje = useMemo(() => {
     const mapa = {};
     for (const r of reaccionesMensajes) (mapa[r.mensaje_id] ||= []).push(r);
@@ -406,7 +425,7 @@ export default function Chat({ avisar }) {
     // Solo se mueve la lista: en el iPhone, mover la página desacomoda el teclado.
     const el = lista.current;
     el?.scrollTo({ top: el.scrollHeight, behavior: cargado ? "smooth" : "auto" });
-  }, [linea.length, cargado]);
+  }, [linea.length, logrosChat.length, cargado]);
 
   // Si alguien empieza a escribir y estás abajo de todo, se muestra sin que tengas que bajar.
   const bajarSiEstaAbajo = useCallback(() => {
@@ -590,10 +609,18 @@ export default function Chat({ avisar }) {
           const nuevoDia = !previo || fechaLocal(new Date(previo.creado_en)) !== dia;
           const separador = nuevoDia && <p className="chat-dia"><span>{nombreDia(dia)}</span></p>;
           const fotoDe = m.adjunto_path ? fotos[m.adjunto_path] : undefined;
+          // Los logros que se ganaron entre este mensaje y el siguiente.
+          const logros = logrosChat.filter((l) => l.ganada_en >= m.creado_en && (!siguiente || l.ganada_en < siguiente.creado_en));
+          const conLogros = (elemento) => (
+            <Fragment key={m.id}>
+              {elemento}
+              {logros.map((l) => <LineaLogro key={`${l.usuario_id}-${l.codigo}`} logro={l} perfil={perfiles[l.usuario_id]} onPerfil={abrirPerfil} />)}
+            </Fragment>
+          );
 
           if (!m.usuario_id) {
-            return (
-              <div key={m.id} className="chat-grupo">
+            return conLogros(
+              <div className="chat-grupo">
                 {separador}
                 <motion.article id={`m-${m.id}`} className="burbuja-bot" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
                   <header><Bot size={17} aria-hidden="true" /> <strong>Bot del grupo</strong></header>
@@ -608,9 +635,8 @@ export default function Chat({ avisar }) {
           }
 
           const mismoAutor = (x) => x && x.usuario_id === m.usuario_id;
-          return (
+          return conLogros(
             <Mensaje
-              key={m.id}
               m={m}
               propio={m.usuario_id === usuario.id}
               inicio={nuevoDia || !mismoAutor(previo)}

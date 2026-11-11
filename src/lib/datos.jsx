@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { supabase } from "./supabase.js";
 import { accionWhoop } from "./api.js";
 import { haceDias } from "./fechas.js";
-import { cantidades } from "./medallas.js";
+import { cantidades, nivelesGuardados, nivelGeneral } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
 import { castigoDe, marcaDeCaca } from "./multas.js";
 import { marcarActividad } from "./vivo.js";
@@ -532,9 +532,14 @@ export function DatosProvider({ usuario, children }) {
   }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, salud, usuario.id]);
 
   // La caca de cada uno se ve al lado del nombre en toda la app.
+  // Cada perfil lleva su nivel general (el avatar se pone más lindo al subir) y, si le toca, la caca.
   const perfilesConCaca = useMemo(() => {
-    if (!extras.multasActivas) return perfiles;
-    return Object.fromEntries(Object.entries(perfiles).map(([id, p]) => [id, { ...p, caca: marcaDeCaca({ usuarioId: id, multas: extras.multas, bochaEvo: extras.bochaEvo }) }]));
+    const medallas = extras.medallas || [];
+    return Object.fromEntries(Object.entries(perfiles).map(([id, p]) => [id, {
+      ...p,
+      nivel: nivelGeneral(nivelesGuardados(medallas.filter((m) => m.usuario_id === id).map((m) => m.codigo))).nivel,
+      ...(extras.multasActivas ? { caca: marcaDeCaca({ usuarioId: id, multas: extras.multas, bochaEvo: extras.bochaEvo }) } : {}),
+    }]));
   }, [perfiles, extras]);
   const castigo = useMemo(
     () => (extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, diario: false, activo: false }),

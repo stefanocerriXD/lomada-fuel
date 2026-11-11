@@ -15,6 +15,8 @@ import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
+import Visor from "../componentes/Visor.jsx";
+import { createPortal } from "react-dom";
 
 export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta, avisar }) {
   const [modo, setModo] = useState("dia");
@@ -324,6 +326,13 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
   const [abierta, setAbierta] = useState(false);
   const total = sumarComidas(comidas);
   const visibles = comidas.filter((c) => !esDeAppleSalud(c));
+  // Ordenadas por comida del día: desayuno, almuerzo, merienda, cena, colaciones y fiesta.
+  const orden = [...TIPOS.map((t) => t.id), "fiesta", "resumen"];
+  const porComida = orden
+    .map((tipo) => ({ tipo, lista: visibles.filter((c) => c.tipo === tipo) }))
+    .filter((g) => g.lista.length);
+  const fotosDelDia = porComida.flatMap((g) => g.lista).filter((c) => fotos[c.foto_path]);
+  const [visor, setVisor] = useState(null);
   const avance = Math.min(total.kcal / perfil.meta_calorias, 1);
   const conFoto = comidas.filter((c) => fotos[c.foto_path]).slice(0, 3);
 
@@ -358,16 +367,30 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
           <motion.div className="amigo-detalle" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
             <div className="amigo-detalle-interno">
               <BarraMacros total={total} compacta />
-              <ul>
-                {visibles.map((c) => (
-                  <li key={c.id}>
-                    <IconoComida tipo={c.tipo} size={16} />
-                    <span className="amigo-comida">{c.descripcion || tipoInfo(c.tipo).texto}</span>
-                    <strong>{(c.calorias || 0).toLocaleString("es-AR")}</strong>
+              <ul className="dia-por-comida">
+                {porComida.map((g) => (
+                  <li key={g.tipo}>
+                    <span className="dia-por-comida-tipo"><IconoComida tipo={g.tipo} size={15} /> {tipoInfo(g.tipo).plural && g.lista.length > 1 ? tipoInfo(g.tipo).plural : tipoInfo(g.tipo).texto}</span>
+                    {g.lista.map((c) => (
+                      <div key={c.id} className="dia-por-comida-fila">
+                        {fotos[c.foto_path] ? (
+                          <button type="button" className="dia-por-comida-foto" onClick={() => setVisor(Math.max(0, fotosDelDia.findIndex((x) => x.id === c.id)))} aria-label={`Ver foto: ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                            <img src={fotos[c.foto_path]} alt="" loading="lazy" />
+                          </button>
+                        ) : (
+                          <span className="dia-por-comida-foto sin-foto"><IconoComida tipo={c.tipo} size={20} /></span>
+                        )}
+                        <span className="dia-por-comida-datos">
+                          <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
+                          <small>{Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal · P {Math.round(c.proteinas || 0)} · C {Math.round(c.carbohidratos || 0)} · G {Math.round(c.grasas || 0)}</small>
+                        </span>
+                      </div>
+                    ))}
                   </li>
                 ))}
               </ul>
               <button className="boton-texto" onClick={() => abrirPerfil(perfil.id)}><UserRound size={15} /> Ver perfil</button>
+              {visor !== null && createPortal(<Visor lista={fotosDelDia} inicio={visor} onCerrar={() => setVisor(null)} />, document.body)}
             </div>
           </motion.div>
         )}

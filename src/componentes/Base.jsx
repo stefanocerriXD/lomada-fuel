@@ -13,14 +13,20 @@ export function vibrar(ms = 10) {
   }
 }
 
+// El marco del avatar mejora con el nivel general: del 1 al 4 nada; después bronce, plata, oro, diamante y legendario.
+export const MARCOS = [[5, "bronce"], [10, "plata"], [20, "oro"], [35, "diamante"], [55, "legendario"]];
+export const marcoDe = (nivel) => MARCOS.filter(([desde]) => (nivel || 0) >= desde).pop()?.[1] || null;
+
 export function Avatar({ perfil, tam = 40 }) {
+  const marco = marcoDe(perfil?.nivel);
   return (
     <span
-      className="avatar"
-      style={{ width: tam, height: tam, fontSize: tam * 0.42, "--avatar": perfil?.color || "#E4572E" }}
+      className={marco ? `avatar con-marco marco-${marco}` : "avatar"}
+      style={{ width: tam, height: tam, fontSize: tam * 0.42, "--avatar": perfil?.color || "#E4572E", "--borde-marco": `${Math.max(1.5, tam * 0.07)}px` }}
       aria-hidden="true"
     >
       {(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}
+      {marco === "legendario" && tam >= 28 && <span className="avatar-corona">👑</span>}
       {perfil?.caca && <span className={`avatar-caca ${perfil.caca}`}>💩</span>}
     </span>
   );

@@ -1584,3 +1584,35 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .cuadraditos span { width: 14px; height: 12px; border-radius: 4px; background: rgb(255 255 255 / 25%); }
 .cuadraditos span.lleno { background: var(--viaje-arena); }
 .viaje-lema { margin: 0; font-weight: 700; font-size: 0.92rem; }
+
+/* Marcos del avatar según el nivel */
+.avatar.con-marco::before { content: ""; position: absolute; inset: calc(var(--borde-marco) * -1.6); border-radius: 50%; background: var(--marco); pointer-events: none; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco) * 1.15), #000 calc(100% - var(--borde-marco) * 1.15 + 0.6px)); mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco) * 1.15), #000 calc(100% - var(--borde-marco) * 1.15 + 0.6px)); }
+.marco-bronce { --marco: linear-gradient(145deg, #e0a16b, #8a4f24 55%, #c98a52); }
+.marco-plata { --marco: linear-gradient(145deg, #ffffff, #9aa3ad 45%, #e6ebf0 70%, #7d8691); }
+.marco-oro { --marco: linear-gradient(145deg, #fff3b0, #e0a800 40%, #fff0a0 65%, #b07d00); box-shadow: 0 0 calc(var(--borde-marco) * 2.5) rgb(224 168 0 / 45%); }
+.marco-diamante { --marco: conic-gradient(from 20deg, #7fe7ff, #b48cff, #ff9ce6, #7fe7ff, #b9fff3, #7fe7ff); box-shadow: 0 0 calc(var(--borde-marco) * 3) rgb(140 160 255 / 55%); }
+.marco-legendario { --marco: conic-gradient(from 0deg, #ff4d4d, #ffb84d, #fff24d, #4dff88, #4dd2ff, #9f4dff, #ff4dd8, #ff4d4d); }
+.marco-legendario::before { animation: girar-marco 2.4s linear infinite; filter: saturate(1.2); }
+.marco-legendario { animation: brillo-legendario 2.4s ease-in-out infinite; }
+.avatar-corona { position: absolute; top: -0.78em; left: 50%; font-size: 0.7em; line-height: 1; transform: translateX(-50%) rotate(-12deg); filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%)); animation: flotar-corona 2.4s ease-in-out infinite; }
+@keyframes girar-marco { to { transform: rotate(360deg); } }
+@keyframes brillo-legendario { 0%, 100% { box-shadow: 0 0 calc(var(--borde-marco) * 2) rgb(255 120 80 / 45%); } 50% { box-shadow: 0 0 calc(var(--borde-marco) * 5) rgb(160 90 255 / 65%); } }
+@keyframes flotar-corona { 0%, 100% { transform: translate(-50%, 0) rotate(-12deg); } 50% { transform: translate(-50%, -2px) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .marco-legendario, .marco-legendario::before, .avatar-corona { animation: none; } }
+
+/* Logros en el chat */
+.chat-logro { display: flex; align-items: center; justify-content: center; gap: 6px; align-self: center; max-width: 92%; min-height: 36px; margin: 2px auto; padding: 4px 12px; border-radius: 99px; background: color-mix(in srgb, #e0a800 12%, transparent); color: var(--tinta-2); font-family: Georgia, "Times New Roman", serif; font-size: 0.8rem; font-style: italic; text-align: center; }
+.chat-logro svg { flex: none; color: #b07d00; }
+.chat-logro b { font-family: var(--titulo); font-style: normal; font-weight: 700; color: var(--tinta); }
+.chat-logro em { font-weight: 700; color: var(--tinta); }
+
+/* El día de cada uno, por comida */
+.dia-por-comida { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.amigo-detalle .dia-por-comida > li { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 0; }
+.dia-por-comida-tipo { display: flex; align-items: center; gap: 6px; color: var(--tinta-2); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.dia-por-comida-fila { display: flex; align-items: center; gap: 10px; }
+.dia-por-comida-foto { display: grid; place-items: center; flex: none; width: 64px; height: 64px; padding: 0; border-radius: 14px; background: var(--superficie-2); overflow: hidden; color: var(--tinta-2); }
+.dia-por-comida-foto img { width: 100%; height: 100%; object-fit: cover; }
+.dia-por-comida-datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dia-por-comida-datos strong { overflow: hidden; font-size: 0.9rem; text-overflow: ellipsis; white-space: nowrap; }
+.dia-por-comida-datos small { color: var(--tinta-2); font-size: 0.76rem; }
