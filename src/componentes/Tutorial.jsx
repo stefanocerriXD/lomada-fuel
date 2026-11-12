@@ -13,6 +13,14 @@ const SECCIONES = [
     ],
   },
   {
+    titulo: "Grupos",
+    preguntas: [
+      ["¿Puedo estar en más de un grupo?", ["Sí. En Ajustes → Grupos escribí el código del otro grupo y tocá Sumarme.", "Arriba aparece el nombre del grupo que estás viendo: tocalo para cambiar de grupo. Cada grupo tiene su chat, sus logros y su caca."]],
+      ["¿En qué grupo se publican mis comidas?", ["Lo elegís en Ajustes → Grupos:", "En todos mis grupos: cada comida se ve en todos.", "Solo en el grupo que estoy viendo: va al que tenés abierto arriba.", "Elegir en cada comida: al subirla tocás en qué grupos va, debajo de la foto."]],
+      ["¿Cómo salgo de un grupo?", "En Ajustes → Grupos tocá Salir al lado del grupo y confirmá. Tus comidas dejan de verse ahí."],
+    ],
+  },
+  {
     titulo: "Cargar comidas",
     preguntas: [
       ["¿Cómo subo una comida?", "Tocá el botón + o el + de la comida en Resumen. Escribí qué comiste, elegí el resultado y tocá Publicar. La foto es opcional."],

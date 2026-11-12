@@ -1650,3 +1650,30 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .postre-emoji { font-size: 1.5rem; line-height: 1; }
 .postre-cerrar { display: grid; place-items: center; width: 44px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta-2); }
 .postre-nota { margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.86rem; font-weight: 600; }
+
+/* Varios grupos */
+.selector-grupo { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 4px 10px 4px 12px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta); font-family: var(--titulo); font-weight: 750; font-size: 1rem; max-width: 52vw; }
+.selector-grupo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista-grupos { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.grupo-opcion, .grupo-fila { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 12px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta); text-align: left; }
+.grupo-opcion.activo { background: var(--acento-suave); color: var(--sobre-acento-suave); }
+.grupo-icono { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--superficie); color: var(--acento); flex: none; }
+.grupo-nombre { flex: 1; display: flex; flex-direction: column; font-weight: 700; }
+.grupo-nombre small { color: var(--tinta-2); font-weight: 500; font-size: 0.76rem; }
+.sumarme-grupo { display: flex; align-items: flex-end; gap: 8px; margin: 6px 0 18px; }
+.sumarme-grupo label { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.sumarme-grupo label span { font-weight: 650; font-size: 0.86rem; }
+.sumarme-grupo .boton { min-height: 46px; white-space: nowrap; }
+.opciones-publicar { display: flex; flex-direction: column; gap: 6px; }
+.opcion-publicar { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta); text-align: left; border: 2px solid transparent; }
+.opcion-publicar.activa { border-color: var(--acento); }
+.opcion-publicar > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.opcion-publicar small { color: var(--tinta-2); font-size: 0.78rem; }
+.opcion-marca { display: grid; place-items: center; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; border: 2px solid var(--borde); flex: none; }
+.opcion-publicar.activa .opcion-marca { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); }
+.publicar-en { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 12px; }
+.publicar-en > span { font-weight: 700; font-size: 0.9rem; }
+.chips-grupos { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-grupo { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta-2); font-weight: 650; border: 2px solid transparent; }
+.chip-grupo.activo { background: var(--acento-suave); color: var(--sobre-acento-suave); border-color: var(--acento); }
+.publicar-nota { margin: 0 0 10px; }

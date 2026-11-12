@@ -37,7 +37,10 @@ const valorDe = (consulta, clave) => (consulta.error ? null : consulta.data?.fin
 // Sin grupo cargado (la base todavía no tiene grupos) se comporta como la Lomada de siempre.
 export const GRUPO_BASE = { id: null, nombre: "Lomada", conBocha: true };
 
-export function DatosProvider({ usuario, grupo = GRUPO_BASE, children }) {
+const SIN_GRUPOS = [];
+const nada = async () => false;
+
+export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRUPOS, cambiarGrupo = nada, recargarGrupos = nada, children }) {
   const [perfiles, setPerfiles] = useState({});
   const [comidas, setComidas] = useState([]);
   const [fotos, setFotos] = useState({});
@@ -555,6 +558,9 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, children }) {
     () => ({
       usuario,
       grupo,
+      misGrupos,
+      cambiarGrupo,
+      recargarGrupos,
       yo: perfilesConCaca[usuario.id] || { ...AVATAR_BASE, id: usuario.id, nombre: "" },
       perfiles: perfilesConCaca,
       castigo,
@@ -601,7 +607,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

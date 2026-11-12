@@ -35,7 +35,15 @@ export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia,
 function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
   // Lo que se está cargando se puede guardar como receta propia (un budín, el desayuno de siempre).
   const [recetaNueva, setRecetaNueva] = useState(null);
-  const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones } = useDatos();
+  const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones, grupo, misGrupos } = useDatos();
+  // En varios grupos: dónde se publica según el ajuste de cada uno, o eligiendo acá.
+  const variosGrupos = misGrupos.length > 1;
+  const eligeGrupos = variosGrupos && yo.publicar_en === "elegir";
+  const [gruposElegidos, setGruposElegidos] = useState(() => {
+    const propios = (carga.comida?.grupos || []).filter((id) => misGrupos.some((g) => g.id === id));
+    return propios.length ? propios : [grupo.id];
+  });
+  const alternarGrupo = (id) => setGruposElegidos((lista) => (lista.includes(id) ? (lista.length > 1 ? lista.filter((x) => x !== id) : lista) : [...lista, id]));
   // Comida grupal: a quién sumar. Solo la comida original invita, no las copias de los que aceptaron.
   const [companeros, setCompaneros] = useState([]);
   const otrosIntegrantes = Object.values(perfiles).filter((p) => p.id !== usuario.id);
@@ -213,6 +221,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
         grasas: Math.round(total.g * 10) / 10,
         macros_editados: !!ajuste,
         ...(extras.disponible ? { privada } : {}),
+        ...(eligeGrupos ? { grupos: gruposElegidos } : {}),
         alimentos: items.map(({ indice, ...i }) => ({ ...i, ...(i.por100 ? macrosDeItem(i) : {}) })),
       };
       const { error: errFila } = original
@@ -399,6 +408,23 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
             </details>
           )}
 
+          {eligeGrupos && (
+            <div className="publicar-en" role="group" aria-label="En qué grupos se publica">
+              <span>Publicar en</span>
+              <div className="chips-grupos">
+                {misGrupos.map((g) => (
+                  <button key={g.id} type="button" className={gruposElegidos.includes(g.id) ? "chip-grupo activo" : "chip-grupo"} aria-pressed={gruposElegidos.includes(g.id)} onClick={() => alternarGrupo(g.id)}>
+                    <Users size={14} /> {g.nombre}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {variosGrupos && !eligeGrupos && !original && (
+            <p className="nota publicar-nota">
+              Se publica en {yo.publicar_en === "actual" ? grupo.nombre : misGrupos.map((g) => g.nombre).join(" y ")}. Lo cambiás en Ajustes → Grupos.
+            </p>
+          )}
           <details className="mas-opciones">
             <summary>Más opciones</summary>
             <div className="mas-opciones-cuerpo">

@@ -4,9 +4,10 @@ import MisRecetas from "../componentes/MisRecetas.jsx";
 import LaCaca from "../componentes/LaCaca.jsx";
 import Tutorial from "../componentes/Tutorial.jsx";
 import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
+import MisGrupos from "../componentes/MisGrupos.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -32,7 +33,7 @@ function textoObjetivo(salud) {
 }
 
 export default function Ajustes({ avisar, onEditarCuerpo }) {
-  const { castigo, usuario, yo, cargarPerfiles, salud, grupo } = useDatos();
+  const { castigo, usuario, yo, cargarPerfiles, salud, grupo, misGrupos } = useDatos();
   const [nombre, setNombre] = useState(yo.nombre);
   const [color, setColor] = useState(yo.color);
   const [meta, setMeta] = useState(yo.meta_calorias);
@@ -67,6 +68,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
   const estadoSalud = useEstadoSalud();
   const SECCIONES = [
     { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
+    { id: "grupos", titulo: "Grupos", detalle: misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Sumarte a otro grupo con un código", icono: Users },
     { id: "caca", titulo: "La caca 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
@@ -179,6 +181,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}
       {seccion === "recetas" && <MisRecetas avisar={avisar} />}
       {seccion === "caca" && <LaCaca avisar={avisar} />}
+      {seccion === "grupos" && <MisGrupos avisar={avisar} />}
 
       {seccion === "apariencia" && (
         <section className="tarjeta ajuste">
