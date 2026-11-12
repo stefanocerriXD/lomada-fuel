@@ -1741,6 +1741,8 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .postre-boton > svg { color: var(--acento); }
 .postre-emoji { font-size: 1.5rem; line-height: 1; }
 .postre-cerrar { display: grid; place-items: center; width: 44px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta-2); }
+.postre-atajos { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.postre-atajos .postre-boton { width: 100%; }
 .postre-nota { margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.86rem; font-weight: 600; }
 
 /* Varios grupos */

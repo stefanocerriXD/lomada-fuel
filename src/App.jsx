@@ -411,7 +411,7 @@ function Principal({ recuperando, onRecuperado }) {
       </nav>
 
       <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
-      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} avisar={avisar} />
+      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} onPostre={(comida) => setCarga({ comida, postre: true })} avisar={avisar} />
       <Fiesta abierta={fiesta} onCerrar={() => setFiesta(false)} avisar={avisar} />
       <Importar
         pedido={importar}

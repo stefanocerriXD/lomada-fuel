@@ -23,16 +23,16 @@ const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
-export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, avisar }) {
+export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
   const editando = carga?.comida;
   return (
     <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={carga?.postre ? "Agregar postre" : editando ? "Editar comida" : "Subir comida"} ancha>
-      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} onFiesta={onFiesta} avisar={avisar} />}
+      {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} onFiesta={onFiesta} onPostre={onPostre} avisar={avisar} />}
     </Hoja>
   );
 }
 
-function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
+function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
   // Lo que se está cargando se puede guardar como receta propia (un budín, el desayuno de siempre).
   const [recetaNueva, setRecetaNueva] = useState(null);
   const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones, grupo, misGrupos } = useDatos();
@@ -247,9 +247,31 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
   }
 
   const buscando = texto.trim().length > 0;
+  // Comida nueva con el almuerzo o la cena ya cargados: atajo para sumarles el postre.
+  const fechaCarga = carga.fecha || fechaLocal();
+  const paraPostre = original || carga.postre || !onPostre
+    ? []
+    : comidas
+        .filter((c) => c.usuario_id === usuario.id && c.fecha === fechaCarga && (c.tipo === "almuerzo" || c.tipo === "cena"))
+        .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1))
+        .slice(0, 2);
 
   return (
     <div className="carga">
+      {!buscando && items.length === 0 && paraPostre.length > 0 && (
+        <div className="postre-atajos">
+          {paraPostre.map((c) => (
+            <button key={c.id} className="postre-boton" onClick={() => onPostre(c)}>
+              <span className="postre-emoji" aria-hidden="true">🍮</span>
+              <span>
+                <strong>Sumar postre a tu {c.tipo === "cena" ? "cena" : "almuerzo"}</strong>
+                <small>{(c.alimentos || []).some((a) => a.postre) ? "Ya tiene postre: podés agregar otro" : "Queda dentro de esa comida"}</small>
+              </span>
+              <Plus size={18} />
+            </button>
+          ))}
+        </div>
+      )}
       {!buscando && (
         <div className="tipos" role="radiogroup" aria-label="Tipo de comida">
           {TIPOS.map((t) => (
