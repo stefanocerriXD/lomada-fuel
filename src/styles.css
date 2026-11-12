@@ -1585,43 +1585,135 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .cuadraditos span.lleno { background: var(--viaje-arena); }
 .viaje-lema { margin: 0; font-weight: 700; font-size: 0.92rem; }
 
-/* Marcos del avatar según el nivel: el aro va por dentro del avatar, así nunca se corta en el borde de la pantalla. */
+/* Marcos del avatar según el nivel. Todo pasa dentro del lugar del avatar, así nunca se corta.
+   ::before es el marco (aro o silueta con puntas), ::after es la cara, y la letra va arriba. */
 .avatar { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--avatar) 14%, var(--superficie)), color-mix(in srgb, var(--avatar) 34%, var(--superficie)) 78%); }
-.avatar.con-marco { box-shadow: none; }
+.avatar-letra { position: relative; z-index: 2; }
+.avatar.con-marco { background: none; box-shadow: none; isolation: isolate; }
 .avatar.con-marco::before,
-.avatar.con-marco::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
-/* El aro de color. */
+.avatar.con-marco::after { content: ""; position: absolute; pointer-events: none; }
 .avatar.con-marco::before {
+  inset: 0;
+  z-index: 0;
+  border-radius: 50%;
   background: var(--marco);
   background-size: 220% 220%;
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco)), #000 calc(100% - var(--borde-marco) + 0.7px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco)), #000 calc(100% - var(--borde-marco) + 0.7px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--hueco) - 0.5px), #000 calc(100% - var(--hueco)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--hueco) - 0.5px), #000 calc(100% - var(--hueco)));
 }
-/* Una línea fina del color del fondo separa el aro de la cara, como las historias. */
-.avatar.con-marco::after { inset: var(--borde-marco); box-shadow: 0 0 0 calc(var(--borde-marco) * 0.38) var(--fondo); }
+.avatar.con-forma::before { border-radius: 0; clip-path: var(--forma); -webkit-mask: none; mask: none; background-size: 100% 100%; }
+.avatar.con-forma::after { box-shadow: 0 0 0 max(1px, calc(var(--hueco) * 0.11)) var(--fondo); }
+.avatar.con-marco::after {
+  inset: var(--hueco);
+  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--avatar) 14%, var(--superficie)), color-mix(in srgb, var(--avatar) 34%, var(--superficie)) 78%);
+  box-shadow: 0 0 0 max(1.2px, calc(var(--hueco) * 0.24)) var(--fondo);
+}
+.avatar-corona, .avatar-chispa, .avatar-caca, .avatar-orbita, .avatar-estrellas, .avatar-halo { z-index: 3; }
+
+/* 3 · Cobre */
+.marco-cobre { --marco: linear-gradient(135deg, #f0b27a 0%, #b5651d 40%, #7a3b12 58%, #e09a5a 80%, #9c5420 100%); }
+/* 6 · Bronce: aro con muescas */
 .marco-bronce { --marco: linear-gradient(135deg, #f3c08e 0%, #b8743d 30%, #6f3a17 52%, #d79a62 74%, #8a4f24 100%); }
-.marco-plata { --marco: linear-gradient(135deg, #ffffff 0%, #c4cbd3 28%, #7d8691 50%, #eef2f6 72%, #9aa3ad 100%); }
-.marco-oro { --marco: linear-gradient(120deg, #a87400 0%, #f2c230 22%, #fff6c4 38%, #e8b100 52%, #fff1a6 66%, #b88400 100%); }
-.marco-oro::before { animation: brillo-metal 3.2s ease-in-out infinite; }
+.marco-bronce::before {
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--hueco) - 0.5px), #000 calc(100% - var(--hueco))), repeating-conic-gradient(#000 0 26deg, transparent 26deg 30deg);
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--hueco) - 0.5px), #000 calc(100% - var(--hueco))) intersect, repeating-conic-gradient(#000 0 26deg, transparent 26deg 30deg);
+}
+/* 9 · Plata y 12 · Oro: brillo que recorre el metal */
+.marco-plata { --marco: linear-gradient(120deg, #8a939d 0%, #ffffff 25%, #aab2bb 45%, #f4f7fa 65%, #7d8691 100%); }
+.marco-plata::before { animation: brillo-metal 4s ease-in-out infinite; }
+.marco-oro { --marco: linear-gradient(120deg, #a87400 0%, #f2c230 22%, #fff6c4 38%, #e8b100 52%, #fff1a6 66%, #b88400 100%); box-shadow: 0 0 3px rgb(242 194 48 / 55%); }
+.marco-oro::before { animation: brillo-metal 3s ease-in-out infinite; }
+/* 15 · Esmeralda: gema de 8 lados */
+.marco-esmeralda { --marco: conic-gradient(from 22.5deg, #0b7a43, #7dffb3, #0b6b3a, #4be08f, #0f9d58, #b6ffd6, #0b6b3a, #4be08f, #0b7a43); }
+.marco-esmeralda::before { animation: destello 3.4s ease-in-out infinite; }
+/* 18 · Zafiro: con una luz que orbita */
+.marco-zafiro { --marco: linear-gradient(135deg, #0a2a8a 0%, #3f7fff 35%, #a8d4ff 50%, #2456d6 70%, #0a2a8a 100%); }
+.marco-zafiro::before { animation: brillo-metal 3.6s ease-in-out infinite; }
+.avatar-orbita { position: absolute; inset: 0; border-radius: 50%; animation: girar-marco 2.6s linear infinite; pointer-events: none; }
+.avatar-orbita::after { content: ""; position: absolute; top: calc(var(--hueco) * 0.1); left: 50%; width: calc(var(--hueco) * 0.8); height: calc(var(--hueco) * 0.8); border-radius: 50%; transform: translateX(-50%); background: #fff; box-shadow: 0 0 4px 1px #7fd0ff; }
+/* 21 · Rubí: hexágono que late */
+.marco-rubi { --marco: conic-gradient(from 30deg, #7a0019, #ff4d6d, #a3001f, #ff8fa3, #7a0019, #ff4d6d, #7a0019); }
+.marco-rubi::before { animation: latido 1.6s ease-in-out infinite; }
+/* 24 · Fuego: corona de llamas que titila */
+.marco-fuego { --marco: radial-gradient(circle closest-side, #fff3a0 66%, #ffcf1a 72%, #ff8a00 82%, #ff4a12 91%, #c8102e 100%); box-shadow: 0 0 4px rgb(255 106 0 / 55%); }
+.marco-fuego::before { animation: llamear 0.7s ease-in-out infinite alternate; transform-origin: 50% 55%; }
+/* 27 · Hielo: cristal de 8 puntas que gira despacio */
+.marco-hielo { --marco: radial-gradient(circle closest-side, #ffffff 66%, #d6f7ff 74%, #6fd6ff 86%, #2a8ff0 100%); }
+.marco-hielo::before { animation: girar-marco 14s linear infinite; }
+.marco-hielo .avatar-chispa { color: #5ccfff; }
+/* 30 · Rayo: chispazos */
+.marco-rayo { --marco: repeating-conic-gradient(from 9deg, #ffe14d 0 18deg, #7c3aed 18deg 36deg); box-shadow: 0 0 3px rgb(255 225 77 / 60%); }
+.marco-rayo::before { animation: chispazo 1.8s steps(1, end) infinite; }
+/* 33 · Neón: doble aro que prende y apaga */
+.marco-neon { --marco: linear-gradient(135deg, #ff3df2, #7a5cff 50%, #3df2ff); animation: neon 1.8s ease-in-out infinite; }
+.marco-neon::before {
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--hueco)), #000 calc(100% - var(--hueco) + 0.5px) calc(100% - var(--hueco) * 0.62), transparent calc(100% - var(--hueco) * 0.62 + 0.5px) calc(100% - var(--hueco) * 0.4), #000 calc(100% - var(--hueco) * 0.4 + 0.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--hueco)), #000 calc(100% - var(--hueco) + 0.5px) calc(100% - var(--hueco) * 0.62), transparent calc(100% - var(--hueco) * 0.62 + 0.5px) calc(100% - var(--hueco) * 0.4), #000 calc(100% - var(--hueco) * 0.4 + 0.5px));
+}
+/* 36 · Diamante: tornasolado */
 .marco-diamante { --marco: linear-gradient(120deg, #7fe7ff 0%, #b48cff 20%, #ffffff 34%, #ff9ce6 50%, #b9fff3 68%, #7fe7ff 84%, #b48cff 100%); }
 .marco-diamante::before { animation: brillo-metal 2.6s ease-in-out infinite; }
-.marco-diamante .avatar-chispa { animation-duration: 2.6s; }
-.marco-legendario { --marco: conic-gradient(from 0deg, #ff4d6d, #ffb347, #ffe94d, #59f59a, #4dc9ff, #8f6bff, #ff5ccd, #ff4d6d); }
+/* 40 · Galaxia: estrellas que giran */
+.marco-galaxia { --marco: radial-gradient(circle at 22% 30%, #fff 0.6px, transparent 1.4px), radial-gradient(circle at 74% 18%, #fff 0.6px, transparent 1.4px), radial-gradient(circle at 84% 72%, #fff 0.6px, transparent 1.4px), radial-gradient(circle at 30% 82%, #fff 0.6px, transparent 1.4px), radial-gradient(circle at 52% 6%, #ffd6ff 0.6px, transparent 1.4px), conic-gradient(#3a2bd8, #b03be0, #2f7cff, #7b2ff7, #3a2bd8); }
+.marco-galaxia::before { background-size: 100% 100%; animation: girar-marco 9s linear infinite; }
+/* 45 · Magma: puntas que hierven */
+.marco-magma { --marco: radial-gradient(circle closest-side, #ffe082 68%, #ff9800 76%, #e64a19 86%, #8e1b0e 100%); box-shadow: 0 0 4px rgb(216 67 21 / 55%); }
+.marco-magma::before { animation: hervir 2.2s ease-in-out infinite, girar-marco 20s linear infinite; }
+/* 50 · Aurora: colores que fluyen */
+.marco-aurora { --marco: linear-gradient(120deg, #00ffa3, #00c3ff, #a35bff, #ff5bd1, #00ffa3, #00c3ff); }
+.marco-aurora::before { background-size: 300% 300%; animation: fluir 4s linear infinite; }
+.marco-aurora .avatar-chispa { color: #00c3ff; }
+/* 60 · Legendario: arcoíris que gira, con corona */
+.marco-legendario { --marco: conic-gradient(from 0deg, #ff4d6d, #ffb347, #ffe94d, #59f59a, #4dc9ff, #8f6bff, #ff5ccd, #ff4d6d); animation: brillo-legendario 2.8s ease-in-out infinite; }
 .marco-legendario::before { background-size: 100% 100%; animation: girar-marco 3s linear infinite; }
-.marco-legendario { animation: brillo-legendario 2.8s ease-in-out infinite; }
-@keyframes brillo-metal { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-@keyframes girar-marco { to { transform: rotate(360deg); } }
-/* El brillo del legendario es corto, para que no lo corte el borde de la tarjeta. */
-@keyframes brillo-legendario { 0%, 100% { box-shadow: 0 0 3px 0 rgb(255 120 90 / 55%); } 50% { box-shadow: 0 0 6px 1px rgb(150 100 255 / 60%); } }
+/* 75 · Mítico: llamas de arcoíris que giran y titilan */
+.marco-mitico { --marco: conic-gradient(#ff3d00, #ffea00, #ff3d00, #d500f9, #2979ff, #00e5ff, #ff3d00); }
+.marco-mitico::before { animation: girar-marco 4s linear infinite, llamear-suave 0.6s ease-in-out infinite alternate; }
+/* 90 · Inmortal: rayos de sol dorados y un halo */
+.marco-inmortal { --marco: repeating-conic-gradient(#fff6c4 0 7.5deg, #f2b800 7.5deg 15deg); box-shadow: 0 0 4px rgb(255 214 0 / 70%); }
+.marco-inmortal::before { animation: girar-marco 10s linear infinite; }
+.avatar-halo { position: absolute; left: 22%; right: 22%; top: -6%; height: 16%; border-radius: 50%; border: max(1.5px, calc(var(--hueco) * 0.3)) solid #ffd54f; box-shadow: 0 0 4px #ffd54f; animation: flotar-halo 2.6s ease-in-out infinite; pointer-events: none; }
+
+/* Adornos */
 .avatar-chispa { position: absolute; top: -0.12em; right: -0.08em; font-size: 0.42em; line-height: 1; color: #fff; text-shadow: 0 0 4px rgb(160 180 255 / 90%), 0 0 1px rgb(0 0 0 / 40%); animation: chispa 3s ease-in-out infinite; pointer-events: none; }
 .marco-oro .avatar-chispa { color: #e8a800; text-shadow: 0 0 4px rgb(255 210 80 / 90%); }
-.marco-diamante .avatar-chispa { color: #8f6bff; text-shadow: 0 0 4px rgb(127 231 255 / 90%); }
-@keyframes chispa { 0%, 60%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 75% { opacity: 1; transform: scale(1) rotate(45deg); } }
+.marco-diamante .avatar-chispa { color: #8f6bff; text-shadow: 0 0 4px rgb(127 231 255 / 90%); animation-duration: 2.6s; }
+.avatar-estrellas { position: absolute; inset: 0; pointer-events: none; }
+.avatar-estrellas::before, .avatar-estrellas::after { content: "✦"; position: absolute; font-size: 0.32em; line-height: 1; color: #fff; text-shadow: 0 0 3px #b48cff; animation: chispa 2.4s ease-in-out infinite; }
+.avatar-estrellas::before { top: 4%; left: 6%; }
+.avatar-estrellas::after { bottom: 6%; right: 2%; animation-delay: 1.2s; }
 .avatar-corona { position: absolute; top: -0.58em; left: 50%; font-size: 0.66em; line-height: 1; transform: translateX(-50%) rotate(-12deg); filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%)); animation: flotar-corona 2.8s ease-in-out infinite; }
+
+@keyframes brillo-metal { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes fluir { to { background-position: 300% 50%; } }
+@keyframes girar-marco { to { transform: rotate(360deg); } }
+@keyframes destello { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.35) saturate(1.2); } }
+@keyframes latido { 0%, 100% { transform: scale(1); filter: brightness(1); } 15% { transform: scale(1.05); filter: brightness(1.25); } 30% { transform: scale(1); } 45% { transform: scale(1.03); filter: brightness(1.15); } }
+@keyframes llamear { 0% { transform: scale(1) rotate(0deg); filter: brightness(1); } 50% { transform: scale(1.04, 1.07) rotate(3deg); filter: brightness(1.15); } 100% { transform: scale(1.02, 1.04) rotate(-2deg); filter: brightness(1.05) saturate(1.2); } }
+@keyframes llamear-suave { from { filter: brightness(1); } to { filter: brightness(1.25) saturate(1.3); } }
+@keyframes hervir { 0%, 100% { filter: brightness(0.95); } 50% { filter: brightness(1.3) saturate(1.2); } }
+@keyframes chispazo { 0%, 100% { filter: brightness(1); transform: rotate(0deg); } 12% { filter: brightness(1.8); transform: rotate(18deg); } 16% { filter: brightness(0.9); } 50% { transform: rotate(18deg); } 62% { filter: brightness(1.7); transform: rotate(36deg); } 66% { filter: brightness(1); } }
+@keyframes neon { 0%, 100% { box-shadow: 0 0 3px 0 rgb(255 61 242 / 70%); } 50% { box-shadow: 0 0 5px 1px rgb(61 242 255 / 75%); } }
+@keyframes brillo-legendario { 0%, 100% { box-shadow: 0 0 3px 0 rgb(255 120 90 / 55%); } 50% { box-shadow: 0 0 6px 1px rgb(150 100 255 / 60%); } }
+@keyframes chispa { 0%, 60%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 75% { opacity: 1; transform: scale(1) rotate(45deg); } }
 @keyframes flotar-corona { 0%, 100% { transform: translate(-50%, 0) rotate(-12deg); } 50% { transform: translate(-50%, -2px) rotate(-6deg); } }
-@media (prefers-reduced-motion: reduce) { .avatar.con-marco, .avatar.con-marco::before, .avatar-corona, .avatar-chispa { animation: none; } }
-/* Aire a la izquierda en las listas, para el brillo del aro. */
+@keyframes flotar-halo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) {
+  .avatar.con-marco, .avatar.con-marco::before, .avatar-corona, .avatar-chispa, .avatar-orbita, .avatar-estrellas::before, .avatar-estrellas::after, .avatar-halo { animation: none; }
+  .avatar-chispa { opacity: 1; }
+}
+/* Aire a la izquierda en las listas, para el brillo del marco. */
 .amigo-cabecera, .integrante { padding-left: 4px; }
+
+/* El marco que tenés y el que sigue */
+.marcos-nivel { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--borde); }
+.marcos-nivel > span:not(.avatar) { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.marcos-nivel strong { font-size: 0.86rem; }
+.marcos-nivel small { color: var(--tinta-2); font-size: 0.74rem; }
+.marcos-flecha { color: var(--tinta-3); }
 
 /* Logros en el chat */
 .chat-logro { display: flex; align-items: center; justify-content: center; gap: 6px; align-self: center; max-width: 92%; min-height: 36px; margin: 2px auto; padding: 4px 12px; border-radius: 99px; background: color-mix(in srgb, #e0a800 12%, transparent); color: var(--tinta-2); font-family: Georgia, "Times New Roman", serif; font-size: 0.8rem; font-style: italic; text-align: center; }

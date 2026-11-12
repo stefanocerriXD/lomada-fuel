@@ -85,7 +85,7 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
         </div>
       </div>
 
-      <div className="tarjeta nivel-propio"><NivelGeneral niveles={niveles} /></div>
+      <div className="tarjeta nivel-propio"><NivelGeneral niveles={niveles} perfil={perfil} /></div>
 
       {error && <p className="error" role="alert">No pudimos traer el historial. Probá de nuevo.</p>}
 

@@ -13,21 +13,82 @@ export function vibrar(ms = 10) {
   }
 }
 
-// El marco del avatar mejora con el nivel general: del 1 al 4 nada; después bronce, plata, oro, diamante y legendario.
-export const MARCOS = [[5, "bronce"], [10, "plata"], [20, "oro"], [35, "diamante"], [55, "legendario"]];
+// El marco del avatar mejora con el nivel general: uno nuevo cada 3 niveles al principio, más espaciados arriba.
+// [desde qué nivel, clave, nombre, emoji]
+export const MARCOS = [
+  [3, "cobre", "Cobre", "🟤"],
+  [6, "bronce", "Bronce", "🥉"],
+  [9, "plata", "Plata", "🥈"],
+  [12, "oro", "Oro", "🥇"],
+  [15, "esmeralda", "Esmeralda", "💚"],
+  [18, "zafiro", "Zafiro", "💙"],
+  [21, "rubi", "Rubí", "❤️"],
+  [24, "fuego", "Fuego", "🔥"],
+  [27, "hielo", "Hielo", "❄️"],
+  [30, "rayo", "Rayo", "⚡"],
+  [33, "neon", "Neón", "💡"],
+  [36, "diamante", "Diamante", "💎"],
+  [40, "galaxia", "Galaxia", "🌌"],
+  [45, "magma", "Magma", "🌋"],
+  [50, "aurora", "Aurora", "🌈"],
+  [60, "legendario", "Legendario", "👑"],
+  [75, "mitico", "Mítico", "🐉"],
+  [90, "inmortal", "Inmortal", "☀️"],
+];
 export const marcoDe = (nivel) => MARCOS.filter(([desde]) => (nivel || 0) >= desde).pop()?.[1] || null;
+export const datosMarco = (clave) => MARCOS.find((m) => m[1] === clave) || null;
+export const proximoMarco = (nivel) => MARCOS.find(([desde]) => (nivel || 0) < desde) || null;
+
+// Siluetas con puntas: cada punta tiene su largo (en % del radio), así las llamas no son todas iguales.
+function puntas(largos, interior) {
+  const n = largos.length;
+  const puntos = [];
+  for (let i = 0; i < n * 2; i++) {
+    const r = i % 2 === 0 ? largos[i / 2] : interior;
+    const a = (Math.PI * i) / n - Math.PI / 2;
+    puntos.push(`${(50 + r * Math.cos(a)).toFixed(2)}% ${(50 + r * Math.sin(a)).toFixed(2)}%`);
+  }
+  return `polygon(${puntos.join(", ")})`;
+}
+const repetir = (n, largo) => Array.from({ length: n }, () => largo);
+const FORMAS = {
+  esmeralda: puntas(repetir(8, 50), 47),
+  rubi: puntas(repetir(6, 50), 45),
+  fuego: puntas([50, 43, 48, 42, 50, 44, 47, 42, 49, 43, 47, 42, 48, 44], 37),
+  hielo: puntas([50, 42, 50, 42, 50, 42, 50, 42], 36.5),
+  rayo: puntas(repetir(10, 50), 37.5),
+  magma: puntas([50, 44, 48, 45, 50, 43, 47, 45, 49, 44, 46, 45], 38),
+  mitico: puntas([50, 44, 48, 43, 50, 45, 47, 43, 50, 44, 48, 43, 50, 45, 47, 43], 37.5),
+  inmortal: puntas(repetir(24, 50), 40),
+};
+// Cuánto lugar deja el marco alrededor de la cara (en % del tamaño).
+const HUECO = { esmeralda: 9, rubi: 10, fuego: 17, hielo: 17, rayo: 16, magma: 16, mitico: 16, inmortal: 13, galaxia: 10, neon: 11 };
 
 export function Avatar({ perfil, tam = 40 }) {
   const marco = marcoDe(perfil?.nivel);
+  const forma = marco && FORMAS[marco];
+  const hueco = marco ? (HUECO[marco] ?? 8.5) : 0;
+  const deco = tam >= 28;
   return (
     <span
-      className={marco ? `avatar con-marco marco-${marco}` : "avatar"}
-      style={{ width: tam, height: tam, fontSize: tam * 0.42, "--avatar": perfil?.color || "#E4572E", "--borde-marco": `${Math.max(2, tam * 0.085)}px` }}
+      className={marco ? `avatar con-marco marco-${marco}${forma ? " con-forma" : ""}` : "avatar"}
+      style={{
+        width: tam,
+        height: tam,
+        fontSize: tam * (marco ? 0.42 * (1 - hueco / 60) : 0.42),
+        "--avatar": perfil?.color || "#E4572E",
+        "--borde-marco": `${Math.max(2, tam * 0.085)}px`,
+        ...(marco ? { "--hueco": `${(tam * hueco) / 100}px` } : {}),
+        ...(forma ? { "--forma": forma } : {}),
+      }}
       aria-hidden="true"
     >
-      {(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}
-      {marco === "legendario" && tam >= 28 && <span className="avatar-corona">👑</span>}
-      {(marco === "oro" || marco === "diamante") && tam >= 28 && <span className="avatar-chispa">✦</span>}
+      <span className="avatar-letra">{(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}</span>
+      {deco && marco === "zafiro" && <span className="avatar-orbita" />}
+      {deco && (marco === "galaxia" || marco === "mitico") && <span className="avatar-estrellas" />}
+      {deco && ["legendario", "mitico"].includes(marco) && <span className="avatar-corona">👑</span>}
+      {deco && marco === "inmortal" && <span className="avatar-halo" />}
+      {deco && ["oro", "diamante", "hielo", "aurora"].includes(marco) && <span className="avatar-chispa">✦</span>}
       {perfil?.caca && <span className={`avatar-caca ${perfil.caca}`}>💩</span>}
     </span>
   );
