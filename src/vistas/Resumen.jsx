@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, Zap } from "lucide-react";
+import { Activity, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, X, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -52,6 +52,17 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
   // El de Apple Salud cuenta en el total pero no se muestra aparte: parecería sumado dos veces.
   const resumenDia = mias.find((c) => c.tipo === "resumen" && !esDeAppleSalud(c));
   const racha = calcularRacha(comidas.filter((c) => c.usuario_id === usuario.id).map((c) => c.fecha));
+  // Después del almuerzo o la cena, recordar el postre (la gente se olvida de cargarlo).
+  const [sinPostre, setSinPostre] = useState(leerSinPostre);
+  const paraPostre = mias
+    .filter((c) => (c.tipo === "almuerzo" || c.tipo === "cena") && !(c.alimentos || []).some((a) => a.postre))
+    .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1))[0];
+  const ofrecerPostre = paraPostre && !sinPostre.includes(paraPostre.id);
+  function noHuboPostre() {
+    const lista = [...sinPostre, paraPostre.id].slice(-30);
+    setSinPostre(lista);
+    try { localStorage.setItem("lomada-sin-postre", JSON.stringify(lista)); } catch { /* Sin almacenamiento, vuelve a aparecer. */ }
+  }
 
   const amigos = Object.values(perfiles)
     .map((p) => ({ perfil: p, comidas: delDia.filter((c) => c.usuario_id === p.id) }))
@@ -120,6 +131,18 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
             );
           })}
         </ul>
+        <AnimatePresence>
+          {ofrecerPostre && (
+            <motion.div className="postre-aviso" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+              <button className="postre-boton" onClick={() => onCargar({ comida: paraPostre, postre: true })}>
+                <span className="postre-emoji" aria-hidden="true">🍮</span>
+                <span><strong>¿Hubo postre?</strong><small>Sumalo a tu {paraPostre.tipo === "cena" ? "cena" : "almuerzo"}</small></span>
+                <Plus size={17} aria-hidden="true" />
+              </button>
+              <button className="postre-cerrar" onClick={noHuboPostre} aria-label="No hubo postre"><X size={16} /></button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       {resumenDia && (
@@ -165,6 +188,14 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
 // Cómo se ven los macros del día: lo que falta, lo que llevás o el porcentaje. Se recuerda en este teléfono.
 const VISTAS_MACROS = [["falta"], ["llevo"], ["porcentaje"]];
 const CLAVE_VISTA_MACROS = "lomada-vista-macros";
+function leerSinPostre() {
+  try {
+    return JSON.parse(localStorage.getItem("lomada-sin-postre") || "[]");
+  } catch {
+    return [];
+  }
+}
+
 function vistaGuardada() {
   try {
     const v = localStorage.getItem(CLAVE_VISTA_MACROS);

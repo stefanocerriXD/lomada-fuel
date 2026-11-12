@@ -1585,20 +1585,43 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .cuadraditos span.lleno { background: var(--viaje-arena); }
 .viaje-lema { margin: 0; font-weight: 700; font-size: 0.92rem; }
 
-/* Marcos del avatar según el nivel */
-.avatar.con-marco::before { content: ""; position: absolute; inset: calc(var(--borde-marco) * -1.6); border-radius: 50%; background: var(--marco); pointer-events: none; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco) * 1.15), #000 calc(100% - var(--borde-marco) * 1.15 + 0.6px)); mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco) * 1.15), #000 calc(100% - var(--borde-marco) * 1.15 + 0.6px)); }
-.marco-bronce { --marco: linear-gradient(145deg, #e0a16b, #8a4f24 55%, #c98a52); }
-.marco-plata { --marco: linear-gradient(145deg, #ffffff, #9aa3ad 45%, #e6ebf0 70%, #7d8691); }
-.marco-oro { --marco: linear-gradient(145deg, #fff3b0, #e0a800 40%, #fff0a0 65%, #b07d00); box-shadow: 0 0 calc(var(--borde-marco) * 2.5) rgb(224 168 0 / 45%); }
-.marco-diamante { --marco: conic-gradient(from 20deg, #7fe7ff, #b48cff, #ff9ce6, #7fe7ff, #b9fff3, #7fe7ff); box-shadow: 0 0 calc(var(--borde-marco) * 3) rgb(140 160 255 / 55%); }
-.marco-legendario { --marco: conic-gradient(from 0deg, #ff4d4d, #ffb84d, #fff24d, #4dff88, #4dd2ff, #9f4dff, #ff4dd8, #ff4d4d); }
-.marco-legendario::before { animation: girar-marco 2.4s linear infinite; filter: saturate(1.2); }
-.marco-legendario { animation: brillo-legendario 2.4s ease-in-out infinite; }
-.avatar-corona { position: absolute; top: -0.78em; left: 50%; font-size: 0.7em; line-height: 1; transform: translateX(-50%) rotate(-12deg); filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%)); animation: flotar-corona 2.4s ease-in-out infinite; }
+/* Marcos del avatar según el nivel: el aro va por dentro del avatar, así nunca se corta en el borde de la pantalla. */
+.avatar { background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--avatar) 14%, var(--superficie)), color-mix(in srgb, var(--avatar) 34%, var(--superficie)) 78%); }
+.avatar.con-marco { box-shadow: none; }
+.avatar.con-marco::before,
+.avatar.con-marco::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+/* El aro de color. */
+.avatar.con-marco::before {
+  background: var(--marco);
+  background-size: 220% 220%;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco)), #000 calc(100% - var(--borde-marco) + 0.7px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--borde-marco)), #000 calc(100% - var(--borde-marco) + 0.7px));
+}
+/* Una línea fina del color del fondo separa el aro de la cara, como las historias. */
+.avatar.con-marco::after { inset: var(--borde-marco); box-shadow: 0 0 0 calc(var(--borde-marco) * 0.38) var(--fondo); }
+.marco-bronce { --marco: linear-gradient(135deg, #f3c08e 0%, #b8743d 30%, #6f3a17 52%, #d79a62 74%, #8a4f24 100%); }
+.marco-plata { --marco: linear-gradient(135deg, #ffffff 0%, #c4cbd3 28%, #7d8691 50%, #eef2f6 72%, #9aa3ad 100%); }
+.marco-oro { --marco: linear-gradient(120deg, #a87400 0%, #f2c230 22%, #fff6c4 38%, #e8b100 52%, #fff1a6 66%, #b88400 100%); }
+.marco-oro::before { animation: brillo-metal 3.2s ease-in-out infinite; }
+.marco-diamante { --marco: linear-gradient(120deg, #7fe7ff 0%, #b48cff 20%, #ffffff 34%, #ff9ce6 50%, #b9fff3 68%, #7fe7ff 84%, #b48cff 100%); }
+.marco-diamante::before { animation: brillo-metal 2.6s ease-in-out infinite; }
+.marco-diamante .avatar-chispa { animation-duration: 2.6s; }
+.marco-legendario { --marco: conic-gradient(from 0deg, #ff4d6d, #ffb347, #ffe94d, #59f59a, #4dc9ff, #8f6bff, #ff5ccd, #ff4d6d); }
+.marco-legendario::before { background-size: 100% 100%; animation: girar-marco 3s linear infinite; }
+.marco-legendario { animation: brillo-legendario 2.8s ease-in-out infinite; }
+@keyframes brillo-metal { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 @keyframes girar-marco { to { transform: rotate(360deg); } }
-@keyframes brillo-legendario { 0%, 100% { box-shadow: 0 0 calc(var(--borde-marco) * 2) rgb(255 120 80 / 45%); } 50% { box-shadow: 0 0 calc(var(--borde-marco) * 5) rgb(160 90 255 / 65%); } }
+/* El brillo del legendario es corto, para que no lo corte el borde de la tarjeta. */
+@keyframes brillo-legendario { 0%, 100% { box-shadow: 0 0 3px 0 rgb(255 120 90 / 55%); } 50% { box-shadow: 0 0 6px 1px rgb(150 100 255 / 60%); } }
+.avatar-chispa { position: absolute; top: -0.12em; right: -0.08em; font-size: 0.42em; line-height: 1; color: #fff; text-shadow: 0 0 4px rgb(160 180 255 / 90%), 0 0 1px rgb(0 0 0 / 40%); animation: chispa 3s ease-in-out infinite; pointer-events: none; }
+.marco-oro .avatar-chispa { color: #e8a800; text-shadow: 0 0 4px rgb(255 210 80 / 90%); }
+.marco-diamante .avatar-chispa { color: #8f6bff; text-shadow: 0 0 4px rgb(127 231 255 / 90%); }
+@keyframes chispa { 0%, 60%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 75% { opacity: 1; transform: scale(1) rotate(45deg); } }
+.avatar-corona { position: absolute; top: -0.58em; left: 50%; font-size: 0.66em; line-height: 1; transform: translateX(-50%) rotate(-12deg); filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%)); animation: flotar-corona 2.8s ease-in-out infinite; }
 @keyframes flotar-corona { 0%, 100% { transform: translate(-50%, 0) rotate(-12deg); } 50% { transform: translate(-50%, -2px) rotate(-6deg); } }
-@media (prefers-reduced-motion: reduce) { .marco-legendario, .marco-legendario::before, .avatar-corona { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .avatar.con-marco, .avatar.con-marco::before, .avatar-corona, .avatar-chispa { animation: none; } }
+/* Aire a la izquierda en las listas, para el brillo del aro. */
+.amigo-cabecera, .integrante { padding-left: 4px; }
 
 /* Logros en el chat */
 .chat-logro { display: flex; align-items: center; justify-content: center; gap: 6px; align-self: center; max-width: 92%; min-height: 36px; margin: 2px auto; padding: 4px 12px; border-radius: 99px; background: color-mix(in srgb, #e0a800 12%, transparent); color: var(--tinta-2); font-family: Georgia, "Times New Roman", serif; font-size: 0.8rem; font-style: italic; text-align: center; }
@@ -1616,3 +1639,14 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .dia-por-comida-datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .dia-por-comida-datos strong { overflow: hidden; font-size: 0.9rem; text-overflow: ellipsis; white-space: nowrap; }
 .dia-por-comida-datos small { color: var(--tinta-2); font-size: 0.76rem; }
+
+/* ¿Hubo postre? Aparece después de cargar el almuerzo o la cena. */
+.postre-aviso { display: flex; align-items: stretch; gap: 6px; margin-top: 10px; overflow: hidden; }
+.postre-boton { flex: 1; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta); text-align: left; }
+.postre-boton > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; }
+.postre-boton strong { font-size: 0.92rem; }
+.postre-boton small { color: var(--tinta-2); font-size: 0.78rem; }
+.postre-boton > svg { color: var(--acento); }
+.postre-emoji { font-size: 1.5rem; line-height: 1; }
+.postre-cerrar { display: grid; place-items: center; width: 44px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta-2); }
+.postre-nota { margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.86rem; font-weight: 600; }

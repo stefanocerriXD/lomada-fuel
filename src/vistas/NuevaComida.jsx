@@ -26,7 +26,7 @@ const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meri
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, avisar }) {
   const editando = carga?.comida;
   return (
-    <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={editando ? "Editar comida" : "Subir comida"} ancha>
+    <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={carga?.postre ? "Agregar postre" : editando ? "Editar comida" : "Subir comida"} ancha>
       {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} onFiesta={onFiesta} avisar={avisar} />}
     </Hoja>
   );
@@ -87,7 +87,8 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
 
   function agregar(alimento) {
     // Lo que viene sin valores por 100 g (importado o a mano) se repite tal cual.
-    setItems((prev) => [...prev, { ...(alimento.por100 ? prepararItem(alimento) : alimento), id: crypto.randomUUID() }]);
+    // En modo postre, lo que se suma queda marcado como postre de esa comida.
+    setItems((prev) => [...prev, { ...(alimento.por100 ? prepararItem(alimento) : alimento), id: crypto.randomUUID(), ...(carga.postre ? { postre: true } : {}) }]);
     setTexto("");
     setPanel(null);
     setImportado(null);
@@ -250,10 +251,11 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, avisar }) {
         </div>
       )}
 
+      {carga.postre && <p className="postre-nota">🍮 Buscá el postre y sumalo. Queda dentro de tu {original?.tipo === "cena" ? "cena" : "almuerzo"}.</p>}
       <div className="fila-busqueda">
         <div className="buscador-campo">
           <Search size={19} />
-          <input ref={campo} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="¿Qué comiste?" aria-label="Buscar alimento o producto" enterKeyHint="search" autoComplete="off" />
+          <input ref={campo} autoFocus={Boolean(carga.postre)} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="¿Qué comiste?" aria-label="Buscar alimento o producto" enterKeyHint="search" autoComplete="off" />
           {texto && <button className="limpiar" onClick={() => setTexto("")} aria-label="Borrar búsqueda"><X size={17} /></button>}
         </div>
         {!buscando && (

@@ -22,11 +22,12 @@ export function Avatar({ perfil, tam = 40 }) {
   return (
     <span
       className={marco ? `avatar con-marco marco-${marco}` : "avatar"}
-      style={{ width: tam, height: tam, fontSize: tam * 0.42, "--avatar": perfil?.color || "#E4572E", "--borde-marco": `${Math.max(1.5, tam * 0.07)}px` }}
+      style={{ width: tam, height: tam, fontSize: tam * 0.42, "--avatar": perfil?.color || "#E4572E", "--borde-marco": `${Math.max(2, tam * 0.085)}px` }}
       aria-hidden="true"
     >
       {(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}
       {marco === "legendario" && tam >= 28 && <span className="avatar-corona">👑</span>}
+      {(marco === "oro" || marco === "diamante") && tam >= 28 && <span className="avatar-chispa">✦</span>}
       {perfil?.caca && <span className={`avatar-caca ${perfil.caca}`}>💩</span>}
     </span>
   );
