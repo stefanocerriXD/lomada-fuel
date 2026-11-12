@@ -4,6 +4,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { LOGROS, nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
 import { Avatar, Vacio } from "../componentes/Base.jsx";
 import DetalleLogro from "../componentes/DetalleLogro.jsx";
+import CaminoNiveles from "../componentes/CaminoNiveles.jsx";
 import NivelGeneral from "../componentes/NivelGeneral.jsx";
 import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 import Multas from "../componentes/Multas.jsx";
@@ -51,6 +52,7 @@ function Medallas() {
   return (
     <>
       <div className="tarjeta nivel-propio"><NivelGeneral niveles={nivelesDe(usuario.id)} perfil={perfiles[usuario.id]} /></div>
+      <CaminoNiveles perfil={perfiles[usuario.id]} nivel={nivelGeneral(nivelesDe(usuario.id)).nivel} />
       {[["objetivos", "Objetivos"], ["alimentacion", "Alimentación"]].map(([grupo, titulo]) => (
         <div key={grupo} className="grupo-medallas">
           <h3 className="perfil-subtitulo">{titulo}</h3>

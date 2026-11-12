@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { animate, AnimatePresence, motion, useDragControls, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
+import { NIVEL_MAXIMO } from "../lib/medallas.js";
 
 export const resorte = { type: "spring", stiffness: 420, damping: 34 };
 
@@ -34,13 +35,15 @@ export const MARCOS = [
   [60, "legendario", "Legendario", "👑"],
   [75, "mitico", "Mítico", "🐉"],
   [90, "inmortal", "Inmortal", "☀️"],
+  // El final: todos los logros al máximo.
+  [NIVEL_MAXIMO, "lomada", "LOMADA LEGENDARY", "🔥"],
 ];
 export const marcoDe = (nivel) => MARCOS.filter(([desde]) => (nivel || 0) >= desde).pop()?.[1] || null;
 export const datosMarco = (clave) => MARCOS.find((m) => m[1] === clave) || null;
 export const proximoMarco = (nivel) => MARCOS.find(([desde]) => (nivel || 0) < desde) || null;
 
 // Siluetas con puntas: cada punta tiene su largo (en % del radio), así las llamas no son todas iguales.
-function puntas(largos, interior) {
+export function puntas(largos, interior) {
   const n = largos.length;
   const puntos = [];
   for (let i = 0; i < n * 2; i++) {
@@ -60,9 +63,10 @@ const FORMAS = {
   magma: puntas([50, 44, 48, 45, 50, 43, 47, 45, 49, 44, 46, 45], 38),
   mitico: puntas([50, 44, 48, 43, 50, 45, 47, 43, 50, 44, 48, 43, 50, 45, 47, 43], 37.5),
   inmortal: puntas(repetir(24, 50), 40),
+  lomada: puntas([50, 40, 47, 38, 50, 41, 46, 38, 50, 40, 47, 39, 50, 41, 46, 38], 34),
 };
 // Cuánto lugar deja el marco alrededor de la cara (en % del tamaño).
-const HUECO = { esmeralda: 9, rubi: 10, fuego: 17, hielo: 17, rayo: 16, magma: 16, mitico: 16, inmortal: 13, galaxia: 10, neon: 11 };
+const HUECO = { esmeralda: 9, rubi: 10, fuego: 17, hielo: 17, rayo: 16, magma: 16, mitico: 16, inmortal: 13, lomada: 20, galaxia: 10, neon: 11 };
 
 export function Avatar({ perfil, tam = 40 }) {
   const marco = marcoDe(perfil?.nivel);
@@ -88,8 +92,24 @@ export function Avatar({ perfil, tam = 40 }) {
       {deco && (marco === "galaxia" || marco === "mitico") && <span className="avatar-estrellas" />}
       {deco && ["legendario", "mitico"].includes(marco) && <span className="avatar-corona">👑</span>}
       {deco && marco === "inmortal" && <span className="avatar-halo" />}
+      {deco && marco === "lomada" && <img className="avatar-lomada" src="/lomada.svg" alt="" />}
+      {deco && marco === "lomada" && <span className="avatar-brasas"><i /><i /><i /></span>}
       {deco && ["oro", "diamante", "hielo", "aurora"].includes(marco) && <span className="avatar-chispa">✦</span>}
       {perfil?.caca && <span className={`avatar-caca ${perfil.caca}`}>💩</span>}
+    </span>
+  );
+}
+
+// El logo de la Lomada prendido fuego: el premio de LOMADA LEGENDARY.
+const LLAMAS_LOGO = puntas([50, 39, 46, 37, 50, 40, 45, 37, 49, 39, 46, 37, 50, 40, 45, 38, 49, 39, 46, 37], 33);
+export function LogoLegendario({ tam = 120 }) {
+  return (
+    <span className="logo-legendario" style={{ width: tam, height: tam, "--forma": LLAMAS_LOGO }} aria-hidden="true">
+      <span className="ll-brillo" />
+      <span className="ll-llamas" />
+      <span className="ll-llamas atras" />
+      <img className="ll-logo" src="/lomada.svg" alt="" />
+      <span className="ll-brasas">{Array.from({ length: 8 }, (_, i) => <i key={i} style={{ "--i": i }} />)}</span>
     </span>
   );
 }

@@ -1769,3 +1769,90 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .chip-grupo { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta-2); font-weight: 650; border: 2px solid transparent; }
 .chip-grupo.activo { background: var(--acento-suave); color: var(--sobre-acento-suave); border-color: var(--acento); }
 .publicar-nota { margin: 0 0 10px; }
+
+/* LOMADA LEGENDARY: el marco final, llamas grandes con el logo de la Lomada arriba */
+.marco-lomada { --marco: radial-gradient(circle closest-side, #fff8c2 62%, #ffd21f 70%, #ff8a00 80%, #ff3d12 90%, #b3001b 100%); }
+.marco-lomada::before { animation: llamear 0.55s ease-in-out infinite alternate; transform-origin: 50% 55%; }
+.avatar-lomada { position: absolute; z-index: 3; top: -0.55em; left: 50%; width: 0.98em; height: 0.98em; transform: translateX(-50%); border-radius: 50%; filter: drop-shadow(0 0 3px #ff9a00) drop-shadow(0 0 6px rgb(255 60 0 / 70%)); animation: logo-arde 1.2s ease-in-out infinite alternate; pointer-events: none; }
+.avatar-brasas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.avatar-brasas i { position: absolute; bottom: 12%; width: 3px; height: 3px; border-radius: 50%; background: #ffd21f; box-shadow: 0 0 3px #ff7a00; opacity: 0; animation: brasa 1.8s ease-out infinite; }
+.avatar-brasas i:nth-child(1) { left: 18%; }
+.avatar-brasas i:nth-child(2) { left: 52%; animation-delay: 0.6s; }
+.avatar-brasas i:nth-child(3) { left: 80%; animation-delay: 1.2s; }
+@keyframes brillo-fuego { 0%, 100% { box-shadow: 0 0 4px rgb(255 120 0 / 65%); } 50% { box-shadow: 0 0 7px 1px rgb(255 60 0 / 75%); } }
+@keyframes logo-arde { from { filter: drop-shadow(0 0 2px #ffb000) drop-shadow(0 0 5px rgb(255 60 0 / 60%)); transform: translateX(-50%) scale(1); } to { filter: drop-shadow(0 0 4px #ffd21f) drop-shadow(0 0 9px rgb(255 40 0 / 85%)); transform: translateX(-50%) scale(1.06); } }
+@keyframes brasa { 0% { opacity: 0; transform: translateY(0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-260%) translateX(2px) scale(0.4); } }
+
+/* El logo de la Lomada prendido fuego */
+.logo-legendario { position: relative; display: inline-grid; place-items: center; flex: none; isolation: isolate; }
+.logo-legendario > * { grid-area: 1 / 1; }
+.ll-brillo { position: absolute; inset: -6%; border-radius: 50%; background: radial-gradient(circle, rgb(255 210 60 / 75%) 30%, rgb(255 90 0 / 45%) 55%, transparent 72%); animation: ll-pulso 1.6s ease-in-out infinite; z-index: 0; }
+.ll-llamas { position: absolute; inset: 0; clip-path: var(--forma); background: radial-gradient(circle closest-side, #fff8c2 60%, #ffd21f 68%, #ff8a00 79%, #ff3d12 90%, #b3001b 100%); animation: llamear 0.5s ease-in-out infinite alternate; transform-origin: 50% 58%; z-index: 1; }
+.ll-llamas.atras { transform: rotate(9deg) scale(1.06); opacity: 0.75; filter: hue-rotate(-12deg) saturate(1.3); animation: ll-llamas-atras 0.7s ease-in-out infinite alternate; z-index: 0; }
+.ll-logo { position: relative; width: 62%; height: 62%; border-radius: 50%; box-shadow: 0 0 0 2px #fff3a0, 0 0 10px 2px rgb(255 140 0 / 90%); z-index: 2; animation: ll-logo 1.6s ease-in-out infinite; }
+.ll-brasas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.ll-brasas i { position: absolute; bottom: 18%; left: calc(14% + var(--i) * 10%); width: 4%; height: 4%; min-width: 2px; min-height: 2px; border-radius: 50%; background: #ffe066; box-shadow: 0 0 4px #ff7a00; opacity: 0; animation: brasa 1.6s ease-out infinite; animation-delay: calc(var(--i) * 0.2s); }
+@keyframes ll-pulso { 0%, 100% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes ll-llamas-atras { from { transform: rotate(9deg) scale(1.04); } to { transform: rotate(4deg) scale(1.1, 1.14); } }
+@keyframes ll-logo { 0%, 100% { box-shadow: 0 0 0 2px #fff3a0, 0 0 8px 2px rgb(255 140 0 / 80%); } 50% { box-shadow: 0 0 0 2px #fff8c2, 0 0 16px 4px rgb(255 80 0 / 95%); } }
+
+.titulo-legendario {
+  font-family: var(--titulo);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: linear-gradient(100deg, #b3001b, #ff3d12 20%, #ffb000 40%, #fff3a0 50%, #ffb000 60%, #ff3d12 80%, #b3001b);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fluir-texto 2.4s linear infinite;
+}
+.titulo-legendario.chico { font-size: 0.9rem; }
+@keyframes fluir-texto { to { background-position: -250% 0; } }
+
+/* Festejo al subir de nivel */
+.subida-nivel { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: rgb(20 14 8 / 55%); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.subida-nivel.legendaria { background: radial-gradient(circle at 50% 42%, rgb(120 30 0 / 70%), rgb(10 5 2 / 88%) 70%); }
+.subida-tarjeta { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(320px, 100%); padding: 34px 20px 26px; border-radius: 28px; background: var(--superficie); color: var(--tinta); text-align: center; overflow: hidden; box-shadow: 0 20px 60px rgb(0 0 0 / 35%); }
+.legendaria .subida-tarjeta { background: #1a0d06; color: #fff3e0; box-shadow: 0 0 0 2px #ff8a00, 0 0 40px rgb(255 90 0 / 55%); }
+.subida-rayos { position: absolute; left: 50%; top: 92px; width: 420px; height: 420px; margin: -210px 0 0 -210px; background: repeating-conic-gradient(rgb(255 196 60 / 22%) 0 9deg, transparent 9deg 18deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 62%); mask: radial-gradient(circle, #000 20%, transparent 62%); animation: girar-marco 14s linear infinite; pointer-events: none; }
+.legendaria .subida-rayos { background: repeating-conic-gradient(rgb(255 120 0 / 35%) 0 7deg, transparent 7deg 14deg); animation-duration: 8s; }
+.subida-figura { position: relative; display: grid; place-items: center; min-height: 112px; margin-bottom: 8px; }
+.subida-sobre { position: relative; color: var(--tinta-2); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.legendaria .subida-sobre { color: #ffcf8a; }
+.subida-numero { position: relative; font-family: var(--titulo); font-size: 2.6rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.subida-nivel .titulo-legendario { position: relative; font-size: 1.85rem; line-height: 1.05; }
+.subida-marco { position: relative; margin: 6px 0 0; color: var(--tinta-2); font-size: 0.92rem; }
+.legendaria .subida-marco { color: #ffd9b0; }
+
+/* Camino de niveles */
+.camino { margin: 14px 0 6px; }
+.camino-cabecera { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.camino-cabecera span { color: var(--tinta-2); font-size: 0.8rem; font-weight: 650; }
+.camino-lista { list-style: none; margin: 8px 0 0; padding: 0; }
+.camino-paso { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 4px 8px 6px; }
+.camino-paso::before { content: ""; position: absolute; left: 30px; top: -50%; height: 100%; width: 2px; background: var(--borde); z-index: -1; }
+.camino-paso:first-child::before { display: none; }
+.camino-paso.logrado::before, .camino-paso.actual::before { background: var(--acento); }
+.camino-paso.con-salto { margin-top: 18px; }
+.camino-paso.con-salto::before { display: none; }
+.camino-puntos { position: absolute; left: 25px; top: -20px; color: var(--tinta-3); font-size: 1rem; line-height: 1; }
+.camino-figura { display: grid; place-items: center; width: 50px; height: 50px; flex: none; }
+.camino-paso.bloqueado .camino-figura { opacity: 0.55; filter: saturate(0.55); }
+.camino-texto { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.camino-texto strong { font-size: 0.92rem; }
+.camino-texto small { color: var(--tinta-2); font-size: 0.76rem; }
+.camino-paso.bloqueado .camino-texto strong { color: var(--tinta-2); }
+.camino-paso.actual { background: var(--acento-suave); border-radius: 16px; }
+.camino-paso.actual .camino-texto small { color: var(--sobre-acento-suave); font-weight: 700; }
+.camino-paso.final { margin-top: 18px; }
+.camino-estado { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--tinta-3); flex: none; }
+.camino-paso.logrado .camino-estado, .camino-paso.actual .camino-estado { background: var(--acento); color: var(--sobre-acento); }
+.camino-mas { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; margin-top: 4px; padding: 6px 4px; color: var(--acento); font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marco-lomada, .avatar-lomada, .avatar-brasas i, .ll-brillo, .ll-llamas, .ll-logo, .ll-brasas i, .titulo-legendario, .subida-rayos { animation: none; }
+}
+/* El final se ve prendido aunque todavía falte: es la meta. */
+.camino-paso.final .titulo-legendario { color: transparent; }
+.camino-paso.final .camino-figura { opacity: 0.9; filter: none; }

@@ -7,6 +7,7 @@ import { medallasGanadas, nombreDeCodigo } from "./lib/medallas.js";
 import { DatosProvider, GRUPO_BASE, useDatos } from "./lib/datos.jsx";
 import SinGrupo from "./componentes/SinGrupo.jsx";
 import SelectorGrupo from "./componentes/SelectorGrupo.jsx";
+import SubidaNivel from "./componentes/SubidaNivel.jsx";
 import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
@@ -440,6 +441,7 @@ function Principal({ recuperando, onRecuperado }) {
       </Hoja>
       <Festejo key={festejo} activo={festejo > 0} />
       <NuevoLogro codigo={logroNuevo} onTerminar={terminarLogro} />
+      <SubidaNivel ocupado={Boolean(logroNuevo)} />
       {grupo.conBocha && <Bocha />}
       <Aviso texto={aviso} />
     </div>

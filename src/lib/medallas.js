@@ -61,7 +61,9 @@ export function nivelesGuardados(codigos) {
 }
 
 // Cada nivel de cada logro suma un punto. Los títulos generales cuestan cada vez más.
-const RANGOS = [[0, "Novato"], [5, "Aprendiz"], [15, "Constante"], [30, "Experto"], [50, "Maestro"], [80, "Leyenda"], [110, "Inmortal"]];
+// El último es tener todos los logros al máximo: LOMADA LEGENDARY.
+export const NIVEL_MAXIMO = LOGROS.reduce((t, l) => t + l.niveles.length, 0);
+const RANGOS = [[0, "Novato"], [5, "Aprendiz"], [15, "Constante"], [30, "Experto"], [50, "Maestro"], [70, "Leyenda"], [90, "Inmortal"], [NIVEL_MAXIMO, "LOMADA LEGENDARY"]];
 
 export function nivelGeneral(niveles) {
   const puntos = Object.values(niveles).reduce((t, n) => t + n, 0);
