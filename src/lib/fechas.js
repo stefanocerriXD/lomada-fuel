@@ -48,8 +48,8 @@ export function saludo() {
   return "Buenas noches";
 }
 
-export function tipoSegunHora() {
-  const h = new Date().getHours();
+export function tipoSegunHora(momento = new Date()) {
+  const h = new Date(momento).getHours();
   if (h < 11) return "desayuno";
   if (h < 16) return "almuerzo";
   if (h < 20) return "merienda";

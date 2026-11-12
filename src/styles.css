@@ -1741,6 +1741,15 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .postre-boton > svg { color: var(--acento); }
 .postre-emoji { font-size: 1.5rem; line-height: 1; }
 .postre-cerrar { display: grid; place-items: center; width: 44px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta-2); }
+/* Comidas que llegaron de Apple Salud (MyFitnessPal): se precargan con un toque */
+.de-salud { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.de-salud-titulo { display: flex; align-items: center; gap: 6px; margin: 0 2px 2px; color: var(--tinta-2); font-size: 0.8rem; font-weight: 700; }
+.de-salud-titulo svg { color: #ff375f; }
+.de-salud-boton { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 10px 8px 14px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta); text-align: left; }
+.de-salud-boton > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.de-salud-boton strong { font-size: 0.92rem; }
+.de-salud-boton small { color: var(--tinta-2); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.de-salud-usar { padding: 7px 12px; border-radius: 999px; background: var(--acento); color: var(--sobre-acento); font-size: 0.82rem; font-weight: 800; }
 .postre-atajos { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .postre-atajos .postre-boton { width: 100%; }
 .postre-nota { margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.86rem; font-weight: 600; }

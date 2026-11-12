@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BookmarkPlus, CalendarDays, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
+import { BookmarkPlus, CalendarDays, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
@@ -21,6 +21,7 @@ import { createPortal } from "react-dom";
 
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
+const horaDe = (momento) => new Date(momento).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
@@ -84,6 +85,41 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const campo = useRef(null);
+
+  // Lo que llegó de Apple Salud (MyFitnessPal escribe una entrada por comida): se precarga y solo falta la foto.
+  const [deSalud, setDeSalud] = useState([]);
+  useEffect(() => {
+    if (original || carga.postre || !extras.disponible) return undefined;
+    let vigente = true;
+    supabase
+      .from("salud_comidas")
+      .select("id, momento, kcal, proteinas, carbohidratos, grasas")
+      .eq("usuario_id", usuario.id)
+      .eq("fecha", carga.fecha || fechaLocal())
+      .order("momento", { ascending: false })
+      .then(({ data, error }) => { if (vigente && !error) setDeSalud(data || []); });
+    return () => { vigente = false; };
+  }, [original, carga.postre, carga.fecha, extras.disponible, usuario.id]);
+  const usadasDeSalud = useMemo(() => new Set(comidas.filter((c) => c.usuario_id === usuario.id).flatMap((c) => (c.alimentos || []).map((a) => a.salud_id).filter(Boolean))), [comidas, usuario.id]);
+  const sugeridasDeSalud = deSalud.filter((e) => !usadasDeSalud.has(e.id) && !items.some((i) => i.salud_id === e.id)).slice(0, 3);
+
+  function usarDeSalud(e) {
+    const t = carga.tipo || tipoSegunHora(e.momento);
+    setTipo(t);
+    setItems((prev) => [...prev, {
+      id: crypto.randomUUID(),
+      nombre: `${tipoInfo(t).texto} de Apple Salud`,
+      fuente: "importado",
+      medida: `cargado a las ${horaDe(e.momento)}`,
+      kcal: Number(e.kcal) || 0,
+      p: Number(e.proteinas) || 0,
+      c: Number(e.carbohidratos) || 0,
+      g: Number(e.grasas) || 0,
+      salud_id: e.id,
+    }]);
+    setError("");
+    vibrar(12);
+  }
 
   const calculado = useMemo(() => sumarItems(items), [items]);
   const total = ajuste ? { kcal: Number(ajuste.kcal) || 0, p: Number(ajuste.p) || 0, c: Number(ajuste.c) || 0, g: Number(ajuste.g) || 0 } : calculado;
@@ -258,6 +294,24 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
   return (
     <div className="carga">
+      {!buscando && items.length === 0 && sugeridasDeSalud.length > 0 && (
+        <div className="de-salud">
+          <p className="de-salud-titulo"><HeartPulse size={15} /> Llegó de Apple Salud · tocá para precargar</p>
+          {sugeridasDeSalud.map((e) => {
+            const t = carga.tipo || tipoSegunHora(e.momento);
+            return (
+              <button key={e.id} className="de-salud-boton" onClick={() => usarDeSalud(e)}>
+                <IconoComida tipo={t} />
+                <span>
+                  <strong>{tipoInfo(t).texto} · {horaDe(e.momento)}</strong>
+                  <small>{Math.round(e.kcal)} kcal · P {Math.round(e.proteinas)} · C {Math.round(e.carbohidratos)} · G {Math.round(e.grasas)}</small>
+                </span>
+                <span className="de-salud-usar">Usar</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {!buscando && items.length === 0 && paraPostre.length > 0 && (
         <div className="postre-atajos">
           {paraPostre.map((c) => (
