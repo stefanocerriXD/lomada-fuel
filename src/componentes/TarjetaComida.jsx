@@ -15,7 +15,7 @@ const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷"];
 // Las reacciones no ocupan lugar: un resumen con el total (que muestra quién reaccionó)
 // y un botón que abre los emojis solo cuando querés reaccionar.
 export function Reacciones({ comidaId, avisar }) {
-  const { usuario, perfiles, salud, reacciones, alternarReaccion, castigo } = useDatos();
+  const { usuario, perfiles, salud, reacciones, alternarReaccion, castigo, grupo } = useDatos();
   const [eligiendo, setEligiendo] = useState(false);
   const [quienes, setQuienes] = useState(false);
   if (salud === undefined) return null; // Las reacciones llegan con la misma actualización de la base.
@@ -27,7 +27,7 @@ export function Reacciones({ comidaId, avisar }) {
   );
 
   function abrir() {
-    if (castigo.activo) return avisar?.("Castigado por el Bocha: no podés reaccionar hasta que subas tu foto de hoy.");
+    if (castigo.activo) return avisar?.(grupo.conBocha ? "Castigado por el Bocha: no podés reaccionar hasta que subas tu foto de hoy." : "Subí tu foto de hoy para reaccionar a las del grupo.");
     setEligiendo(!eligiendo);
   }
 

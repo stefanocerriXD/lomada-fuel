@@ -701,7 +701,7 @@ export default function Chat({ avisar }) {
         </div>
       ) : (
       <form className="chat-enviar" onSubmit={enviar}>
-        {castigo.diario ? null : (
+        {castigo.soloTexto ? null : (
           <>
             <label className={subiendo ? "boton-icono ocupado" : "boton-icono"} aria-label="Mandar foto o GIF">
               <ImagePlus size={20} />
@@ -711,7 +711,7 @@ export default function Chat({ avisar }) {
           </>
         )}
         <input ref={campo} value={texto} onChange={alEscribir} placeholder={respuesta || citado ? "Escribí tu respuesta…" : "Escribí algo…"} aria-label="Mensaje" maxLength={1000} />
-        {texto.trim() || castigo.diario ? (
+        {texto.trim() || castigo.soloTexto ? (
           <motion.button className="boton-enviar" type="submit" whileTap={{ scale: 0.86 }} onMouseDown={(e) => e.preventDefault()} disabled={!texto.trim()} aria-label="Enviar">
             <SendHorizontal size={20} />
           </motion.button>
@@ -720,7 +720,7 @@ export default function Chat({ avisar }) {
         )}
       </form>
       )}
-      {castigo.diario && !castigo.evo && <p className="castigo-nota chat">Castigado por el Bocha: solo texto hasta que subas tu foto de hoy.</p>}
+      {castigo.soloTexto && !castigo.evo && <p className="castigo-nota chat">Castigado por el Bocha: solo texto hasta que subas tu foto de hoy.</p>}
 
       <VerReceta receta={verReceta} onCerrar={() => setVerReceta(null)} avisar={avisar} />
       <AccionesMensaje mensaje={acciones} onCerrar={() => setAcciones(null)} onResponder={responderMensaje} avisar={avisar} />

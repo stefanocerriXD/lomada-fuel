@@ -31,6 +31,15 @@ export default async function handler(req, res) {
     if (!resp.ok) return res.status(resp.status === 401 ? 401 : 400).json({ error: "No autorizado" });
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });
+    // Cada grupo se entera solo de lo suyo. Las mejoras van a quien administra, sea del grupo que sea.
+    if (!["mejora", "mejora_hecha"].includes(tipo)) {
+      const filtro = await rpc("solo_mi_grupo", { p_endpoints: aviso.destinos.map((d) => d.endpoint) });
+      if (filtro.ok) {
+        const permitidos = new Set(await filtro.json());
+        aviso.destinos = aviso.destinos.filter((d) => permitidos.has(d.endpoint));
+        if (!aviso.destinos.length) return res.status(200).json({ enviadas: 0 });
+      }
+    }
 
     const { enviadas, vencidas } = await enviarAvisos(aviso, process.env.APP_URL || `https://${req.headers.host}`);
     // El navegador informa con 404 o 410 que ese dispositivo ya no recibe avisos.

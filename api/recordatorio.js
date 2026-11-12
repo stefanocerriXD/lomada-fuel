@@ -25,6 +25,13 @@ export default async function handler(req, res) {
     if (!resp.ok) return res.status(401).json({ error: "No autorizado" });
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });
+    // El viaje y el Match Day son del grupo con Bocha; nadie sin grupo recibe nada.
+    const filtro = await rpc("filtrar_destinos", { p_clave: clave, p_tipo: tipo, p_endpoints: aviso.destinos.map((d) => d.endpoint) });
+    if (filtro.ok) {
+      const permitidos = new Set(await filtro.json());
+      aviso.destinos = aviso.destinos.filter((d) => permitidos.has(d.endpoint));
+      if (!aviso.destinos.length) return res.status(200).json({ enviadas: 0 });
+    }
 
     const { enviadas, vencidas } = await enviarAvisos(aviso, process.env.APP_URL || `https://${req.headers.host}`);
     if (vencidas.length) await rpc("limpiar_suscripciones", { p_clave: clave, p_endpoints: vencidas });

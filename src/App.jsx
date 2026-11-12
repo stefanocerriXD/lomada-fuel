@@ -4,7 +4,8 @@ import { CalendarDays, Plus, Settings, Trophy, Users } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
 import { avisarGrupo } from "./lib/api.js";
 import { medallasGanadas, nombreDeCodigo } from "./lib/medallas.js";
-import { DatosProvider, useDatos } from "./lib/datos.jsx";
+import { DatosProvider, GRUPO_BASE, useDatos } from "./lib/datos.jsx";
+import SinGrupo from "./componentes/SinGrupo.jsx";
 import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
@@ -73,14 +74,35 @@ export default function App() {
       {cargando ? (
         <Cargando />
       ) : sesion ? (
-        <DatosProvider usuario={sesion.user}>
+        <ConGrupo usuario={sesion.user}>
           <Principal recuperando={recuperando} onRecuperado={() => setRecuperando(false)} />
-        </DatosProvider>
+        </ConGrupo>
       ) : (
         <Login />
       )}
     </MotionConfig>
   );
+}
+
+const LOMADA = "00000000-0000-4000-8000-00000000a001";
+
+// Cada uno ve solo su grupo. Si la base todavía no tiene grupos, es la Lomada de siempre.
+function ConGrupo({ usuario, children }) {
+  const [grupo, setGrupo] = useState(undefined);
+  const cargar = useCallback(async () => {
+    const { data, error } = await supabase.from("perfiles").select("grupo_id").eq("id", usuario.id).maybeSingle();
+    if (error || !data || data.grupo_id === undefined) return setGrupo(GRUPO_BASE);
+    if (!data.grupo_id) return setGrupo(null);
+    const { data: g } = await supabase.from("grupos").select("id, nombre, con_bocha").eq("id", data.grupo_id).maybeSingle();
+    setGrupo(g ? { id: g.id, nombre: g.nombre, conBocha: g.con_bocha } : { id: data.grupo_id, nombre: "", conBocha: data.grupo_id === LOMADA });
+  }, [usuario.id]);
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  if (grupo === undefined) return <Cargando />;
+  if (grupo === null) return <SinGrupo onAdentro={cargar} />;
+  return <DatosProvider key={grupo.id || "lomada"} usuario={usuario} grupo={grupo}>{children}</DatosProvider>;
 }
 
 function Cargando() {
@@ -99,7 +121,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta } = useDatos();
+  const { usuario, grupo, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta } = useDatos();
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
@@ -395,7 +417,7 @@ function Principal({ recuperando, onRecuperado }) {
       </Hoja>
       <Festejo key={festejo} activo={festejo > 0} />
       <NuevoLogro codigo={logroNuevo} onTerminar={terminarLogro} />
-      <Bocha />
+      {grupo.conBocha && <Bocha />}
       <Aviso texto={aviso} />
     </div>
   );

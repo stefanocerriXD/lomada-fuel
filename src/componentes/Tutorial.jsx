@@ -1,3 +1,4 @@
+import { useDatos } from "../lib/datos.jsx";
 const SECCIONES = [
   {
     titulo: "La caca 💩",
@@ -128,12 +129,28 @@ const SECCIONES = [
   },
 ];
 
+// En los grupos sin Bocha la caca es más simple, como BeReal.
+const CACA_SIN_BOCHA = {
+  titulo: "La caca 💩",
+  preguntas: [
+    ["¿Cuál es la regla?", "Mínimo 1 foto de comida por día. La foto del resumen del día no cuenta. Se cuenta a la medianoche."],
+    ["¿Qué pasa si un día no subo ninguna?", ["Al día siguiente tenés 💩 al lado del nombre, y la ve todo el grupo.", "Ves borrosas las fotos de los demás y no podés reaccionar, como en BeReal.", "El bot cuenta en el chat quiénes no subieron."]],
+    ["¿Cómo vuelvo a ver las fotos?", "Subiendo tu foto del día. La 💩 al lado del nombre queda hasta el día siguiente."],
+    ["¿Me avisan antes?", "Sí. A las 22 te llega una notificación si todavía no subiste ninguna foto ese día. En Resumen, arriba, ves si ya subiste la de hoy."],
+  ],
+};
+const AVISOS_SIN_BOCHA = ["¿Qué avisos automáticos hay?", "A las 21 te recuerda cargar tus comidas si todavía no cargaste el día, a las 22 si te falta la foto del día, y cada lunes a las 9 llegan los podios de la semana, que quedan en el chat."];
+
 export default function Tutorial() {
+  const { grupo } = useDatos();
+  const secciones = grupo.conBocha
+    ? SECCIONES
+    : SECCIONES.map((s) => (s.titulo === "La caca 💩" ? CACA_SIN_BOCHA : { ...s, preguntas: s.preguntas.map((q) => (q[0] === AVISOS_SIN_BOCHA[0] ? AVISOS_SIN_BOCHA : q)) }));
   return (
     <section className="tarjeta ajuste tutorial">
       <h2>Tutorial</h2>
       <p className="ajuste-texto">Elegí un tema y tocá la pregunta.</p>
-      {SECCIONES.map((s) => (
+      {secciones.map((s) => (
         <details key={s.titulo} className="tutorial-seccion">
           <summary>{s.titulo}</summary>
           <div className="tutorial-preguntas">

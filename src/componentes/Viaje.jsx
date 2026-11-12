@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Plane } from "lucide-react";
 import { aFecha, fechaLocal } from "../lib/fechas.js";
+import { useDatos } from "../lib/datos.jsx";
 
 // El viaje del grupo: cuenta regresiva y los cuadraditos que hay que tener para la playa.
 const VIAJE = { destino: "Floripa", fecha: "2026-12-26", desde: "2026-10-01" };
@@ -16,9 +17,11 @@ function textoFalta(dias) {
 }
 
 export default function Viaje({ hoy = fechaLocal() }) {
+  const { grupo } = useDatos();
   const faltan = diasEntre(hoy, VIAJE.fecha);
   // Durante el viaje sigue el cartel; una semana después desaparece.
-  if (faltan < -7) return null;
+  // El viaje es de la Lomada; los otros grupos no lo ven.
+  if (faltan < -7 || !grupo.conBocha) return null;
   const total = Math.max(1, diasEntre(VIAJE.desde, VIAJE.fecha));
   const avance = Math.min(Math.max((total - faltan) / total, 0), 1);
   const llenos = faltan <= 0 ? CUADRADITOS : Math.min(CUADRADITOS - 1, Math.floor(avance * CUADRADITOS));

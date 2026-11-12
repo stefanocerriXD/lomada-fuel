@@ -34,7 +34,10 @@ async function traerTodo(armar) {
 
 const valorDe = (consulta, clave) => (consulta.error ? null : consulta.data?.find((a) => a.clave === clave)?.valor || null);
 
-export function DatosProvider({ usuario, children }) {
+// Sin grupo cargado (la base todavía no tiene grupos) se comporta como la Lomada de siempre.
+export const GRUPO_BASE = { id: null, nombre: "Lomada", conBocha: true };
+
+export function DatosProvider({ usuario, grupo = GRUPO_BASE, children }) {
   const [perfiles, setPerfiles] = useState({});
   const [comidas, setComidas] = useState([]);
   const [fotos, setFotos] = useState({});
@@ -401,7 +404,7 @@ export function DatosProvider({ usuario, children }) {
     const chatAnterior = chatRef.current;
     chatRef.current = null;
     if (chatAnterior) supabase.removeChannel(chatAnterior);
-    const chat = supabase.channel("chat-vivo", { config: { broadcast: { self: false, ack: false } } });
+    const chat = supabase.channel(`chat-vivo-${grupo.id || "lomada"}`, { config: { broadcast: { self: false, ack: false } } });
     chat.on("broadcast", { event: "mensaje" }, ({ payload }) => {
       if (!payload?.id) return;
       marcarActividad(payload.usuario_id, null);
@@ -427,7 +430,7 @@ export function DatosProvider({ usuario, children }) {
         reintento.current = setTimeout(conectar, REINTENTO_MS);
       }
     });
-  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura]);
+  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura, grupo.id]);
 
   useEffect(() => {
     cargarMensajes().catch(() => setMensajesListos(true));
@@ -485,7 +488,7 @@ export function DatosProvider({ usuario, children }) {
   const presencia = useRef(null);
   const estadoPropio = useRef({ escribiendo: false, publicando: false });
   useEffect(() => {
-    const canal = supabase.channel("presencia-grupo", { config: { presence: { key: usuario.id } } });
+    const canal = supabase.channel(`presencia-${grupo.id || "grupo"}`, { config: { presence: { key: usuario.id } } });
     canal.on("presence", { event: "sync" }, () => {
       const mapa = {};
       for (const [id, lista] of Object.entries(canal.presenceState())) {
@@ -503,7 +506,7 @@ export function DatosProvider({ usuario, children }) {
       presencia.current = null;
       supabase.removeChannel(canal);
     };
-  }, [usuario.id]);
+  }, [usuario.id, grupo.id]);
 
   const avisarEstado = useCallback((parcial) => {
     const nuevo = { ...estadoPropio.current, ...parcial };
@@ -541,14 +544,17 @@ export function DatosProvider({ usuario, children }) {
       ...(extras.multasActivas ? { caca: marcaDeCaca({ usuarioId: id, multas: extras.multas, bochaEvo: extras.bochaEvo }) } : {}),
     }]));
   }, [perfiles, extras]);
-  const castigo = useMemo(
-    () => (extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, diario: false, activo: false }),
-    [extras, comidas, usuario.id],
-  );
+  const castigo = useMemo(() => {
+    const base = extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, diario: false, activo: false };
+    if (grupo.conBocha) return { ...base, soloTexto: base.diario };
+    // Sin Bocha es tipo BeReal: las fotos de los demás borrosas y sin reaccionar hasta subir la tuya. El chat sigue igual.
+    return { ...base, marca: base.marca && "dia", evo: false, activo: base.diario, soloTexto: false };
+  }, [extras, comidas, usuario.id, grupo.conBocha]);
 
   const valor = useMemo(
     () => ({
       usuario,
+      grupo,
       yo: perfilesConCaca[usuario.id] || { ...AVATAR_BASE, id: usuario.id, nombre: "" },
       perfiles: perfilesConCaca,
       castigo,
@@ -595,7 +601,7 @@ export function DatosProvider({ usuario, children }) {
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

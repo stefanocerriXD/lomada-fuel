@@ -11,7 +11,7 @@ const IMAGENES = [
 
 // Las reglas de la caca y, para quien administra, las imágenes del Bocha.
 export default function LaCaca({ avisar }) {
-  const { usuario, fotos, extras, imagenesBocha, cargarExtras } = useDatos();
+  const { usuario, fotos, extras, imagenesBocha, cargarExtras, grupo } = useDatos();
   const [subiendo, setSubiendo] = useState(null);
 
   async function subir(clave, archivo) {
@@ -26,6 +26,20 @@ export default function LaCaca({ avisar }) {
     vibrar(15);
     avisar("Imagen guardada");
     await cargarExtras();
+  }
+
+  if (!grupo.conBocha) {
+    return (
+      <section className="tarjeta ajuste la-caca">
+        <ul className="la-caca-reglas">
+          <li><strong>Mínimo 1 foto de comida por día.</strong> La foto del resumen del día no cuenta.</li>
+          <li><strong>Si no subís ninguna,</strong> al día siguiente tenés 💩 al lado del nombre y ves borrosas las fotos de los demás, como en BeReal. Tampoco podés reaccionar.</li>
+          <li><strong>Se levanta subiendo tu foto del día.</strong> La 💩 queda hasta el día siguiente.</li>
+          <li>El bot cuenta en el chat quiénes no subieron, y el domingo pasa la tabla de la semana.</li>
+          <li>A las 22 te llega un aviso si todavía no subiste ninguna foto.</li>
+        </ul>
+      </section>
+    );
   }
 
   return (

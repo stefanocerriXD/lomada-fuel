@@ -10,7 +10,7 @@ import Multas from "../componentes/Multas.jsx";
 
 // Los logros de cada uno, el nivel del grupo y, al final, la maldición del Bocha.
 export default function Retos() {
-  const { extras } = useDatos();
+  const { extras, grupo } = useDatos();
 
   if (!extras.disponible) {
     return <Vacio icono={Trophy} titulo="Los logros todavía no están activos" texto="Se activan al terminar la configuración de la base de datos." />;
@@ -31,7 +31,7 @@ export default function Retos() {
 
       {extras.multasActivas && (
         <section>
-          <h2 className="titulo-seccion">La maldición del Bocha</h2>
+          <h2 className="titulo-seccion">{grupo.conBocha ? "La maldición del Bocha" : "La caca 💩"}</h2>
           <Multas />
         </section>
       )}

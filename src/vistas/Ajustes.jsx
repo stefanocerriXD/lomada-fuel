@@ -32,7 +32,7 @@ function textoObjetivo(salud) {
 }
 
 export default function Ajustes({ avisar, onEditarCuerpo }) {
-  const { castigo, usuario, yo, cargarPerfiles, salud } = useDatos();
+  const { castigo, usuario, yo, cargarPerfiles, salud, grupo } = useDatos();
   const [nombre, setNombre] = useState(yo.nombre);
   const [color, setColor] = useState(yo.color);
   const [meta, setMeta] = useState(yo.meta_calorias);
@@ -67,7 +67,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
   const estadoSalud = useEstadoSalud();
   const SECCIONES = [
     { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
-    { id: "caca", titulo: "La caca 💩", detalle: "La regla de las fotos y el Bocha", icono: Skull },
+    { id: "caca", titulo: "La caca 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
     { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
