@@ -1827,8 +1827,13 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 /* Camino de niveles */
 .camino { margin: 14px 0 6px; }
-.camino-cabecera { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.camino-cabecera span { color: var(--tinta-2); font-size: 0.8rem; font-weight: 650; }
+.camino-cabecera { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 12px 8px 6px; border-radius: 16px; background: var(--superficie-2); color: var(--tinta); text-align: left; }
+.camino-figura.chica { width: 38px; height: 38px; }
+.camino-resumen { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.camino-resumen strong { font-size: 0.95rem; }
+.camino-resumen small { color: var(--tinta-2); font-size: 0.78rem; }
+.camino-flecha { color: var(--tinta-2); transition: transform 0.2s; flex: none; }
+.camino-cuerpo { overflow: hidden; }
 .camino-lista { list-style: none; margin: 8px 0 0; padding: 0; }
 .camino-paso { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 4px 8px 6px; }
 .camino-paso::before { content: ""; position: absolute; left: 30px; top: -50%; height: 100%; width: 2px; background: var(--borde); z-index: -1; }
