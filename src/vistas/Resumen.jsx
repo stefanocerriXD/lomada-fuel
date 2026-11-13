@@ -7,7 +7,7 @@ import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
 import { Indicador, Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
 import InvitacionesComida from "../componentes/InvitacionesComida.jsx";
-import { abrirInforme } from "../componentes/InformeSemanal.jsx";
+import { abrirInforme, CartelInforme } from "../componentes/InformeSemanal.jsx";
 import { FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
 import { esDeAppleSalud } from "../lib/importar.js";
 import { esDeNoche, fechaDeLaNoche } from "../componentes/Fiesta.jsx";
@@ -63,6 +63,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
 
   return (
     <>
+      {fecha === hoy && <CartelInforme />}
       <div className="dia-encabezado">
         <p className="dia-titulo">{fecha === hoy ? `${saludo()}, ${yo.nombre}` : nombreDia(fecha)}</p>
         {extras.multasActivas && fecha === hoy && (
@@ -73,14 +74,6 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
       </div>
 
       <InvitacionesComida avisar={avisar} />
-
-      {fecha === hoy && informeListo() && (
-        <button className="informe-aviso" onClick={abrirInforme}>
-          <span className="informe-aviso-icono" aria-hidden="true"><BarChart3 size={20} /></span>
-          <span><strong>Tu informe de la semana está listo</strong><small>Promedios, tu mejor día y cómo vas contra la semana pasada</small></span>
-          <ChevronRight size={18} aria-hidden="true" />
-        </button>
-      )}
 
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
 
@@ -574,7 +567,3 @@ function GraficoSemana({ datos, meta }) {
   );
 }
 
-// El informe se ofrece el domingo desde las 18 y el lunes.
-function informeListo(ahora = new Date()) {
-  return (ahora.getDay() === 0 && ahora.getHours() >= 18) || ahora.getDay() === 1;
-}
