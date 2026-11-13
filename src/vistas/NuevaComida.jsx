@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BookmarkPlus, CalendarDays, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Star, Trash2, Users, X } from "lucide-react";
+import { BookmarkPlus, CalendarDays, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
-import { avisarGrupo, buscarAlimentos, buscarCodigo } from "../lib/api.js";
+import { avisarGrupo, buscarAlimentos, buscarCodigo, reconocerFoto } from "../lib/api.js";
+import { itemsDeFoto } from "../lib/reconocer.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
 import { alimentosUsados, buscarEnHistorial, combosDe } from "../lib/historial.js";
@@ -22,6 +23,8 @@ import { createPortal } from "react-dom";
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 const horaDe = (momento) => new Date(momento).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+// Si en Vercel todavía no está la clave de Gemini, el botón de la foto con IA no se muestra más en esta sesión.
+let iaApagada = false;
 const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
@@ -85,6 +88,10 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const campo = useRef(null);
+  // La IA reconoce los alimentos de la foto: se suman solos y después se ajustan las cantidades.
+  const [reconociendo, setReconociendo] = useState(false);
+  const [deFoto, setDeFoto] = useState(null);
+  const [conIA, setConIA] = useState(!iaApagada);
 
   // Lo que llegó de Apple Salud (MyFitnessPal escribe una entrada por comida): se precarga y solo falta la foto.
   const [deSalud, setDeSalud] = useState([]);
@@ -212,7 +219,39 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
   const cambiarItem = (id, nuevo) => setItems((prev) => prev.map((i) => (i.id === id ? nuevo : i)));
 
-  async function elegirFoto(e) {
+  async function reconocer(blob, pedido) {
+    setReconociendo(true);
+    setError("");
+    try {
+      const { alimentos, titulo, esComida } = await reconocerFoto(blob);
+      if (!esComida) {
+        if (pedido) setError("No vimos comida en la foto. Buscá los alimentos o cargalos a mano.");
+        return;
+      }
+      const nuevos = itemsDeFoto(alimentos, historial.todos);
+      setItems((prev) => [...prev, ...nuevos]);
+      setDescripcion((d) => d || titulo);
+      setDeFoto({ ids: nuevos.map((i) => i.id), titulo });
+      vibrar(14);
+    } catch (err) {
+      if (err.apagado) {
+        iaApagada = true;
+        setConIA(false);
+      }
+      if (pedido || !err.apagado) setError(err.message);
+    } finally {
+      setReconociendo(false);
+    }
+  }
+
+  function deshacerFoto() {
+    setItems((prev) => prev.filter((i) => !deFoto.ids.includes(i.id)));
+    setDescripcion((d) => (d === deFoto.titulo ? "" : d));
+    setDeFoto(null);
+  }
+
+  // Con la foto de un plato nuevo y nada cargado, la IA arranca sola. Desde el botón de la foto, siempre.
+  async function elegirFoto(e, pedido = false) {
     const archivo = e.target.files[0];
     e.target.value = "";
     if (!archivo) return;
@@ -221,6 +260,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       const blob = await comprimirImagen(archivo);
       setFoto(blob);
       setVistaFoto(URL.createObjectURL(blob));
+      if (conIA && !reconociendo && (pedido || (!original && !carga.postre && !items.length))) reconocer(blob, pedido);
     } catch (err) {
       setError(err.message);
     }
@@ -346,8 +386,15 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
       ) : (
         <>
-          {!original && !items.length && (
+          {!original && !items.length && !reconociendo && (
             <div className="acciones-rapidas">
+              {conIA && !carga.postre && (
+                <label className="tarjeta accion accion-foto">
+                  <input type="file" accept="image/*" onChange={(e) => elegirFoto(e, true)} aria-label="Foto del plato para reconocer los alimentos" />
+                  <Sparkles size={22} />
+                  <span><strong>Sacale una foto al plato</strong><small>La IA reconoce los alimentos y vos ajustás las cantidades</small></span>
+                </label>
+              )}
               <button className={panel === "importar" ? "tarjeta accion activa" : "tarjeta accion"} onClick={() => alternarPanel("importar")} aria-pressed={panel === "importar"}>
                 <ClipboardPaste size={22} />
                 <span><strong>Importar {tipoInfo(tipo).texto.toLowerCase()}</strong><small>Captura o texto</small></span>
@@ -368,6 +415,19 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           {panel === "codigo" && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
           {panel === "mano" && <CargaManual key={importado?.clave || "vacia"} inicial={importado} onAgregar={agregar} />}
 
+          {reconociendo && (
+            <p className="buscando reconociendo" role="status">
+              <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}><LoaderCircle size={17} /></motion.span>
+              Mirando la foto…
+            </p>
+          )}
+          {deFoto && deFoto.ids.some((id) => items.some((i) => i.id === id)) && (
+            <div className="nota-ia">
+              <Sparkles size={15} aria-hidden="true" />
+              <span>Lo reconoció la IA en la foto. Revisá las cantidades.</span>
+              <button type="button" className="boton-texto" onClick={deshacerFoto}><Undo2 size={14} /> Deshacer</button>
+            </div>
+          )}
           <AnimatePresence initial={false}>
             {items.map((i) => (
               <FilaItem key={i.id} item={i} onCambiar={(n) => cambiarItem(i.id, n)} onQuitar={() => setItems((prev) => prev.filter((x) => x.id !== i.id))} />
@@ -451,6 +511,11 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
             </label>
             <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Título de la comida" aria-label="Nota de la comida" maxLength={200} />
           </div>
+          {conIA && foto && items.length > 0 && !deFoto && !reconociendo && (
+            <button type="button" className="boton-texto reconocer-foto" onClick={() => reconocer(foto, true)}>
+              <Sparkles size={15} /> Reconocer los alimentos de la foto
+            </button>
+          )}
 
           {tipo !== "resumen" && otrosIntegrantes.length > 0 && (!original || !original.grupo_comida || original.grupo_comida === original.id) && (
             <details className="comida-grupal" open={Boolean(original?.grupo_comida) || undefined}>
@@ -557,7 +622,7 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
     <motion.div className="fila-item" layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
       <div className="fila-datos">
         <strong>{item.nombre}</strong>
-        <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}</span>
+        <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}{item.ia ? " · por la foto" : ""}</span>
       </div>
       <button className="boton-icono chico" onClick={onQuitar} aria-label={`Quitar ${item.nombre}`}><Trash2 size={16} /></button>
       {item.por100 && (

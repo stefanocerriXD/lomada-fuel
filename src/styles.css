@@ -1920,3 +1920,15 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .informe-dato strong { font-size: 0.88rem; }
 .informe-dato small { color: var(--tinta-2); font-size: 0.8rem; line-height: 1.35; }
 .informe-dato-icono { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 10px; background: var(--acento-suave); color: var(--sobre-acento-suave); }
+
+/* Reconocer la comida con la foto */
+.accion-foto { grid-column: 1 / -1; position: relative; cursor: pointer; }
+.accion-foto input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.accion-foto:focus-within { outline: 3px solid var(--acento); outline-offset: 2px; }
+.accion-foto svg { color: var(--acento); flex: none; }
+.reconociendo { padding: 14px 8px; }
+.nota-ia { display: flex; align-items: center; gap: 7px; color: var(--tinta-2); font-size: 0.84rem; line-height: 1.25; }
+.nota-ia > svg { flex: none; color: var(--acento); }
+.nota-ia > span { flex: 1; min-width: 0; }
+.nota-ia .boton-texto { flex: none; display: inline-flex; align-items: center; gap: 4px; }
+.reconocer-foto { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }

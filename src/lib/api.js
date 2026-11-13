@@ -1,4 +1,5 @@
 import { supabase } from "./supabase.js";
+import { comprimirImagen } from "./imagen.js";
 
 async function encabezados() {
   const { data } = await supabase.auth.getSession();
@@ -52,4 +53,26 @@ export async function buscarAlimentos(texto, signal) {
 export async function buscarCodigo(codigo) {
   const resp = await fetch(`/api/alimentos?codigo=${encodeURIComponent(codigo)}`, { headers: await encabezados() });
   return (await leer(resp)).alimento;
+}
+
+// La foto viaja chica (alcanza para reconocer el plato) y la analiza Gemini desde /api/reconocer.
+export async function reconocerFoto(blob) {
+  const chica = await comprimirImagen(blob, 1024, 0.75);
+  const imagen = await new Promise((resolver, rechazar) => {
+    const lector = new FileReader();
+    lector.onload = () => resolver(String(lector.result).split(",")[1]);
+    lector.onerror = () => rechazar(new Error("No se pudo leer la foto"));
+    lector.readAsDataURL(chica);
+  });
+  const resp = await fetch("/api/reconocer", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(await encabezados()) },
+    body: JSON.stringify({ imagen }),
+  });
+  if (resp.status === 503) {
+    const error = new Error("El reconocimiento de fotos todavía no está activado");
+    error.apagado = true;
+    throw error;
+  }
+  return leer(resp);
 }
