@@ -201,7 +201,7 @@ export const RECETAS = [
     pasos: ["Dorá el pollo en cubos.", "Sumá la crema y cociná 5 minutos.", "Serví con el puré."],
   },
   {
-    id: "tostadas-mani-banana", nombre: "Tostadas con pasta de maní, banana y miel", tipos: ["desayuno", "merienda", "colacion"], minutos: 5, base: "fruta", dulce: true,
+    id: "tostadas-mani-banana", nombre: "Tostadas con pasta de maní y banana", tipos: ["desayuno", "merienda", "colacion"], minutos: 5, base: "fruta", dulce: true,
     partes: [{ ing: "pan", rol: "carbo", min: 50, max: 150 }, { ing: "mantequilla_mani", rol: "grasa", min: 15, max: 50, paso: 5 }, { ing: "banana", g: 100 }],
     pasos: ["Tostá el pan.", "Untá la pasta de maní.", "Sumá la banana en rodajas."],
   },
