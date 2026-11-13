@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { fotosGuardadas, guardarFotos } from "./fotosGuardadas.js";
 import { supabase } from "./supabase.js";
 import { accionWhoop } from "./api.js";
 import { haceDias } from "./fechas.js";
@@ -73,11 +74,17 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     const ahora = Date.now();
     const rutas = [...new Set(todas.filter(Boolean))].filter((r) => !(ahora - firmas.current[r] < RENOVAR_FOTOS_MS));
     if (!rutas.length) return;
-    const { data } = await supabase.storage.from("fotos").createSignedUrls(rutas, 3600);
+    // Las que ya están guardadas en el celu abren al instante y no se piden de nuevo.
+    const locales = await fotosGuardadas(rutas);
+    Object.keys(locales).forEach((r) => { firmas.current[r] = Infinity; });
+    const faltan = rutas.filter((r) => !locales[r]);
+    const { data } = faltan.length ? await supabase.storage.from("fotos").createSignedUrls(faltan, 3600) : { data: [] };
     // Se suman a las que ya están: el perfil y los días viejos traen fotos fuera de la ventana.
     const nuevas = (data || []).filter((u) => u.signedUrl);
     nuevas.forEach((u) => { firmas.current[u.path] = ahora; });
-    setFotos((prev) => ({ ...prev, ...Object.fromEntries(nuevas.map((u) => [u.path, u.signedUrl])) }));
+    setFotos((prev) => ({ ...prev, ...locales, ...Object.fromEntries(nuevas.map((u) => [u.path, u.signedUrl])) }));
+    // Las nuevas se guardan en el celu para la próxima vez.
+    guardarFotos(nuevas.map((u) => ({ ruta: u.path, url: u.signedUrl })));
   }, []);
 
   const firmarFotos = useCallback((lista) => firmarRutas(lista.map((c) => c.foto_path)), [firmarRutas]);

@@ -203,8 +203,8 @@ function useToqueLargo(alAbrir) {
 const SIN_REACCIONES = [];
 const nombreDeQuien = (perfiles, yoId, id) => (id === yoId ? "vos" : perfiles[id]?.nombre || "Amigo");
 
-// Cada reacción muestra quién la puso: el emoji y las caritas de los que reaccionaron.
-function Reacciones({ mensajeId, lista, perfiles, yoId, onReaccion }) {
+// Cada reacción muestra quién la puso. Tocarla abre el detalle: no reacciona de una.
+function Reacciones({ mensajeId, lista, perfiles, yoId, onVer }) {
   if (!lista.length) return null;
   const grupos = [...new Set(lista.map((r) => r.emoji))];
   return (
@@ -214,7 +214,7 @@ function Reacciones({ mensajeId, lista, perfiles, yoId, onReaccion }) {
         const mia = quienes.includes(yoId);
         const nombres = listaDeNombres(quienes.map((id) => nombreDeQuien(perfiles, yoId, id)));
         return (
-          <button key={e} className={mia ? "mia" : ""} onClick={() => onReaccion(mensajeId, e)} aria-pressed={mia} aria-label={`${e} de ${nombres}`} title={nombres}>
+          <button key={e} className={mia ? "mia" : ""} onClick={() => onVer({ id: mensajeId, emoji: e })} aria-label={`${e} de ${nombres}. Ver quién reaccionó`} title={nombres}>
             <span className="reaccion-emoji">{e}</span>
             <span className="reaccion-quienes" aria-hidden="true">
               {quienes.slice(0, 3).map((id) => <Avatar key={id} perfil={perfiles[id]} tam={16} />)}
@@ -276,7 +276,7 @@ function LineaLogro({ logro, perfil, onPerfil }) {
 }
 
 // Memorizado: escribir o recibir algo no redibuja todos los mensajes, solo los que cambian.
-const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onReaccion, onPerfil, onAcciones, onResponder, onZoom, onVerReceta }) {
+const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onVerReacciones, onPerfil, onAcciones, onResponder, onZoom, onVerReceta }) {
   const { marcado, eventos } = useToqueLargo(() => onAcciones(m));
   // Deslizar a la derecha responde, como en WhatsApp.
   const x = useMotionValue(0);
@@ -332,7 +332,7 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
             {m.receta_id ? <RecetaEnChat id={m.receta_id} onVer={onVerReceta} /> : m.texto && <p><ConMenciones texto={m.texto} /></p>}
             <time dateTime={m.creado_en}>{m.pendiente ? <Clock3 size={11} aria-label="Enviando" /> : hora(m.creado_en)}</time>
           </motion.div>
-          <Reacciones mensajeId={m.id} lista={reacciones} perfiles={perfiles} yoId={yoId} onReaccion={onReaccion} />
+          <Reacciones mensajeId={m.id} lista={reacciones} perfiles={perfiles} yoId={yoId} onVer={onVerReacciones} />
           {visto && <p className="visto">{visto}</p>}
         </div>
       </motion.div>
@@ -382,10 +382,60 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
   );
 }
 
+// Quién reaccionó a un mensaje y con qué, por emoji. La tuya se saca tocándola.
+function VerReacciones({ ver, onCerrar }) {
+  const { usuario, perfiles, reaccionesMensajes, alternarReaccionMensaje } = useDatos();
+  const [filtro, setFiltro] = useState(null);
+  useEffect(() => { setFiltro(ver?.emoji || null); }, [ver]);
+  const delMensaje = ver ? reaccionesMensajes.filter((r) => r.mensaje_id === ver.id) : [];
+  const emojis = [...new Set(delMensaje.map((r) => r.emoji))];
+  const activo = filtro && emojis.includes(filtro) ? filtro : null;
+  const lista = delMensaje
+    .filter((r) => !activo || r.emoji === activo)
+    .sort((a, b) => (a.usuario_id === usuario.id ? -1 : b.usuario_id === usuario.id ? 1 : 0));
+  const yaPuse = activo && delMensaje.some((r) => r.emoji === activo && r.usuario_id === usuario.id);
+  const alternar = (emoji) => { alternarReaccionMensaje(ver.id, emoji); vibrar(8); };
+  return (
+    <Hoja abierta={Boolean(ver) && delMensaje.length > 0} onCerrar={onCerrar} titulo="Reacciones">
+      <div className="filtro-reacciones" role="tablist" aria-label="Filtrar por reacción">
+        <button role="tab" aria-selected={!activo} className={!activo ? "activo" : ""} onClick={() => setFiltro(null)}>Todas <small>{delMensaje.length}</small></button>
+        {emojis.map((e) => (
+          <button key={e} role="tab" aria-selected={activo === e} className={activo === e ? "activo" : ""} onClick={() => setFiltro(e)}>
+            {e} <small>{delMensaje.filter((r) => r.emoji === e).length}</small>
+          </button>
+        ))}
+      </div>
+      <ul className="quienes-reaccionaron">
+        {lista.map((r) => {
+          const mia = r.usuario_id === usuario.id;
+          const fila = (
+            <>
+              <Avatar perfil={perfiles[r.usuario_id]} tam={32} />
+              <span className="quien-reacciono">
+                {mia ? "Vos" : perfiles[r.usuario_id]?.nombre || "Amigo"}
+                {mia && <small>Tocá para sacarla</small>}
+              </span>
+              <span className="reaccion-grande">{r.emoji}</span>
+            </>
+          );
+          return (
+            <li key={`${r.usuario_id}${r.emoji}`}>
+              {mia ? <button className="reaccion-propia" onClick={() => alternar(r.emoji)} aria-label={`Sacar tu ${r.emoji}`}>{fila}</button> : fila}
+            </li>
+          );
+        })}
+      </ul>
+      {activo && !yaPuse && (
+        <button className="boton boton-secundario reaccionar-tambien" onClick={() => alternar(activo)}>Reaccionar con {activo} también</button>
+      )}
+    </Hoja>
+  );
+}
+
 export default function Chat({ avisar }) {
   const {
     castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, quitarMensaje, emitirChat, respuesta, responder,
-    lecturas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, alternarReaccionMensaje, abrirPerfil, extras,
+    lecturas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, abrirPerfil, extras,
   } = useDatos();
   const logrosChat = useMemo(
     () => (extras.medallas || [])
@@ -406,6 +456,7 @@ export default function Chat({ avisar }) {
   const [zoom, setZoom] = useState(null);
   const [mencion, setMencion] = useState(null);
   const [acciones, setAcciones] = useState(null);
+  const [verReacciones, setVerReacciones] = useState(null);
   const [citado, setCitado] = useState(null);
   const [stickers, setStickers] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
@@ -648,7 +699,7 @@ export default function Chat({ avisar }) {
               foto={fotoDe}
               yoId={usuario.id}
               reacciones={reaccionesPorMensaje[m.id] || SIN_REACCIONES}
-              onReaccion={alternarReaccionMensaje}
+              onVerReacciones={setVerReacciones}
               onPerfil={abrirPerfil}
               onAcciones={setAcciones}
               onResponder={responderMensaje}
@@ -724,6 +775,7 @@ export default function Chat({ avisar }) {
 
       <VerReceta receta={verReceta} onCerrar={() => setVerReceta(null)} avisar={avisar} />
       <AccionesMensaje mensaje={acciones} onCerrar={() => setAcciones(null)} onResponder={responderMensaje} avisar={avisar} />
+      <VerReacciones ver={verReacciones} onCerrar={() => setVerReacciones(null)} />
 
       <AnimatePresence>
         {zoom && (

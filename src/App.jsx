@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { borrarFotosGuardadas } from "./lib/fotosGuardadas.js";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { CalendarDays, Plus, Settings, Trophy, Users } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
@@ -66,6 +67,7 @@ export default function App() {
     });
     const { data } = supabase.auth.onAuthStateChange((evento, nueva) => {
       if (evento === "PASSWORD_RECOVERY") setRecuperando(true);
+      if (evento === "SIGNED_OUT") borrarFotosGuardadas();
       setSesion(nueva);
     });
     return () => data.subscription.unsubscribe();

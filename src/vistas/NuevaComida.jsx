@@ -127,7 +127,8 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const historial = useMemo(() => alimentosUsados(comidasLogros || comidas, usuario.id), [comidasLogros, comidas, usuario.id]);
   const combos = useMemo(() => combosDe(comidasLogros || comidas, usuario.id, tipo), [comidasLogros, comidas, usuario.id, tipo]);
 
-  useEffect(() => () => { if (vistaFoto?.startsWith("blob:")) URL.revokeObjectURL(vistaFoto); }, [vistaFoto]);
+  // Solo se libera la vista previa propia: la foto guardada en el celu la usan otras pantallas.
+  useEffect(() => () => { if (vistaFoto?.startsWith("blob:") && vistaFoto !== fotos[original?.foto_path]) URL.revokeObjectURL(vistaFoto); }, [vistaFoto]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function agregar(alimento) {
     // Lo que viene sin valores por 100 g (importado o a mano) se repite tal cual.
@@ -283,14 +284,13 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   }
 
   const buscando = texto.trim().length > 0;
-  // Comida nueva con el almuerzo o la cena ya cargados: atajo para sumarles el postre.
+  // En colación, una opción discreta: si es el postre del almuerzo o la cena, va dentro de esa comida.
   const fechaCarga = carga.fecha || fechaLocal();
-  const paraPostre = original || carga.postre || !onPostre
-    ? []
+  const paraPostre = original || carga.postre || !onPostre || tipo !== "colacion"
+    ? null
     : comidas
         .filter((c) => c.usuario_id === usuario.id && c.fecha === fechaCarga && (c.tipo === "almuerzo" || c.tipo === "cena"))
-        .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1))
-        .slice(0, 2);
+        .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1))[0];
 
   return (
     <div className="carga">
@@ -312,20 +312,6 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           })}
         </div>
       )}
-      {!buscando && items.length === 0 && paraPostre.length > 0 && (
-        <div className="postre-atajos">
-          {paraPostre.map((c) => (
-            <button key={c.id} className="postre-boton" onClick={() => onPostre(c)}>
-              <span className="postre-emoji" aria-hidden="true">🍮</span>
-              <span>
-                <strong>Sumar postre a tu {c.tipo === "cena" ? "cena" : "almuerzo"}</strong>
-                <small>{(c.alimentos || []).some((a) => a.postre) ? "Ya tiene postre: podés agregar otro" : "Queda dentro de esa comida"}</small>
-              </span>
-              <Plus size={18} />
-            </button>
-          ))}
-        </div>
-      )}
       {!buscando && (
         <div className="tipos" role="radiogroup" aria-label="Tipo de comida">
           {TIPOS.map((t) => (
@@ -336,6 +322,11 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         </div>
       )}
 
+      {!buscando && items.length === 0 && paraPostre && (
+        <button className="postre-opcion" onClick={() => onPostre(paraPostre)}>
+          🍮 ¿Es postre? <strong>Sumalo a tu {paraPostre.tipo === "cena" ? "cena" : "almuerzo"}</strong>
+        </button>
+      )}
       {carga.postre && <p className="postre-nota">🍮 Buscá el postre y sumalo. Queda dentro de tu {original?.tipo === "cena" ? "cena" : "almuerzo"}.</p>}
       <div className="fila-busqueda">
         <div className="buscador-campo">

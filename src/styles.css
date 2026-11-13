@@ -1038,9 +1038,9 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .fotos-lista { padding: 0; gap: 18px; }
 .fotos-lista .comida { border: 0; }
 .fotos-lista .comida-foto { border-radius: 16px; }
-/* En Imágenes la foto entra completa pero más chica; tocándola se abre grande. */
-.fotos-lista .comida-foto { display: grid; place-items: center; }
-.fotos-lista .comida-foto img { width: auto; max-width: 100%; max-height: min(230px, 32dvh); }
+/* En Imágenes la foto llena un recuadro vertical, como en Instagram: sin bandas a los costados. Tocándola se ve entera. */
+.fotos-lista .comida-foto { aspect-ratio: 4 / 5; max-height: 58dvh; }
+.fotos-lista .comida-foto img { width: 100%; height: 100%; max-height: none; object-fit: cover; }
 .comida-foto-ampliar { position: absolute; right: 8px; bottom: 8px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgb(0 0 0 / 45%); color: #fff; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); pointer-events: none; }
 .comida-sinfoto { background: transparent; }
 .dia, .tira-dias .dia { background: transparent; box-shadow: none; }
@@ -1530,6 +1530,15 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .quienes-reaccionaron { display: flex; flex-direction: column; margin: 6px 0 0; padding: 0; list-style: none; }
 .quienes-reaccionaron li { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-top: 1px solid var(--borde); font-weight: 600; }
 .quienes-reaccionaron .reaccion-grande { margin-left: auto; font-size: 1.2rem; }
+.filtro-reacciones { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 8px; padding-bottom: 2px; scrollbar-width: none; }
+.filtro-reacciones button { display: inline-flex; align-items: center; gap: 5px; flex: none; min-height: 38px; padding: 0 14px; border-radius: 99px; background: var(--superficie-2); font-size: 1rem; font-weight: 700; }
+.filtro-reacciones button small { color: var(--tinta-2); font-size: 0.8rem; }
+.filtro-reacciones button.activo { background: var(--acento); color: var(--sobre-acento); }
+.filtro-reacciones button.activo small { color: inherit; opacity: 0.85; }
+.quien-reacciono { display: flex; flex-direction: column; }
+.quien-reacciono small { color: var(--tinta-2); font-size: 0.76rem; font-weight: 500; }
+.quienes-reaccionaron .reaccion-propia { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; text-align: left; font-weight: 600; }
+.reaccionar-tambien { width: 100%; margin-top: 12px; }
 
 /* Objetivos de MyFitnessPal */
 .objetivos-leidos { gap: 12px; }
@@ -1750,8 +1759,8 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .de-salud-boton strong { font-size: 0.92rem; }
 .de-salud-boton small { color: var(--tinta-2); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 .de-salud-usar { padding: 7px 12px; border-radius: 999px; background: var(--acento); color: var(--sobre-acento); font-size: 0.82rem; font-weight: 800; }
-.postre-atajos { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-.postre-atajos .postre-boton { width: 100%; }
+.postre-opcion { display: block; margin: -4px 0 10px; padding: 6px 2px; color: var(--tinta-2); font-size: 0.85rem; text-align: left; }
+.postre-opcion strong { color: var(--acento); }
 .postre-nota { margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.86rem; font-weight: 600; }
 
 /* Varios grupos */
