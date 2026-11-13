@@ -51,6 +51,11 @@ function conLimite(promesa) {
 }
 
 export function leerImagen(archivo, alProgreso) {
+  return conLimite(leer(archivo, alProgreso)).then(corregirCaptura);
+}
+
+// El texto tal cual, sin los arreglos de las capturas de la otra app (para etiquetas de productos).
+export function leerTexto(archivo, alProgreso) {
   return conLimite(leer(archivo, alProgreso));
 }
 
@@ -62,7 +67,7 @@ async function leer(archivo, alProgreso) {
   });
   try {
     const { data } = await lector.recognize(lienzo);
-    return corregirCaptura(data.text);
+    return data.text;
   } finally {
     await lector.terminate();
   }

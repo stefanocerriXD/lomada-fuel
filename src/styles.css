@@ -1944,3 +1944,24 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .grupo-fotos, .fotos-lista, .fotos-lista .comida { overflow: clip; }
 .fotos-lista .comida-cuerpo { scroll-margin-top: calc(130px + env(safe-area-inset-top)); scroll-margin-bottom: 90px; }
 .fotos-lista .ver-alimentos[aria-expanded="true"] { position: sticky; top: calc(118px + env(safe-area-inset-top)); z-index: 6; align-self: stretch; justify-content: flex-start; margin-inline: -16px; padding-inline: 16px; background: var(--fondo); border-bottom: 1px solid var(--borde); }
+
+/* Tabla nutricional desde el escáner */
+.etiqueta-accion, .etiqueta-enlace { position: relative; cursor: pointer; }
+.etiqueta-accion input, .etiqueta-enlace input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.etiqueta-accion:focus-within, .etiqueta-enlace:focus-within { outline: 3px solid var(--acento); outline-offset: 2px; }
+.etiqueta-accion svg { flex: none; color: var(--acento); }
+.etiqueta-enlace { align-self: center; display: inline-flex; align-items: center; gap: 6px; }
+.form-etiqueta { display: flex; flex-direction: column; gap: 9px; }
+.base-etiqueta { display: flex; gap: 8px; }
+.base-etiqueta .boton-chico { flex: 1; }
+.porcion-etiqueta { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--tinta-2); font-size: 0.86rem; }
+.porcion-etiqueta input { width: 110px; }
+.form-etiqueta-botones { display: grid; grid-template-columns: 1fr 1.4fr; gap: 9px; }
+
+/* ¿Qué puedo comer?: preferencia escrita y la hora */
+.preferencia-comida { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 15px; background: var(--superficie); color: var(--tinta-2); }
+.preferencia-comida input { flex: 1; min-width: 0; padding-inline: 0; border: 0; background: transparent; box-shadow: none; }
+.preferencia-comida input:focus { outline: none; }
+.preferencia-comida:focus-within { outline: 3px solid var(--acento); outline-offset: 1px; }
+.preferencia-comida .limpiar { display: grid; place-items: center; width: 32px; height: 32px; color: var(--tinta-2); }
+.contexto-hora { color: var(--sobre-acento-suave); font-size: 0.86rem; font-weight: 650; }

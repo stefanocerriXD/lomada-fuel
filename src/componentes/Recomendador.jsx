@@ -1,19 +1,23 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChefHat, Clock, RefreshCw } from "lucide-react";
-import { TIPOS_PRINCIPALES as TIPOS } from "../lib/macros.js";
-import { comidaSugerida, comoItems, macrosFaltantes, metasDelDia, queFalta, recomendar, textoCantidad } from "../lib/recomendar.js";
+import { ChefHat, Clock, RefreshCw, Sparkles, X } from "lucide-react";
+import { TIPOS } from "../lib/macros.js";
+import { comidaSugerida, comoItems, contextoHora, macrosFaltantes, metasDelDia, queFalta, recomendar, textoCantidad } from "../lib/recomendar.js";
 import IconoComida from "./IconoComida.jsx";
 import { Hoja, vibrar } from "./Base.jsx";
 
 const POR_PAGINA = 3;
+const CLAVE_PREFERENCIA = "lomada-preferencia-comida";
+const leerGuardada = () => { try { return localStorage.getItem(CLAVE_PREFERENCIA) || ""; } catch { return ""; } };
 const numero = (n) => Math.round(n).toLocaleString("es-AR");
 
 export default function Recomendador({ yo, salud, total, cargadas, fecha, onCargar }) {
   const metas = useMemo(() => metasDelDia(yo, salud), [yo, salud]);
   const faltan = useMemo(() => macrosFaltantes(metas, total), [metas, total]);
-  const sugerida = useMemo(() => comidaSugerida(cargadas), [cargadas]);
   const [abierto, setAbierto] = useState(false);
+  // La hora se toma al abrir: a las 23 y con la cena cargada no tiene sentido otra cena.
+  const ahora = useMemo(() => new Date(), [abierto]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sugerida = useMemo(() => comidaSugerida(cargadas, ahora), [cargadas, ahora]);
   const texto = queFalta(faltan, metas);
 
   return (
@@ -34,6 +38,7 @@ export default function Recomendador({ yo, salud, total, cargadas, fecha, onCarg
             metas={metas}
             total={total}
             cargadas={cargadas}
+            ahora={ahora}
             onElegir={(tipo, opcion) => {
               setAbierto(false);
               onCargar({ tipo, fecha, receta: { descripcion: opcion.receta.nombre, items: comoItems(opcion) } });
@@ -45,10 +50,17 @@ export default function Recomendador({ yo, salud, total, cargadas, fecha, onCarg
   );
 }
 
-function Opciones({ inicial, faltan, metas, total, cargadas, onElegir }) {
+function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir }) {
   const [tipo, setTipo] = useState(inicial);
   const [pagina, setPagina] = useState(0);
-  const resultado = useMemo(() => recomendar({ tipo, faltan, cargadas }), [tipo, faltan, cargadas]);
+  const [preferencia, setPreferencia] = useState(leerGuardada);
+  const cambiarPreferencia = (valor) => {
+    setPreferencia(valor);
+    setPagina(0);
+    try { localStorage.setItem(CLAVE_PREFERENCIA, valor); } catch { /* opcional */ }
+  };
+  const resultado = useMemo(() => recomendar({ tipo, faltan, cargadas, ahora, preferencia }), [tipo, faltan, cargadas, ahora, preferencia]);
+  const contexto = contextoHora(tipo, cargadas, ahora);
   const cantidad = resultado.opciones.length;
   const inicio = cantidad ? (pagina * POR_PAGINA) % cantidad : 0;
   const visibles = Array.from({ length: Math.min(POR_PAGINA, cantidad) }, (_, i) => resultado.opciones[(inicio + i) % cantidad]);
@@ -62,6 +74,14 @@ function Opciones({ inicial, faltan, metas, total, cargadas, onElegir }) {
           </button>
         ))}
       </div>
+
+      <label className="preferencia-comida">
+        <Sparkles size={17} aria-hidden="true" />
+        <input value={preferencia} onChange={(e) => cambiarPreferencia(e.target.value)} placeholder="¿Algo en especial? Ej: dulce, sin huevo, rápido, con atún" aria-label="Preferencia para la recomendación" enterKeyHint="done" />
+        {preferencia && <button type="button" className="limpiar" onClick={() => cambiarPreferencia("")} aria-label="Borrar preferencia"><X size={16} /></button>}
+      </label>
+      {contexto && <p className="contexto-hora">{contexto}</p>}
+      {resultado.nota && <p className="nota">{resultado.nota}</p>}
 
       {resultado.cerrado ? (
         <p className="objetivo-comida">Ya estás cerca de tu meta, así que van opciones livianas.</p>

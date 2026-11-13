@@ -17,6 +17,30 @@ const PEDIDO = `Sos nutricionista en Argentina. Mirá la foto y listá por separ
 - "titulo": cómo llamaría la comida una persona ("Milanesa con puré").
 - Si la foto no es de comida (una captura de pantalla, una persona, un paisaje), es_comida=false y la lista vacía.`;
 
+const PEDIDO_ETIQUETA = `Es la foto de la tabla de información nutricional de un producto envasado (puede estar en español, inglés o portugués).
+Copiá los números TAL CUAL están impresos, sin estimar:
+- Si hay una columna "100 g" o "100 ml", usá esa y base="100g". Si solo está por porción, base="porcion".
+- "porcion_g": los gramos o ml de una porción, si figura (si no, 0).
+- kcal: el valor energético en kcal (si solo está en kJ, dividí por 4,184). Grasas = grasas totales. Carbohidratos = totales.
+- "nombre" y "marca": solo si se leen en la foto; si no, vacío.
+- Si la foto no muestra una tabla nutricional, es_etiqueta=false.`;
+
+const ESQUEMA_ETIQUETA = {
+  type: "OBJECT",
+  properties: {
+    es_etiqueta: { type: "BOOLEAN" },
+    nombre: { type: "STRING" },
+    marca: { type: "STRING" },
+    base: { type: "STRING", enum: ["porcion", "100g"] },
+    porcion_g: { type: "NUMBER" },
+    kcal: { type: "NUMBER" },
+    proteinas: { type: "NUMBER" },
+    carbohidratos: { type: "NUMBER" },
+    grasas: { type: "NUMBER" },
+  },
+  required: ["es_etiqueta", "base", "porcion_g", "kcal", "proteinas", "carbohidratos", "grasas"],
+};
+
 const ESQUEMA = {
   type: "OBJECT",
   properties: {
@@ -61,15 +85,15 @@ function limpiar(a) {
   return { nombre, gramos: Math.round(gramos), unidades: unidades >= 1 ? Math.round(unidades) : null, por100: { kcal: Math.round(kcal), p: redondeo(p), c: redondeo(c), g: redondeo(g) } };
 }
 
-async function preguntar(modelo, imagen, clave) {
-  const config = { responseMimeType: "application/json", responseSchema: ESQUEMA, temperature: 0.2, maxOutputTokens: 2048 };
+async function preguntar(modelo, imagen, clave, etiqueta = false) {
+  const config = { responseMimeType: "application/json", responseSchema: etiqueta ? ESQUEMA_ETIQUETA : ESQUEMA, temperature: etiqueta ? 0 : 0.2, maxOutputTokens: 2048 };
   // En los 2.5 se apaga el razonamiento: responde más rápido y alcanza para esto.
   if (modelo.includes("2.5")) config.thinkingConfig = { thinkingBudget: 0 };
   const resp = await fetch(`${API}/${modelo}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": clave },
     body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ inline_data: { mime_type: "image/jpeg", data: imagen } }, { text: PEDIDO }] }],
+      contents: [{ role: "user", parts: [{ inline_data: { mime_type: "image/jpeg", data: imagen } }, { text: etiqueta ? PEDIDO_ETIQUETA : PEDIDO }] }],
       generationConfig: config,
     }),
     signal: AbortSignal.timeout(25000),
@@ -95,16 +119,30 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Foto no válida" });
   }
 
+  const etiqueta = req.body?.modo === "etiqueta";
   let sinCupo = false;
   for (const modelo of MODELOS) {
     let r;
     try {
-      r = await preguntar(modelo, imagen, clave);
+      r = await preguntar(modelo, imagen, clave, etiqueta);
     } catch {
       continue; // Tardó demasiado: se prueba con otro.
     }
     if (r.estado === 429) { sinCupo = true; continue; }
     if (r.estado !== 200) continue; // Modelo dado de baja o respuesta rota.
+    if (etiqueta) {
+      const e = r.respuesta || {};
+      const n = (v, max) => num(v, max) ?? 0;
+      const texto = (v) => String(v || "").replace(/\s+/g, " ").trim().slice(0, 60);
+      return res.status(200).json({
+        esEtiqueta: e.es_etiqueta !== false,
+        nombre: texto(e.nombre),
+        marca: texto(e.marca),
+        base: e.base === "100g" ? "100g" : "porcion",
+        porcionG: n(e.porcion_g, 2000) || null,
+        valores: { kcal: n(e.kcal, 5000), p: n(e.proteinas, 500), c: n(e.carbohidratos, 500), g: n(e.grasas, 500) },
+      });
+    }
     const { es_comida: esComida, titulo, alimentos } = r.respuesta || {};
     const lista = (Array.isArray(alimentos) ? alimentos : []).map(limpiar).filter(Boolean).slice(0, 10);
     return res.status(200).json({

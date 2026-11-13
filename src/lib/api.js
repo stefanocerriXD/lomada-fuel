@@ -55,9 +55,13 @@ export async function buscarCodigo(codigo) {
   return (await leer(resp)).alimento;
 }
 
+// Si en Vercel todavía no está la clave de Gemini, no se vuelve a intentar en esta sesión.
+export const ia = { apagada: false };
+
 // La foto viaja chica (alcanza para reconocer el plato) y la analiza Gemini desde /api/reconocer.
-export async function reconocerFoto(blob) {
-  const chica = await comprimirImagen(blob, 1024, 0.75);
+// Para una etiqueta va más grande: los números son chicos.
+export async function reconocerFoto(blob, modo = "plato") {
+  const chica = await comprimirImagen(blob, modo === "etiqueta" ? 1600 : 1024, modo === "etiqueta" ? 0.85 : 0.75);
   const imagen = await new Promise((resolver, rechazar) => {
     const lector = new FileReader();
     lector.onload = () => resolver(String(lector.result).split(",")[1]);
@@ -67,9 +71,10 @@ export async function reconocerFoto(blob) {
   const resp = await fetch("/api/reconocer", {
     method: "POST",
     headers: { "content-type": "application/json", ...(await encabezados()) },
-    body: JSON.stringify({ imagen }),
+    body: JSON.stringify({ imagen, modo }),
   });
   if (resp.status === 503) {
+    ia.apagada = true;
     const error = new Error("El reconocimiento de fotos todavía no está activado");
     error.apagado = true;
     throw error;

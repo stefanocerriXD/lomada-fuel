@@ -124,38 +124,59 @@ export const RECETAS = [
     pasos: ["Hervi el huevo.", "Escurrí el atún.", "Mezclá con la ensalada y limón."],
   },
   {
-    id: "avena-banana", nombre: "Avena con banana y yogur", tipos: ["desayuno", "merienda"], minutos: 5, base: "lacteo",
+    id: "avena-banana", nombre: "Avena con banana y yogur", tipos: ["desayuno", "merienda", "colacion"], minutos: 5, base: "lacteo", dulce: true,
     partes: [{ ing: "yogur", rol: "proteina", min: 120, max: 350 }, { ing: "avena", rol: "carbo", min: 30, max: 100 }, { ing: "banana", g: 100 }],
     pasos: ["Mezclá la avena con el yogur.", "Sumá la banana en rodajas."],
   },
   {
-    id: "licuado", nombre: "Licuado de banana con proteína", tipos: ["desayuno", "merienda"], minutos: 5, base: "lacteo",
+    id: "licuado", nombre: "Licuado de banana con proteína", tipos: ["desayuno", "merienda", "colacion"], minutos: 5, base: "lacteo", dulce: true,
     partes: [{ ing: "proteina_polvo", rol: "proteina", min: 15, max: 45, paso: 5 }, { ing: "banana", rol: "carbo", min: 80, max: 200 }, { ing: "leche", g: 250 }],
     pasos: ["Poné todo en la licuadora.", "Licuá un minuto y serví frío."],
   },
   {
-    id: "tostadas-huevo", nombre: "Tostadas con huevo revuelto y palta", tipos: ["desayuno", "merienda"], minutos: 10, base: "huevo",
+    id: "tostadas-huevo", nombre: "Tostadas con huevo revuelto y palta", tipos: ["desayuno", "merienda", "colacion"], minutos: 10, base: "huevo",
     partes: [{ ing: "huevo", rol: "proteina", min: 50, max: 150 }, { ing: "pan", rol: "carbo", min: 40, max: 120 }, { ing: "palta", rol: "grasa", min: 20, max: 80 }],
     pasos: ["Tostá el pan.", "Revolvé los huevos a fuego bajo.", "Armá las tostadas con palta."],
   },
   {
-    id: "tostadas-jamon", nombre: "Tostadas con jamón y queso", tipos: ["desayuno", "merienda"], minutos: 5, base: "lacteo",
+    id: "tostadas-jamon", nombre: "Tostadas con jamón y queso", tipos: ["desayuno", "merienda", "colacion"], minutos: 5, base: "lacteo",
     partes: [{ ing: "jamon", rol: "proteina", min: 40, max: 150 }, { ing: "pan", rol: "carbo", min: 40, max: 120 }, { ing: "queso", g: 25 }],
     pasos: ["Tostá el pan.", "Sumá jamón y queso, y calentá hasta que se derrita."],
   },
   {
-    id: "yogur-granola", nombre: "Yogur con granola y manzana", tipos: ["desayuno", "merienda"], minutos: 3, base: "lacteo", liviana: true,
+    id: "yogur-granola", nombre: "Yogur con granola y manzana", tipos: ["desayuno", "merienda", "colacion"], minutos: 3, base: "lacteo", liviana: true, dulce: true,
     partes: [{ ing: "yogur", rol: "proteina", min: 120, max: 300 }, { ing: "granola", rol: "carbo", min: 15, max: 60, paso: 5 }, { ing: "manzana", g: 80 }],
     pasos: ["Serví el yogur en un bowl.", "Sumá la granola y la manzana."],
   },
   {
-    id: "banana-mani", nombre: "Banana con pasta de maní", tipos: ["desayuno", "merienda"], minutos: 2, base: "fruta",
+    id: "banana-mani", nombre: "Banana con pasta de maní", tipos: ["desayuno", "merienda", "colacion"], minutos: 2, base: "fruta", dulce: true,
     partes: [{ ing: "banana", rol: "carbo", min: 80, max: 200 }, { ing: "mantequilla_mani", rol: "grasa", min: 10, max: 35, paso: 5 }],
     pasos: ["Cortá la banana.", "Untala con la pasta de maní."],
   },
   {
-    id: "fruta-yogur", nombre: "Manzana con yogur", tipos: ["desayuno", "merienda", "cena"], minutos: 2, base: "fruta", liviana: true,
+    id: "fruta-yogur", nombre: "Manzana con yogur", tipos: ["desayuno", "merienda", "cena", "colacion"], minutos: 2, base: "fruta", liviana: true, dulce: true,
     partes: [{ ing: "yogur", rol: "proteina", min: 100, max: 200 }, { ing: "manzana", g: 120 }],
     pasos: ["Cortá la manzana.", "Serví con yogur."],
+  },
+  // Colaciones: para entre comidas o para la noche, después de cenar.
+  {
+    id: "huevos-duros", nombre: "Huevos duros con una tostada", tipos: ["colacion", "desayuno", "merienda"], minutos: 10, base: "huevo", liviana: true,
+    partes: [{ ing: "huevo", rol: "proteina", min: 50, max: 200 }, { ing: "pan", rol: "carbo", min: 20, max: 60 }],
+    pasos: ["Hervi los huevos 9 minutos.", "Pelalos y serví con una tostada."],
+  },
+  {
+    id: "yogur-proteina", nombre: "Yogur con proteína y maní", tipos: ["colacion", "merienda", "desayuno"], minutos: 3, base: "lacteo", dulce: true,
+    partes: [{ ing: "yogur", g: 200 }, { ing: "proteina_polvo", rol: "proteina", min: 10, max: 40, paso: 5 }, { ing: "mani", rol: "grasa", min: 5, max: 30, paso: 5 }],
+    pasos: ["Mezclá el yogur con la proteína.", "Sumá el maní picado arriba."],
+  },
+  {
+    id: "atun-tostadas", nombre: "Tostadas con atún", tipos: ["colacion", "merienda", "cena"], minutos: 5, base: "pescado",
+    partes: [{ ing: "atun", rol: "proteina", min: 60, max: 170 }, { ing: "pan", rol: "carbo", min: 30, max: 100 }],
+    pasos: ["Tostá el pan.", "Escurrí el atún y ponelo arriba con limón."],
+  },
+  {
+    id: "sandwich-pollo", nombre: "Sándwich de pollo y queso", tipos: ["colacion", "almuerzo", "cena"], minutos: 10, base: "pollo",
+    partes: [{ ing: "pollo", rol: "proteina", min: 60, max: 180 }, { ing: "pan", rol: "carbo", min: 50, max: 150 }, { ing: "queso", g: 20 }],
+    pasos: ["Calentá el pollo en tiras.", "Armá el sándwich con el queso y tostalo."],
   },
 ];

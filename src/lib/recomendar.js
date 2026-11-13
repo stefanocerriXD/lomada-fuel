@@ -4,6 +4,10 @@ import { tipoSegunHora } from "./fechas.js";
 import { TIPOS_PRINCIPALES as TIPOS } from "./macros.js";
 
 const PESO_COMIDA = { desayuno: 0.25, almuerzo: 0.35, merienda: 0.15, cena: 0.25 };
+const PESO_COLACION = 0.12;
+// Después de cenar (o muy tarde) no se sugiere otra cena: va una colación, como mucho esto.
+const TECHO_NOCHE = 750;
+const TECHO_COLACION_DIA = 350;
 const CALORIAS_MINIMAS = 150;
 const REPETICIONES_AJUSTE = 3;
 
@@ -19,18 +23,89 @@ export function macrosFaltantes(metas, total) {
   return { kcal: resta("kcal"), p: resta("p"), c: resta("c"), g: resta("g") };
 }
 
-// La próxima comida sin cargar, empezando por la que corresponde a esta hora.
-export function comidaSugerida(cargadas) {
+const horaDe = (ahora) => ahora.getHours() + ahora.getMinutes() / 60;
+
+// Las comidas principales que todavía tienen sentido a esta hora y no se cargaron.
+function porDelante(cargadas, ahora) {
+  const h = horaDe(ahora);
+  if (h >= 23 || h < 5) return [];
   const orden = TIPOS.map((t) => t.id);
-  const desde = orden.indexOf(tipoSegunHora());
-  return orden.slice(desde).find((t) => !cargadas.includes(t)) || orden[desde];
+  return orden.slice(orden.indexOf(tipoSegunHora(ahora))).filter((t) => !cargadas.includes(t));
+}
+
+// La próxima comida sin cargar según la hora. Si ya cenaste o es muy tarde, una colación.
+export function comidaSugerida(cargadas, ahora = new Date()) {
+  return porDelante(cargadas, ahora)[0] || "colacion";
 }
 
 // Si todavía quedan comidas por delante, esta se lleva solo su parte de lo que falta.
-export function parteDeLaComida(tipo, cargadas) {
-  const orden = TIPOS.map((t) => t.id);
-  const pendientes = orden.slice(orden.indexOf(tipo)).filter((t) => t === tipo || !cargadas.includes(t));
-  return PESO_COMIDA[tipo] / pendientes.reduce((t, x) => t + PESO_COMIDA[x], 0);
+export function parteDeLaComida(tipo, cargadas, ahora = new Date()) {
+  const pendientes = porDelante(cargadas, ahora).filter((t) => t !== tipo);
+  const peso = tipo === "colacion" ? PESO_COLACION : PESO_COMIDA[tipo];
+  return peso / (peso + pendientes.reduce((t, x) => t + PESO_COMIDA[x], 0));
+}
+
+// En palabras, por qué se sugiere esto ahora.
+export function contextoHora(tipo, cargadas, ahora = new Date()) {
+  if (tipo !== "colacion") return null;
+  const hora = ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  if (!porDelante(cargadas, ahora).length) {
+    return cargadas.includes("cena") ? `Son las ${hora} y ya cenaste: van colaciones, nada de otra cena.` : `Son las ${hora}: van cosas para picar, nada pesado.`;
+  }
+  return "Una colación para llegar a la próxima comida.";
+}
+
+// ---- Preferencias escritas: "algo dulce", "sin huevo", "rápido", "con atún", "vegetariano" ----
+const normal = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const raiz = (w) => (w.length > 4 ? w.replace(/(es|s)$/, "") : w);
+const VACIAS = new Set(
+  "algo quiero quisiera tengo ganas de del un una unos unas que sea para y o comer comida la el las los con mucho muy me mi hoy tipo onda rico rica cosa porfa a al en por mas menos poco poca tiempo ahora noche tarde".split(" "),
+);
+const CLAVES = /^(dulce|dulces|salado|salada|rapido|rapida|facil|liviano|liviana|ligero|ligera|light|proteico|proteica|proteina|prote|vegetariano|vegetariana|veggie|vegano|vegana|sin|no|ni|nada|cocinar|toque)$/;
+const CARNES = ["pollo", "carne", "cerdo", "bife", "hamburguesa", "milanesa", "jamon", "atun", "merluza", "salmon", "pescado"];
+
+export function leerPreferencia(texto) {
+  const t = normal(texto).replace(/[^a-zñ\s]/g, " ");
+  const p = { dulce: null, rapido: false, liviano: false, proteico: false, vegetariano: false, sin: [], con: [], vacia: !t.trim() };
+  if (p.vacia) return p;
+  if (/\bdulce/.test(t)) p.dulce = true;
+  if (/\bsalad/.test(t)) p.dulce = false;
+  if (/rapid|facil|sin cocinar|al toque/.test(t)) p.rapido = true;
+  if (/livian|liger|light/.test(t)) p.liviano = true;
+  if (/proteic|proteina|\bprote\b/.test(t)) p.proteico = true;
+  if (/vegetarian|veggie|vegan/.test(t)) p.vegetariano = true;
+  const palabras = t.split(/\s+/).filter(Boolean);
+  palabras.forEach((w, i) => {
+    const previa = palabras[i - 1];
+    if (CLAVES.test(w) || VACIAS.has(w) || w.length < 3) return;
+    if (["sin", "no", "ni"].includes(previa) || (previa === "de" && palabras[i - 2] === "nada")) p.sin.push(raiz(w));
+    else p.con.push(raiz(w));
+  });
+  return p;
+}
+
+const textoDe = (r) => normal([r.nombre, r.base, ...r.partes.map((x) => INGREDIENTES[x.ing].nombre)].join(" "));
+const tiene = (r, w) => textoDe(r).includes(w);
+
+function segunPreferencia(opciones, pref) {
+  if (pref.vacia) return { opciones, nota: "" };
+  let lista = opciones.filter(({ receta: r }) =>
+    !pref.sin.some((w) => tiene(r, w)) &&
+    !(pref.vegetariano && CARNES.some((w) => tiene(r, w))) &&
+    (pref.dulce === null || Boolean(r.dulce) === pref.dulce) &&
+    (!pref.rapido || r.minutos <= 10));
+  const notas = [];
+  if (pref.con.length) {
+    const buscadas = pref.con.filter((w) => opciones.some((o) => tiene(o.receta, w)));
+    pref.con.filter((w) => !buscadas.includes(w)).forEach((w) => notas.push(`No tenemos recetas con "${w}" para esta comida.`));
+    if (buscadas.length) {
+      const con = lista.filter((o) => buscadas.some((w) => tiene(o.receta, w)));
+      lista = [...con, ...lista.filter((o) => !con.includes(o))];
+    }
+  }
+  if (pref.proteico) lista = [...lista].sort((a, b) => a.puntaje - a.macros.p / 40 - (b.puntaje - b.macros.p / 40));
+  if (!lista.length) return { opciones, nota: "Con esa preferencia no encontramos opciones para esta comida: van las de siempre." };
+  return { opciones: lista, nota: notas.join(" ") };
 }
 
 const pasoDe = (parte, ing) => parte.paso || ing.unidad?.[1] || 10;
@@ -81,12 +156,17 @@ function puntuar(m, o) {
   );
 }
 
-export function recomendar({ tipo, faltan, cargadas }) {
+export function recomendar({ tipo, faltan, cargadas, ahora = new Date(), preferencia = "" }) {
+  const pref = typeof preferencia === "string" ? leerPreferencia(preferencia) : preferencia;
   const cerrado = faltan.kcal < CALORIAS_MINIMAS;
-  const parte = cerrado ? 1 : parteDeLaComida(tipo, cargadas);
-  const objetivo = cerrado
+  const parte = cerrado ? 1 : parteDeLaComida(tipo, cargadas, ahora);
+  let objetivo = cerrado
     ? { kcal: CALORIAS_MINIMAS, p: 15, c: 10, g: 3 }
     : { kcal: faltan.kcal * parte, p: faltan.p * parte, c: faltan.c * parte, g: faltan.g * parte };
+  // Una colación nunca es una cena: si falta mucho, se achica todo en la misma proporción.
+  const techo = tipo === "colacion" ? (porDelante(cargadas, ahora).length ? TECHO_COLACION_DIA : TECHO_NOCHE) : Infinity;
+  const factor = Math.min(1, techo / Math.max(objetivo.kcal, 1), pref.liviano ? 0.75 : 1);
+  if (!cerrado && factor < 1) objetivo = { kcal: objetivo.kcal * factor, p: objetivo.p * factor, c: objetivo.c * factor, g: objetivo.g * factor };
 
   const opciones = RECETAS.filter((r) => r.tipos.includes(tipo) && (!cerrado || r.liviana))
     .map((receta) => {
@@ -102,7 +182,8 @@ export function recomendar({ tipo, faltan, cargadas }) {
   const variadas = opciones.filter((o) => coherente(o) && !vistas.has(o.receta.base) && vistas.add(o.receta.base));
   const resto = opciones.filter((o) => !variadas.includes(o));
 
-  return { cerrado, parte, objetivo, opciones: [...variadas, ...resto] };
+  const elegidas = segunPreferencia([...variadas, ...resto], pref);
+  return { cerrado, parte, objetivo, opciones: elegidas.opciones, nota: elegidas.nota };
 }
 
 export function comoItems(opcion) {

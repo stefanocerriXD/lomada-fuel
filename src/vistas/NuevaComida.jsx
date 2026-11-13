@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { BookmarkPlus, CalendarDays, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
-import { avisarGrupo, buscarAlimentos, buscarCodigo, reconocerFoto } from "../lib/api.js";
+import { avisarGrupo, buscarAlimentos, buscarCodigo, ia, reconocerFoto } from "../lib/api.js";
 import { itemsDeFoto } from "../lib/reconocer.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
@@ -23,8 +23,6 @@ import { createPortal } from "react-dom";
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 const horaDe = (momento) => new Date(momento).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
-// Si en Vercel todavía no está la clave de Gemini, el botón de la foto con IA no se muestra más en esta sesión.
-let iaApagada = false;
 const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
@@ -97,7 +95,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   // La IA reconoce los alimentos de la foto: se suman solos y después se ajustan las cantidades.
   const [reconociendo, setReconociendo] = useState(false);
   const [deFoto, setDeFoto] = useState(null);
-  const [conIA, setConIA] = useState(!iaApagada);
+  const [conIA, setConIA] = useState(!ia.apagada);
 
   // Lo que llegó de Apple Salud (MyFitnessPal escribe una entrada por comida): se precarga y solo falta la foto.
   const [deSalud, setDeSalud] = useState([]);
@@ -241,10 +239,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       setDeFoto({ ids: nuevos.map((i) => i.id), titulo });
       vibrar(14);
     } catch (err) {
-      if (err.apagado) {
-        iaApagada = true;
-        setConIA(false);
-      }
+      if (err.apagado) setConIA(false);
       if (pedido || !err.apagado) setError(err.message);
     } finally {
       setReconociendo(false);
@@ -403,7 +398,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
       ) : (
         <>
-          {!original && !items.length && !reconociendo && (
+          {!original && !items.length && !reconociendo && panel !== "codigo" && panel !== "mano" && (
             <div className="acciones-rapidas">
               {conIA && !carga.postre && (
                 <label className="tarjeta accion accion-foto">

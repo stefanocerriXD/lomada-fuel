@@ -78,6 +78,8 @@ export function unidadesDe(alimento) {
   };
 
   if (alimento.unidad) sumar(alimento.unidad);
+  // La porción que declara el producto va primero: es la medida natural de ese envase.
+  if (alimento.porcion) sumar({ nombre: sinCantidad(alimento.porcion.nombre), g: Number(alimento.porcion.g) });
   // Los alimentos de la lista propia traen sus medidas; lo guardado antes las recupera por el nombre.
   const propias = alimento.medidas || medidasDe(alimento.nombre);
   if (propias?.length) {
@@ -85,8 +87,6 @@ export function unidadesDe(alimento) {
     sumar(GRAMOS);
     return lista;
   }
-  // La porción que declara el producto va primero: es la medida natural de ese envase.
-  if (alimento.porcion) sumar({ nombre: sinCantidad(alimento.porcion.nombre), g: Number(alimento.porcion.g) });
   if (SECOS.test(nombre)) {
     const seco = Number(alimento.por100?.kcal) > 300;
     (seco ? [["porción en crudo", 80]] : [["plato", 200], ["taza", 160]]).forEach(([n, g]) => sumar({ nombre: n, g }));
