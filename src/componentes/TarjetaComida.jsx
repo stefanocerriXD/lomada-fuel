@@ -10,7 +10,7 @@ import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import IconoComida from "./IconoComida.jsx";
 
-const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷"];
+const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷", "🤮", "🏳️‍🌈"];
 
 // Las reacciones no ocupan lugar: un resumen con el total (que muestra quién reaccionó)
 // y un botón que abre los emojis solo cuando querés reaccionar.

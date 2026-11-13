@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { ImageUp, MessageCircle, Minus, Plus, Search, Trash2, X } from "lucide-react";
-import { avisarGrupo } from "../lib/api.js";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { prepararItem } from "../lib/unidades.js";
@@ -24,7 +23,7 @@ export default function EditorReceta({ receta, onCerrar, avisar }) {
 }
 
 function Formulario({ receta, onListo, avisar }) {
-  const { usuario, cargarExtras, agregarMensaje, emitirChat } = useDatos();
+  const { usuario, cargarExtras, mandarRecetaAlChat } = useDatos();
   const [compartida, setCompartida] = useState(receta.compartida !== false);
   const [nombre, setNombre] = useState(receta.nombre || "");
   const [porciones, setPorciones] = useState(receta.porciones || 8);
@@ -87,10 +86,9 @@ function Formulario({ receta, onListo, avisar }) {
 
   async function compartir() {
     try {
-      await compartirEnChat({ supabase, receta: { ...receta, compartida }, usuarioId: usuario.id, agregarMensaje, emitirChat, avisarGrupo });
+      await compartirEnChat({ supabase, receta: { ...receta, compartida }, usuarioId: usuario.id, mandarRecetaAlChat });
       if (!compartida) await cargarExtras();
-      vibrar(15);
-      avisar("Receta compartida en el chat");
+      vibrar(10);
       onListo();
     } catch {
       setError("No se pudo compartir.");

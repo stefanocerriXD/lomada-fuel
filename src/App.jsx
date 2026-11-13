@@ -149,7 +149,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer } = useDatos();
+  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
@@ -237,6 +237,15 @@ function Principal({ recuperando, onRecuperado }) {
     setVista("grupo");
     setSeccion("chat");
   }, [abrirPerfil, respuesta]);
+
+  // Compartir una receta lleva al chat con el mensaje escrito, desde cualquier pantalla.
+  useEffect(() => {
+    if (!recetaAlChat) return;
+    abrirPerfil(null);
+    setCarga(null);
+    setVista("grupo");
+    setSeccion("chat");
+  }, [abrirPerfil, recetaAlChat]);
 
   const abrirImportar = useCallback((fecha, filas) => {
     setCarga(null);

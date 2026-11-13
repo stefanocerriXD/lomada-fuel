@@ -227,6 +227,26 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
 
   const quitarMensaje = useCallback((id) => setMensajes((prev) => prev.filter((m) => m.id !== id)), []);
 
+  // Un mensaje eliminado queda en su lugar, vacío, como "Mensaje eliminado".
+  const marcarEliminado = useCallback((id) => {
+    setMensajes((prev) => prev.map((m) => (m.id === id
+      ? { ...m, texto: "", adjunto_path: null, sticker: null, receta_id: null, respuesta_comida: null, respuesta_mensaje: null, eliminado_en: m.eliminado_en || new Date().toISOString() }
+      : m)));
+    setReaccionesMensajes((prev) => prev.filter((r) => r.mensaje_id !== id));
+  }, []);
+
+  // Solo los propios y hasta 4 horas después (lo controla la base). La foto o el audio se borran también.
+  const eliminarMensaje = useCallback(async (id) => {
+    const { data: adjunto, error } = await supabase.rpc("eliminar_mensaje", { p_id: id });
+    if (error) throw error;
+    marcarEliminado(id);
+    emitirChat("eliminado", { id });
+    if (adjunto) supabase.storage.from("fotos").remove([adjunto]).catch(() => {});
+  }, [marcarEliminado, emitirChat]);
+
+  // Compartir una receta deja el mensaje escrito en el chat: se manda recién al tocar Enviar.
+  const [recetaAlChat, mandarRecetaAlChat] = useState(null);
+
   // Escribiendo, grabando o mandando una foto: se avisa al cambiar y cada tanto mientras dura.
   const actividadPropia = useRef({ que: null, cuando: 0 });
   const avisarActividad = useCallback((que) => {
@@ -435,6 +455,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       agregarMensaje(payload);
     });
     chat.on("broadcast", { event: "reaccion" }, ({ payload }) => payload && ponerReaccion(payload));
+    chat.on("broadcast", { event: "eliminado" }, ({ payload }) => payload?.id && marcarEliminado(payload.id));
     chat.on("broadcast", { event: "leido" }, ({ payload }) => payload && ponerLectura(payload));
     chat.on("broadcast", { event: "actividad" }, ({ payload }) => payload?.usuario_id && marcarActividad(payload.usuario_id, payload.que));
     chat.subscribe();
@@ -453,7 +474,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
         reintento.current = setTimeout(conectar, REINTENTO_MS);
       }
     });
-  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura, grupo.id]);
+  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura, marcarEliminado, grupo.id]);
 
   useEffect(() => {
     cargarMensajes().catch(() => setMensajesListos(true));
@@ -593,6 +614,9 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       cargarComida,
       respuesta,
       responder,
+      recetaAlChat,
+      mandarRecetaAlChat,
+      eliminarMensaje,
       mensajes,
       mensajesListos,
       presentes,
@@ -629,7 +653,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

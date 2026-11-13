@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { BookmarkPlus, ChefHat, MessageCircle } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
-import { avisarGrupo } from "../lib/api.js";
 import { useDatos } from "../lib/datos.jsx";
 import { macrosDeItem } from "../lib/macros.js";
 import { compartirEnChat, pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
@@ -34,7 +33,7 @@ export function useReceta(id) {
 }
 
 function Detalle({ receta, onCerrar, avisar }) {
-  const { usuario, perfiles, extras, cargarExtras, agregarMensaje, emitirChat } = useDatos();
+  const { usuario, perfiles, extras, cargarExtras, mandarRecetaAlChat } = useDatos();
   const [ocupado, setOcupado] = useState("");
   const propia = receta.usuario_id === usuario.id;
   const autor = perfiles[receta.usuario_id];
@@ -63,10 +62,9 @@ function Detalle({ receta, onCerrar, avisar }) {
   async function compartir() {
     setOcupado("compartir");
     try {
-      await compartirEnChat({ supabase, receta, usuarioId: usuario.id, agregarMensaje, emitirChat, avisarGrupo });
+      await compartirEnChat({ supabase, receta, usuarioId: usuario.id, mandarRecetaAlChat });
       if (propia && receta.compartida === false) await cargarExtras();
-      vibrar(15);
-      avisar("Receta compartida en el chat");
+      vibrar(10);
       onCerrar();
     } catch {
       avisar("No se pudo compartir");

@@ -1,6 +1,6 @@
 import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Award, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
+import { Award, Ban, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
@@ -21,15 +21,19 @@ const CLAVE_AVISO = "lomada-aviso-cerrado";
 const TOQUE_LARGO_MS = 380;
 const DESLIZAR_PARA_RESPONDER = 60;
 const GIF_MAXIMO = 8 * 1024 * 1024;
-const REACCIONES = ["❤️", "😂", "🔥", "👏", "🤤", "🐷"];
-const STICKERS = ["🔥", "💪", "🥩", "🍖", "🍝", "🍕", "🍔", "🌮", "🥗", "⚽", "🏆", "😂", "🤤", "🐷", "👀", "💀"];
+const REACCIONES = ["❤️", "😂", "🔥", "👏", "🤤", "🐷", "🤮", "🏳️‍🌈"];
+const STICKERS = ["🔥", "💪", "🥩", "🍖", "🍝", "🍕", "🍔", "🌮", "🥗", "⚽", "🏆", "😂", "🤤", "🐷", "🤮", "🏳️‍🌈", "👀", "💀"];
+const HORAS_PARA_ELIMINAR = 4;
+const sePuedeEliminar = (m, yoId) => m.usuario_id === yoId && !m.pendiente && !m.eliminado_en && Date.now() - new Date(m.creado_en).getTime() < HORAS_PARA_ELIMINAR * 3600000;
+// Los mensajes de antes al compartir una receta traían este texto automático: no se muestra.
+const TEXTO_RECETA_VIEJO = "Compartió una receta:";
 
 // Los resúmenes del bot traen emojis guardados en la base.
 const sinEmojis = (texto) => texto.replace(/\p{Extended_Pictographic}️?\s*/gu, "");
 const normal = (t) => String(t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 const escapar = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const esAudio = (ruta) => /\.(m4a|mp4|webm|ogg|aac)$/i.test(ruta || "");
-const resumenDe = (m) => m.texto || (m.sticker ? `Sticker ${m.sticker}` : esAudio(m.adjunto_path) ? "Audio" : m.adjunto_path ? "Foto" : "");
+const resumenDe = (m) => (m.eliminado_en ? "Mensaje eliminado" : "") || m.texto || (m.sticker ? `Sticker ${m.sticker}` : esAudio(m.adjunto_path) ? "Audio" : m.adjunto_path ? "Foto" : "");
 const ESCRIBIENDO_MS = 4000;
 
 // Cada integrante con un color fijo y distinto en el chat; siempre el mismo para la misma persona.
@@ -143,6 +147,7 @@ function CitaMensaje({ id }) {
   const { usuario, mensajes, perfiles, fotos } = useDatos();
   const citado = mensajes.find((m) => m.id === id);
   if (!citado) return <span className="burbuja-cita sin-datos">Mensaje anterior</span>;
+  if (citado.eliminado_en) return <span className="burbuja-cita sin-datos">Mensaje eliminado</span>;
   const nombre = citado.usuario_id === usuario.id ? "Vos" : perfiles[citado.usuario_id]?.nombre || "Bot del grupo";
   const foto = citado.adjunto_path && fotos[citado.adjunto_path];
 
@@ -277,7 +282,7 @@ function LineaLogro({ logro, perfil, onPerfil }) {
 
 // Memorizado: escribir o recibir algo no redibuja todos los mensajes, solo los que cambian.
 const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onVerReacciones, onPerfil, onAcciones, onResponder, onZoom, onVerReceta }) {
-  const { marcado, eventos } = useToqueLargo(() => onAcciones(m));
+  const { marcado, eventos } = useToqueLargo(() => !m.eliminado_en && onAcciones(m));
   // Deslizar a la derecha responde, como en WhatsApp.
   const x = useMotionValue(0);
   const flecha = useTransform(x, [0, DESLIZAR_PARA_RESPONDER], [0, 1]);
@@ -298,9 +303,9 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
         <div className="chat-columna">
           <motion.span className="deslizar-responder" style={{ opacity: flecha, scale: flecha }} aria-hidden="true"><Reply size={18} /></motion.span>
           <motion.div
-            className={`${soloSticker ? "burbuja burbuja-sticker" : "burbuja"}${marcado ? " marcada" : ""}`}
+            className={`${soloSticker ? "burbuja burbuja-sticker" : "burbuja"}${marcado ? " marcada" : ""}${m.eliminado_en ? " eliminada" : ""}`}
             {...eventos}
-            drag="x"
+            drag={m.eliminado_en ? false : "x"}
             dragDirectionLock
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={{ left: 0, right: 0.55 }}
@@ -317,6 +322,7 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
               if (gesto.offset.x > DESLIZAR_PARA_RESPONDER) onResponder(m);
             }}
           >
+            {m.eliminado_en && <p className="mensaje-eliminado"><Ban size={14} aria-hidden="true" /> {propio ? "Eliminaste este mensaje" : "Mensaje eliminado"}</p>}
             {!propio && inicio && <strong className="autor" style={{ color: colorDeNombre(perfiles, m.usuario_id) }}>{perfil?.nombre || "Amigo"}{perfil?.caca && " 💩"}</strong>}
             {m.respuesta_mensaje && <CitaMensaje id={m.respuesta_mensaje} />}
             {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={onZoom} />}
@@ -329,7 +335,12 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
               </button>
             )}
             {m.sticker && <span className="sticker" role="img" aria-label="Sticker">{m.sticker}</span>}
-            {m.receta_id ? <RecetaEnChat id={m.receta_id} onVer={onVerReceta} /> : m.texto && <p><ConMenciones texto={m.texto} /></p>}
+            {m.receta_id ? (
+              <>
+                {m.texto && !m.texto.startsWith(TEXTO_RECETA_VIEJO) && <p><ConMenciones texto={m.texto} /></p>}
+                <RecetaEnChat id={m.receta_id} onVer={onVerReceta} />
+              </>
+            ) : m.texto && <p><ConMenciones texto={m.texto} /></p>}
             <time dateTime={m.creado_en}>{m.pendiente ? <Clock3 size={11} aria-label="Enviando" /> : hora(m.creado_en)}</time>
           </motion.div>
           <Reacciones mensajeId={m.id} lista={reacciones} perfiles={perfiles} yoId={yoId} onVer={onVerReacciones} />
@@ -341,8 +352,27 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
 });
 
 function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
-  const { usuario, perfiles, reaccionesMensajes, alternarReaccionMensaje } = useDatos();
+  const { usuario, perfiles, reaccionesMensajes, alternarReaccionMensaje, eliminarMensaje } = useDatos();
+  const [confirmar, setConfirmar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  useEffect(() => setConfirmar(false), [mensaje?.id]);
   if (!mensaje) return <Hoja abierta={false} onCerrar={onCerrar} titulo="Opciones" />;
+  const puedeEliminar = sePuedeEliminar(mensaje, usuario.id);
+
+  async function eliminar() {
+    if (!confirmar) return setConfirmar(true);
+    setEliminando(true);
+    try {
+      await eliminarMensaje(mensaje.id);
+      vibrar(15);
+      avisar("Mensaje eliminado");
+      onCerrar();
+    } catch (err) {
+      avisar(/no_se_puede/.test(err?.message || "") ? "Ya no se puede eliminar: pasaron más de 4 horas" : "No se pudo eliminar");
+    } finally {
+      setEliminando(false);
+    }
+  }
   const delMensaje = reaccionesMensajes.filter((r) => r.mensaje_id === mensaje.id);
   const mias = new Set(delMensaje.filter((r) => r.usuario_id === usuario.id).map((r) => r.emoji));
 
@@ -366,6 +396,11 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
         </div>
         <button className="accion-mensaje" onClick={() => { onResponder(mensaje); onCerrar(); }}><Reply size={19} /> Responder</button>
         {mensaje.texto && <button className="accion-mensaje" onClick={copiar}><Copy size={18} /> Copiar texto</button>}
+        {puedeEliminar && (
+          <button className={confirmar ? "accion-mensaje peligro" : "accion-mensaje"} onClick={eliminar} disabled={eliminando}>
+            <Trash2 size={18} /> {eliminando ? "Eliminando…" : confirmar ? "¿Seguro? Tocá de nuevo para eliminarlo para todos" : "Eliminar para todos"}
+          </button>
+        )}
         {delMensaje.length > 0 && (
           <ul className="quienes-reaccionaron" aria-label="Quién reaccionó">
             {delMensaje.map((r) => (
@@ -434,7 +469,7 @@ function VerReacciones({ ver, onCerrar }) {
 
 export default function Chat({ avisar }) {
   const {
-    castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, quitarMensaje, emitirChat, respuesta, responder,
+    castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, quitarMensaje, emitirChat, respuesta, responder, recetaAlChat, mandarRecetaAlChat,
     lecturas, lecturasListas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, abrirPerfil, extras,
   } = useDatos();
   const logrosChat = useMemo(
@@ -607,15 +642,34 @@ export default function Chat({ avisar }) {
     return true;
   }
 
+  // Al compartir una receta llega acá con el mensaje ya escrito: se puede cambiar y se manda con Enviar.
+  useEffect(() => {
+    if (!recetaAlChat) return;
+    const propia = recetaAlChat.usuario_id === usuario.id;
+    setTexto(propia ? `Les paso mi receta: ${recetaAlChat.nombre} 🍽️` : `Miren esta receta: ${recetaAlChat.nombre} 🍽️`);
+    setCitado(null);
+    requestAnimationFrame(() => campo.current?.focus());
+  }, [recetaAlChat, usuario.id]);
+
+  function cancelarReceta() {
+    mandarRecetaAlChat(null);
+    setTexto("");
+  }
+
   async function enviar(e) {
     e.preventDefault();
     const limpio = texto.trim();
     if (!limpio) return;
+    const receta = recetaAlChat;
     setTexto("");
     setMencion(null);
     clearTimeout(reposo.current);
     avisarActividad(null);
-    if (!(await mandar({}, limpio))) setTexto(limpio);
+    if (receta) mandarRecetaAlChat(null);
+    if (!(await mandar(receta ? { receta_id: receta.id } : {}, limpio))) {
+      setTexto(limpio);
+      if (receta) mandarRecetaAlChat(receta);
+    }
   }
 
   useEffect(() => () => {
@@ -752,6 +806,13 @@ export default function Chat({ avisar }) {
           {fotos[respuesta.foto_path] ? <img src={fotos[respuesta.foto_path]} alt="" /> : <IconoComida tipo={respuesta.tipo} />}
           <span>Respondiendo a <strong>{respuesta.usuario_id === usuario.id ? "tu foto" : perfiles[respuesta.usuario_id]?.nombre || "Amigo"}</strong></span>
           <button className="boton-icono chico" onClick={() => responder(null)} aria-label="Cancelar respuesta"><X size={16} /></button>
+        </div>
+      )}
+      {recetaAlChat && (
+        <div className="chat-respondiendo chat-receta">
+          <ChefHat size={18} aria-hidden="true" />
+          <span>Receta: <strong>{recetaAlChat.nombre}</strong> · tocá Enviar para mandarla</span>
+          <button className="boton-icono chico" onClick={cancelarReceta} aria-label="No mandar la receta"><X size={16} /></button>
         </div>
       )}
       {citado && (

@@ -48,16 +48,12 @@ export function buscarRecetas(recetas, texto) {
 }
 
 // Mandar una receta por el chat: un mensaje con su nombre que lleva la receta adentro.
-export async function compartirEnChat({ supabase, receta, usuarioId, agregarMensaje, emitirChat, avisarGrupo }) {
+// Deja la receta lista en el chat con un mensaje escrito; se manda cuando la persona toca Enviar.
+// Para que los demás la puedan abrir, una receta propia oculta pasa a estar a la vista del grupo.
+export async function compartirEnChat({ supabase, receta, usuarioId, mandarRecetaAlChat }) {
   if (receta.usuario_id === usuarioId && receta.compartida === false) {
     const { error } = await supabase.from("recetas_propias").update({ compartida: true }).eq("id", receta.id);
     if (error) throw error;
   }
-  const fila = { id: crypto.randomUUID(), usuario_id: usuarioId, texto: `Compartió una receta: ${receta.nombre}`.slice(0, 1000), receta_id: receta.id };
-  const { data, error } = await supabase.from("mensajes").insert(fila).select().single();
-  if (error) throw error;
-  agregarMensaje(data);
-  emitirChat("mensaje", data);
-  avisarGrupo("mensaje", data.id);
-  return data;
+  mandarRecetaAlChat({ id: receta.id, nombre: receta.nombre, usuario_id: receta.usuario_id });
 }
