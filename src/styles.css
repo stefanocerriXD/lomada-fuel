@@ -2112,3 +2112,16 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .visor-miniaturas button.activa { border-color: #fff; opacity: 1; }
 .visor-miniaturas img { width: 100%; height: 100%; object-fit: cover; }
 .nota-salud > svg { color: #e5383b; }
+
+/* Dictar la comida */
+.panel-voz { display: flex; flex-direction: column; gap: 10px; }
+.panel-voz textarea { width: 100%; resize: vertical; min-height: 64px; }
+.boton-microfono { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 6px; text-align: left; }
+.boton-microfono > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.boton-microfono small { color: var(--tinta-2); font-size: 0.8rem; }
+.microfono-circulo { position: relative; display: grid; place-items: center; width: 56px; height: 56px; flex: none; border-radius: 50%; background: var(--acento); color: var(--sobre-acento); }
+.microfono-circulo i { position: absolute; inset: 0; border-radius: 50%; background: var(--acento); }
+.microfono-circulo svg { position: relative; }
+.boton-microfono.escuchando .microfono-circulo { background: #e5383b; }
+.boton-microfono.escuchando .microfono-circulo i { background: #e5383b; }
+.enlace-buscar { display: inline; padding: 0; color: var(--sobre-acento-suave); font-weight: 700; text-decoration: underline; }

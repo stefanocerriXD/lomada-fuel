@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BookmarkPlus, CalendarDays, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
+import { BookmarkPlus, CalendarDays, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Mic, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
-import { avisarGrupo, buscarAlimentos, buscarCodigo, ia, reconocerFoto } from "../lib/api.js";
+import { avisarGrupo, buscarAlimentos, buscarCodigo, ia, reconocerFoto, reconocerTexto } from "../lib/api.js";
+import { itemsDelDictado, partesDelDictado } from "../lib/dictado.js";
 import { itemsDeFoto } from "../lib/reconocer.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
@@ -451,6 +452,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         </div>
         {!buscando && (
           <>
+            <button className={panel === "voz" ? "boton-icono activo" : "boton-icono"} onClick={() => alternarPanel("voz")} aria-label="Dictar la comida" aria-pressed={panel === "voz"}><Mic size={20} /></button>
             <button className={panel === "codigo" ? "boton-icono activo" : "boton-icono"} onClick={() => alternarPanel("codigo")} aria-label="Escanear código" aria-pressed={panel === "codigo"}><ScanBarcode size={20} /></button>
             <button className={panel === "mano" ? "boton-icono activo" : "boton-icono"} onClick={() => alternarPanel("mano")} aria-label="Cargar a mano" aria-pressed={panel === "mano"}><PenLine size={19} /></button>
           </>
@@ -461,7 +463,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
       ) : (
         <>
-          {!original && !items.length && !reconociendo && panel !== "codigo" && panel !== "mano" && (
+          {!original && !items.length && !reconociendo && panel !== "codigo" && panel !== "mano" && panel !== "voz" && (
             <div className="acciones-rapidas">
               {conIA && !carga.postre && (
                 <label className="tarjeta accion accion-foto">
@@ -487,6 +489,20 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           )}
 
           {panel === "importar" && <div className="tarjeta-interna"><Lector onLeido={alLeer} /></div>}
+          {panel === "voz" && (
+            <PanelVoz
+              propios={historial.todos}
+              onListo={(nuevos, titulo, sinEncontrar = []) => {
+                setItems((prev) => [...prev, ...nuevos.map((i) => (carga.postre ? { ...i, postre: true } : i))]);
+                setDescripcion((d) => d || titulo || "");
+                setDeFoto({ ids: nuevos.map((i) => i.id), titulo: titulo || "", origen: "voz", sinEncontrar });
+                setPanel(null);
+                setError("");
+                vibrar(14);
+              }}
+              onBuscar={(frase) => { setPanel(null); setTexto(frase); }}
+            />
+          )}
           {panel === "codigo" && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
           {panel === "mano" && <CargaManual key={importado?.clave || "vacia"} inicial={importado} onAgregar={agregar} />}
 
@@ -506,7 +522,14 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           {deFoto && deFoto.ids.some((id) => items.some((i) => i.id === id)) && (
             <div className="nota-ia">
               <Sparkles size={15} aria-hidden="true" />
-              <span>Lo reconoció la IA en la foto. Revisá las cantidades.</span>
+              <span>
+                {deFoto.origen === "voz" ? "Lo cargamos con lo que dictaste. Revisá las cantidades." : "Lo reconoció la IA en la foto. Revisá las cantidades."}
+                {deFoto.sinEncontrar?.length > 0 && (
+                  <> No encontramos: {deFoto.sinEncontrar.map((s, n) => (
+                    <button key={s} type="button" className="enlace-buscar" onClick={() => setTexto(s)}>{n ? ", " : ""}{s}</button>
+                  ))}. Tocalo para buscarlo.</>
+                )}
+              </span>
               <button type="button" className="boton-texto" onClick={deshacerFoto}><Undo2 size={14} /> Deshacer</button>
             </div>
           )}
@@ -724,7 +747,7 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
     <motion.div className="fila-item" layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
       <div className="fila-datos">
         <strong>{item.nombre}</strong>
-        <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}{item.ia === "sugerencia" ? " · sugerido por la IA" : item.ia ? " · por la foto" : ""}</span>
+        <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}{item.ia === "sugerencia" ? " · sugerido por la IA" : item.ia === "voz" ? " · dictado" : item.ia ? " · por la foto" : ""}</span>
       </div>
       <button className="boton-icono chico" onClick={onQuitar} aria-label={`Quitar ${item.nombre}`}><Trash2 size={16} /></button>
       {item.por100 && (
@@ -871,6 +894,94 @@ export function Resultados({ texto, onElegir, propios }) {
         <p className="nota">Sin resultados. Probá con otra palabra o cargalo a mano.</p>
       )}
     </div>
+  );
+}
+
+// Dictar la comida: el micrófono del celu pasa la voz a texto (gratis) y la IA lo arma en alimentos.
+// Si el navegador no deja dictar, se escribe (o se usa el micrófono del teclado).
+function PanelVoz({ propios, onListo, onBuscar }) {
+  const Reconocedor = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+  const [texto, setTexto] = useState("");
+  const [escuchando, setEscuchando] = useState(false);
+  const [procesando, setProcesando] = useState(false);
+  const [aviso, setAviso] = useState("");
+  const reconocedor = useRef(null);
+  const ultimo = useRef("");
+  useEffect(() => () => reconocedor.current?.abort?.(), []);
+
+  async function cargar(frase = texto) {
+    const limpia = frase.trim();
+    if (!limpia || procesando) return;
+    setProcesando(true);
+    setAviso("");
+    try {
+      if (!ia.apagada) {
+        try {
+          const r = await reconocerTexto(limpia);
+          if (r.esComida && r.alimentos.length) return onListo(itemsDeFoto(r.alimentos, propios, "voz"), r.titulo);
+        } catch {
+          // Sin IA o sin cupo: se arma con la lista propia.
+        }
+      }
+      const { items: encontrados, sinEncontrar } = itemsDelDictado(limpia, propios);
+      if (encontrados.length) return onListo(encontrados, "", sinEncontrar);
+      setAviso("No encontramos esos alimentos. Buscalos a mano.");
+      onBuscar(partesDelDictado(limpia)[0] || limpia);
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  function escuchar() {
+    if (escuchando) return reconocedor.current?.stop();
+    const r = new Reconocedor();
+    r.lang = "es-AR";
+    r.interimResults = true;
+    r.continuous = false;
+    const antes = texto.trim() ? `${texto.trim()}, ` : "";
+    r.onresult = (e) => {
+      const dicho = antes + [...e.results].map((x) => x[0].transcript).join(" ");
+      ultimo.current = dicho;
+      setTexto(dicho);
+    };
+    r.onerror = (e) => setAviso(e.error === "not-allowed" || e.error === "service-not-allowed" ? "Permití el micrófono para dictar, o usá el micrófono del teclado." : "No te escuchamos bien. Probá de nuevo.");
+    // Al terminar de hablar, se carga solo.
+    r.onend = () => {
+      setEscuchando(false);
+      if (ultimo.current.trim() && ultimo.current.trim() !== antes.trim()) cargar(ultimo.current);
+    };
+    reconocedor.current = r;
+    ultimo.current = "";
+    setAviso("");
+    try {
+      r.start();
+      setEscuchando(true);
+      vibrar(10);
+    } catch {
+      setAviso("No se pudo usar el micrófono. Escribilo o usá el micrófono del teclado.");
+    }
+  }
+
+  return (
+    <motion.div className="tarjeta-interna panel-voz" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+      {Reconocedor && (
+        <button type="button" className={escuchando ? "boton-microfono escuchando" : "boton-microfono"} onClick={escuchar} disabled={procesando} aria-pressed={escuchando}>
+          <span className="microfono-circulo" aria-hidden="true">
+            {escuchando && <motion.i animate={{ scale: [1, 1.5], opacity: [0.6, 0] }} transition={{ repeat: Infinity, duration: 1.1 }} />}
+            <Mic size={26} />
+          </span>
+          <span>
+            <strong>{escuchando ? "Te escucho… tocá para terminar" : "Tocá y decí qué comiste"}</strong>
+            <small>Ej: dos empanadas de carne, una ensalada y una coca zero</small>
+          </span>
+        </button>
+      )}
+      <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2} placeholder={Reconocedor ? "Acá aparece lo que dijiste (lo podés corregir)" : "Escribí o dictá con el micrófono del teclado: dos empanadas, una ensalada…"} aria-label="Lo que comiste, en una frase" />
+      {aviso && <p className="nota">{aviso}</p>}
+      <button type="button" className="boton" onClick={() => cargar()} disabled={!texto.trim() || procesando}>
+        {procesando ? "Armando la comida…" : "Cargar estos alimentos"}
+      </button>
+    </motion.div>
   );
 }
 

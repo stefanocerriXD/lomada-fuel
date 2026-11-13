@@ -31,6 +31,22 @@ export async function avisarGrupo(tipo, id, nombre) {
   }
 }
 
+// Lo que dictaste ("dos empanadas y una coca"): Gemini lo pasa a alimentos con cantidades.
+export async function reconocerTexto(texto) {
+  const resp = await fetch("/api/reconocer", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(await encabezados()) },
+    body: JSON.stringify({ modo: "texto", texto }),
+  });
+  if (resp.status === 503) {
+    ia.apagada = true;
+    const error = new Error("La IA todavía no está activada");
+    error.apagado = true;
+    throw error;
+  }
+  return leer(resp);
+}
+
 // "¿Qué puedo comer?" con lo que escribiste: Gemini arma 3 opciones para lo que te falta del día.
 export async function sugerirConIA(datos) {
   const resp = await fetch("/api/sugerir", {

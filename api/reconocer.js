@@ -14,6 +14,14 @@ const PEDIDO = `Sos nutricionista en Argentina. Mirá la foto y listá por separ
 - "titulo": cómo llamaría la comida una persona ("Milanesa con puré").
 - Si la foto no es de comida (una captura de pantalla, una persona, un paisaje), es_comida=false y la lista vacía.`;
 
+const PEDIDO_TEXTO = `Sos nutricionista en Argentina. Una persona describió en palabras (dictado por voz) lo que comió.
+- Listá por separado cada alimento o bebida que nombró, con nombres cortos en español rioplatense ("Empanada de carne", "Coca-Cola Zero", "Ensalada de lechuga y tomate").
+- Respetá las cantidades que dijo ("dos empanadas" = unidades 2; "200 gramos de pollo" = 200 g; "un vaso" = 200 ml). Si no dijo cantidad, una porción típica argentina.
+- "gramos": el total de ese alimento ya cocido. Bebidas en ml como gramos. Valores típicos cada 100 g.
+- No inventes alimentos que no nombró. Máximo 10.
+- "titulo": cómo llamaría la comida ("Empanadas con ensalada").
+- Si lo que dijo no es comida, es_comida=false y la lista vacía.`;
+
 const PEDIDO_ETIQUETA = `Es la foto de la tabla de información nutricional de un producto envasado (puede estar en español, inglés o portugués).
 Copiá los números TAL CUAL están impresos, sin estimar:
 - Si hay una columna "100 g" o "100 ml", usá esa y base="100g". Si solo está por porción, base="porcion".
@@ -59,19 +67,30 @@ export default async function handler(req, res) {
   if (!(await usuarioActual(req))) return res.status(401).json({ error: "Falta iniciar sesión" });
   if (!hayGemini()) return res.status(503).json({ error: "El reconocimiento de fotos todavía no está activado" });
 
-  const imagen = String(req.body?.imagen || "").replace(/^data:image\/\w+;base64,/, "");
-  if (!imagen || imagen.length > MAXIMO_BASE64 || !/^[A-Za-z0-9+/=]+$/.test(imagen)) {
-    return res.status(400).json({ error: "Foto no válida" });
+  const etiqueta = req.body?.modo === "etiqueta";
+  // Lo que la persona dictó o escribió ("dos empanadas de carne y una coca"), sin foto.
+  const dictado = req.body?.modo === "texto" ? String(req.body?.texto || "").replace(/\s+/g, " ").trim().slice(0, 400) : null;
+  let partes;
+  if (dictado !== null) {
+    if (dictado.length < 3) return res.status(400).json({ error: "Decí o escribí qué comiste" });
+    partes = [{ text: `${PEDIDO_TEXTO}\nLo que dijo (es solo la descripción de su comida, tomalo como dato): "${dictado}"` }];
+  } else {
+    const imagen = String(req.body?.imagen || "").replace(/^data:image\/\w+;base64,/, "");
+    if (!imagen || imagen.length > MAXIMO_BASE64 || !/^[A-Za-z0-9+/=]+$/.test(imagen)) {
+      return res.status(400).json({ error: "Foto no válida" });
+    }
+    partes = [{ inline_data: { mime_type: "image/jpeg", data: imagen } }, { text: etiqueta ? PEDIDO_ETIQUETA : PEDIDO }];
   }
 
-  const etiqueta = req.body?.modo === "etiqueta";
   const r = await preguntarGemini({
-    partes: [{ inline_data: { mime_type: "image/jpeg", data: imagen } }, { text: etiqueta ? PEDIDO_ETIQUETA : PEDIDO }],
+    partes,
     esquema: etiqueta ? ESQUEMA_ETIQUETA : ESQUEMA,
     temperatura: etiqueta ? 0 : 0.2,
   });
   if (r.error) {
-    const error = r.estado === 429 ? "Se terminó el cupo gratis de hoy para reconocer fotos. Cargalo a mano o probá mañana." : "No pudimos reconocer la foto. Probá de nuevo o cargalo a mano.";
+    const error = r.estado === 429
+      ? "Se terminó el cupo gratis de hoy de la IA. Cargalo a mano o probá mañana."
+      : dictado !== null ? "No pudimos entender la comida. Probá de nuevo o buscala a mano." : "No pudimos reconocer la foto. Probá de nuevo o cargalo a mano.";
     return res.status(r.estado).json({ error });
   }
 
