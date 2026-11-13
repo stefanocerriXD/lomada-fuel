@@ -118,6 +118,25 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const usadasDeSalud = useMemo(() => new Set(comidas.filter((c) => c.usuario_id === usuario.id).flatMap((c) => (c.alimentos || []).map((a) => a.salud_id).filter(Boolean))), [comidas, usuario.id]);
   const sugeridasDeSalud = deSalud.filter((e) => !usadasDeSalud.has(e.id) && !items.some((i) => i.salud_id === e.id)).slice(0, 3);
 
+  // Al tocar +, si MyFitnessPal (vía Apple Salud) ya mandó la comida de esta hora, se carga sola: solo falta la foto.
+  const saludAutomatica = useRef(false);
+  const [precargada, setPrecargada] = useState(null);
+  useEffect(() => {
+    if (saludAutomatica.current || original || carga.postre || carga.receta || carga.buscar || !deSalud.length) return;
+    saludAutomatica.current = true;
+    if (items.length) return;
+    const actual = carga.tipo || tipo;
+    const candidata = deSalud.find((e) => !usadasDeSalud.has(e.id) && tipoSegunHora(e.momento) === actual);
+    if (!candidata) return;
+    usarDeSalud(candidata);
+    setPrecargada(candidata);
+  }, [deSalud]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function deshacerPrecarga() {
+    setItems((prev) => prev.filter((i) => i.salud_id !== precargada.id));
+    setPrecargada(null);
+  }
+
   function usarDeSalud(e) {
     const t = carga.tipo || tipoSegunHora(e.momento);
     setTipo(t);
@@ -471,6 +490,13 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           {panel === "codigo" && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
           {panel === "mano" && <CargaManual key={importado?.clave || "vacia"} inicial={importado} onAgregar={agregar} />}
 
+          {precargada && items.some((i) => i.salud_id === precargada.id) && (
+            <div className="nota-ia nota-salud">
+              <HeartPulse size={15} aria-hidden="true" />
+              <span>Lo trajimos de MyFitnessPal (Apple Salud), cargado a las {horaDe(precargada.momento)}. Sumá la foto y publicá.</span>
+              <button type="button" className="boton-texto" onClick={deshacerPrecarga}><Undo2 size={14} /> Deshacer</button>
+            </div>
+          )}
           {reconociendo && (
             <p className="buscando reconociendo" role="status">
               <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: "linear" }}><LoaderCircle size={17} /></motion.span>

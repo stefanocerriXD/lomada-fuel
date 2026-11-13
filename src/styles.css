@@ -2111,3 +2111,4 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .visor-miniaturas button { width: 46px; height: 46px; overflow: hidden; border-radius: 10px; border: 2px solid transparent; opacity: 0.6; background: rgb(255 255 255 / 12%); }
 .visor-miniaturas button.activa { border-color: #fff; opacity: 1; }
 .visor-miniaturas img { width: 100%; height: 100%; object-fit: cover; }
+.nota-salud > svg { color: #e5383b; }
