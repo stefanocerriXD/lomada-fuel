@@ -6,7 +6,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { ia, sugerirConIA } from "../lib/api.js";
 import { alimentosUsados } from "../lib/historial.js";
 import { itemsDeFoto } from "../lib/reconocer.js";
-import { comidaSugerida, comoItems, contextoHora, macrosFaltantes, metasDelDia, queFalta, recomendar, textoCantidad } from "../lib/recomendar.js";
+import { comidaSugerida, comoItems, contextoHora, densidadDe, macrosFaltantes, metasDelDia, objetivoDePersona, queFalta, recomendar, textoCantidad, TEXTO_OBJETIVO } from "../lib/recomendar.js";
 import IconoComida from "./IconoComida.jsx";
 import { Hoja, vibrar } from "./Base.jsx";
 
@@ -19,6 +19,7 @@ const plural = (texto, n) => (n > 1 ? texto.split(" ").map((w) => (/^[a-záéí�
 
 export default function Recomendador({ yo, salud, total, cargadas, fecha, onCargar }) {
   const metas = useMemo(() => metasDelDia(yo, salud), [yo, salud]);
+  const meta = useMemo(() => objetivoDePersona(salud), [salud]);
   const faltan = useMemo(() => macrosFaltantes(metas, total), [metas, total]);
   const [abierto, setAbierto] = useState(false);
   // La hora se toma al abrir: a las 23 y con la cena cargada no tiene sentido otra cena.
@@ -45,6 +46,7 @@ export default function Recomendador({ yo, salud, total, cargadas, fecha, onCarg
             total={total}
             cargadas={cargadas}
             ahora={ahora}
+            meta={meta}
             onElegir={(tipo, opcion) => {
               setAbierto(false);
               onCargar({ tipo, fecha, receta: { descripcion: opcion.receta.nombre, items: comoItems(opcion) } });
@@ -60,7 +62,7 @@ export default function Recomendador({ yo, salud, total, cargadas, fecha, onCarg
   );
 }
 
-function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir, onElegirIA }) {
+function Opciones({ inicial, faltan, metas, total, cargadas, ahora, meta, onElegir, onElegirIA }) {
   const { usuario, comidas, comidasLogros } = useDatos();
   const historial = useMemo(() => alimentosUsados(comidasLogros || comidas, usuario.id), [comidasLogros, comidas, usuario.id]);
   const [tipo, setTipo] = useState(inicial);
@@ -79,7 +81,7 @@ function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir, on
     setErrorIA("");
     try { localStorage.setItem(CLAVE_PREFERENCIA, valor); } catch { /* opcional */ }
   };
-  const resultado = useMemo(() => recomendar({ tipo, faltan, cargadas, ahora, preferencia }), [tipo, faltan, cargadas, ahora, preferencia]);
+  const resultado = useMemo(() => recomendar({ tipo, faltan, cargadas, ahora, preferencia, meta }), [tipo, faltan, cargadas, ahora, preferencia, meta]);
   const contexto = contextoHora(tipo, cargadas, ahora);
 
   async function pedirIA() {
@@ -91,11 +93,12 @@ function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir, on
     try {
       const hora = ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
       const habituales = [...historial.frecuentes, ...historial.recientes].map((h) => h.alimento.nombre).filter((n, i, l) => l.indexOf(n) === i).slice(0, 20);
-      const { opciones } = await sugerirConIA({ pedido: preferencia, tipo, hora, objetivo: resultado.objetivo, habituales });
+      const { opciones } = await sugerirConIA({ pedido: preferencia, tipo, hora, objetivo: resultado.objetivo, habituales, meta });
       if (vez !== pedidoActual.current) return;
       setDeIA(opciones.map((o) => {
         const items = itemsDeFoto(o.ingredientes, historial.todos, "sugerencia");
-        return { ...o, items, macros: sumarItems(items) };
+        const macros = sumarItems(items);
+        return { ...o, items, macros, densidad: densidadDe({ macros, partes: items.map((x) => ({ gramos: Number(x.gramos) || 0 })) }) };
       }));
       vibrar(12);
     } catch (err) {
@@ -134,6 +137,7 @@ function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir, on
       )}
       {errorIA && <p className="error" role="alert">{errorIA}</p>}
       {contexto && <p className="contexto-hora">{contexto}</p>}
+      {TEXTO_OBJETIVO[meta] && <p className="contexto-objetivo">{TEXTO_OBJETIVO[meta]}</p>}
 
       {deIA?.map((o, i) => (
         <motion.article key={`ia-${i}-${o.nombre}`} className="tarjeta receta receta-ia" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
@@ -141,7 +145,7 @@ function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir, on
             <div>
               <span className="etiqueta-ia"><Sparkles size={12} /> Para vos, según lo que pediste</span>
               <h3>{o.nombre}</h3>
-              <p><Clock size={13} /> {o.minutos} min</p>
+              <p><Clock size={13} /> {o.minutos} min<Densidad meta={meta} densidad={o.densidad} /></p>
             </div>
           </header>
           {o.porQue && <p className="receta-por-que">{o.porQue}</p>}
@@ -188,7 +192,7 @@ function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir, on
             <header>
               <div>
                 <h3>{o.receta.nombre}</h3>
-                <p><Clock size={13} /> {o.receta.minutos} min</p>
+                <p><Clock size={13} /> {o.receta.minutos} min<Densidad meta={meta} densidad={o.densidad} /></p>
               </div>
             </header>
             <ul className="receta-macros">
@@ -220,4 +224,11 @@ function Opciones({ inicial, faltan, metas, total, cargadas, ahora, onElegir, on
       <p className="nota">Cantidades aproximadas. Los valores reales cambian según ingredientes y cocción.</p>
     </div>
   );
+}
+
+// Una marca chiquita que confirma por qué la opción encaja con tu objetivo.
+function Densidad({ meta, densidad }) {
+  if (meta === "definir" && densidad <= 1.1) return <span className="marca-densidad"> · Mucho volumen</span>;
+  if (meta === "bulk" && densidad >= 1.7) return <span className="marca-densidad"> · Rica en calorías</span>;
+  return null;
 }

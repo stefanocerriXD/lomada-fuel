@@ -1,5 +1,5 @@
 import { INGREDIENTES, RECETAS } from "../data/recetas.js";
-import { calcularPlan } from "./cuerpo.js";
+import { calcularPlan, objetivoDe } from "./cuerpo.js";
 import { tipoSegunHora } from "./fechas.js";
 import { TIPOS_PRINCIPALES as TIPOS } from "./macros.js";
 
@@ -17,6 +17,20 @@ export function metasDelDia(yo, salud) {
   const plan = calcularPlan(salud);
   return { kcal, p: plan.proteinas, g: plan.grasas, c: Math.max(0, (kcal - plan.proteinas * 4 - plan.grasas * 9) / 4) };
 }
+
+// definir, mantener o bulk. Sin plan cargado, mantener.
+export function objetivoDePersona(salud) {
+  return salud ? objetivoDe(salud) : "mantener";
+}
+
+export const TEXTO_OBJETIVO = {
+  definir: "Estás definiendo: primero platos con mucho volumen y pocas calorías, que llenan.",
+  bulk: "Estás en bulk: primero comidas ricas y con calorías, fáciles de comer en cantidad.",
+  mantener: "",
+};
+
+// Calorías por gramo del plato: menos de 1,1 es mucho volumen; más de 1,8, denso en calorías.
+export const densidadDe = (opcion) => opcion.macros.kcal / Math.max(1, opcion.partes.reduce((t, p) => t + p.gramos, 0));
 
 export function macrosFaltantes(metas, total) {
   const resta = (k) => Math.max(0, metas[k] - total[k]);
@@ -143,12 +157,16 @@ export function ajustarReceta(receta, objetivo) {
 }
 
 // Pasarse de calorías o grasas pesa más que quedarse apenas corto.
-function puntuar(m, o) {
+// Definiendo, pasarse pesa todavía más; en bulk, lo que pesa es quedarse corto.
+function puntuar(m, o, meta = "mantener") {
   const relativo = (a, b, piso) => Math.abs(a - b) / Math.max(b, piso);
   const exceso = Math.max(0, m.kcal - o.kcal) / Math.max(o.kcal, 200);
+  const falta = Math.max(0, o.kcal - m.kcal) / Math.max(o.kcal, 200);
+  const pesoExceso = { definir: 3, bulk: 0.6, mantener: 2 }[meta];
   return (
     relativo(m.kcal, o.kcal, 200) * 2 +
-    exceso * 2 +
+    exceso * pesoExceso +
+    (meta === "bulk" ? falta * 1.5 : 0) +
     relativo(m.p, o.p, 15) * 1.5 +
     relativo(m.c, o.c, 20) +
     (Math.max(0, m.g - o.g) / Math.max(o.g, 8)) * 1.2 +
@@ -156,7 +174,7 @@ function puntuar(m, o) {
   );
 }
 
-export function recomendar({ tipo, faltan, cargadas, ahora = new Date(), preferencia = "" }) {
+export function recomendar({ tipo, faltan, cargadas, ahora = new Date(), preferencia = "", meta = "mantener" }) {
   const pref = typeof preferencia === "string" ? leerPreferencia(preferencia) : preferencia;
   const cerrado = faltan.kcal < CALORIAS_MINIMAS;
   const parte = cerrado ? 1 : parteDeLaComida(tipo, cargadas, ahora);
@@ -171,7 +189,10 @@ export function recomendar({ tipo, faltan, cargadas, ahora = new Date(), prefere
   const opciones = RECETAS.filter((r) => r.tipos.includes(tipo) && (!cerrado || r.liviana))
     .map((receta) => {
       const ajustada = ajustarReceta(receta, objetivo);
-      return { receta, ...ajustada, puntaje: puntuar(ajustada.macros, objetivo) };
+      const densidad = densidadDe(ajustada);
+      // Definiendo suben los platos que llenan con pocas calorías; en bulk, los densos y ricos.
+      const porObjetivo = meta === "definir" ? Math.max(0, densidad - 1.1) * 1.5 : meta === "bulk" ? Math.max(0, 1.7 - densidad) * 1.2 : 0;
+      return { receta, ...ajustada, densidad, puntaje: puntuar(ajustada.macros, objetivo, meta) + porObjetivo };
     })
     .sort((a, b) => a.puntaje - b.puntaje);
 

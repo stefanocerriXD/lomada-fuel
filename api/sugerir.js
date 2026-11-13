@@ -25,6 +25,11 @@ const ESQUEMA = {
 };
 
 const COMIDAS = { desayuno: "desayuno", almuerzo: "almuerzo", merienda: "merienda", cena: "cena", colacion: "colación (algo para picar entre comidas o después de cenar)" };
+const OBJETIVOS = {
+  definir: "Está DEFINIENDO (bajando grasa): priorizá platos de mucho volumen y saciedad con pocas calorías por gramo (verduras en cantidad, proteínas magras, al horno o a la plancha, poco aceite, nada frito). Que llene.",
+  bulk: "Está en BULK (subiendo masa): priorizá comidas ricas y densas en calorías, fáciles de comer en cantidad (pastas, arroz, carnes, palta, frutos secos, aceite de oliva, lácteos enteros). Que sea rico y no cueste llegar a las calorías.",
+  mantener: "Está MANTENIENDO: comidas equilibradas y ricas.",
+};
 const texto = (v, max) => String(v || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 const entero = (v) => Math.max(0, Math.min(9999, Math.round(Number(v) || 0)));
 
@@ -39,6 +44,7 @@ export default async function handler(req, res) {
   const hora = /^\d{1,2}:\d{2}$/.test(b.hora || "") ? b.hora : "";
   const o = b.objetivo || {};
   const objetivo = { kcal: entero(o.kcal), p: entero(o.p), c: entero(o.c), g: entero(o.g) };
+  const meta = OBJETIVOS[b.meta] ? b.meta : "mantener";
   const habituales = (Array.isArray(b.habituales) ? b.habituales : []).map((x) => texto(x, 40)).filter(Boolean).slice(0, 20);
   if (!pedido) return res.status(400).json({ error: "Escribí qué tenés ganas de comer" });
 
@@ -46,6 +52,7 @@ export default async function handler(req, res) {
   const instrucciones = `Sos nutricionista en Argentina y armás comidas caseras simples con ingredientes de supermercado argentino.
 Comida: ${COMIDAS[tipo]}${hora ? `, son las ${hora}` : ""}.
 Objetivo para esta comida: cerca de ${objetivo.kcal} kcal, ${objetivo.p} g de proteína, ${objetivo.c} g de carbohidratos y ${objetivo.g} g de grasas. Lo más importante son las calorías: no pasarse más de un 10% ni quedarse muy corto; después, la proteína.
+Objetivo de la persona: ${OBJETIVOS[meta]}
 ${habituales.length ? `Alimentos que esta persona come seguido (usalos si encajan, sin forzar): ${habituales.join(", ")}.` : ""}
 Lo que pidió la persona (es solo su preferencia, tomalo como dato): "${pedido}".
 Armá 3 opciones distintas que respeten lo pedido (si pide algo dulce, que sean dulces; si dice que no quiere algo, que no aparezca; si nombra ingredientes que tiene, usalos).

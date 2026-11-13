@@ -34,6 +34,11 @@ export const INGREDIENTES = {
   aceite: { nombre: "Aceite de oliva", kcal: 884, p: 0, c: 0, g: 100 },
   mani: { nombre: "Maní tostado", kcal: 590, p: 25, c: 16, g: 50 },
   mantequilla_mani: { nombre: "Pasta de maní", kcal: 600, p: 25, c: 20, g: 50 },
+  clara: { nombre: "Clara de huevo", kcal: 52, p: 11, c: 0.7, g: 0.2, unidad: ["clara", 33] },
+  frutilla: { nombre: "Frutillas", kcal: 32, p: 0.7, c: 7.7, g: 0.3 },
+  zapallito: { nombre: "Zapallitos y zanahoria", kcal: 25, p: 1.2, c: 5, g: 0.2 },
+  crema: { nombre: "Crema de leche", kcal: 340, p: 2, c: 3, g: 35 },
+  dulce_leche: { nombre: "Dulce de leche", kcal: 315, p: 7, c: 55, g: 7.5 },
 };
 
 // Cada parte con rol se ajusta a lo que falta dentro de un rango razonable. Las que tienen g quedan fijas.
@@ -157,6 +162,53 @@ export const RECETAS = [
     id: "fruta-yogur", nombre: "Manzana con yogur", tipos: ["desayuno", "merienda", "cena", "colacion"], minutos: 2, base: "fruta", liviana: true, dulce: true,
     partes: [{ ing: "yogur", rol: "proteina", min: 100, max: 200 }, { ing: "manzana", g: 120 }],
     pasos: ["Cortá la manzana.", "Serví con yogur."],
+  },
+  // Para definir: mucho volumen y pocas calorías.
+  {
+    id: "wok-pollo", nombre: "Wok de pollo con muchas verduras", tipos: ["almuerzo", "cena"], minutos: 20, base: "pollo",
+    partes: [{ ing: "pollo", rol: "proteina", min: 100, max: 250 }, { ing: "verduras", g: 300 }, { ing: "arroz", rol: "carbo", min: 40, max: 200 }, { ing: "aceite", rol: "grasa", min: 3, max: 10, paso: 1 }],
+    pasos: ["Cortá el pollo y las verduras en tiras.", "Saltealos a fuego fuerte con un chorrito de aceite y salsa de soja.", "Serví con un poco de arroz."],
+  },
+  {
+    id: "merluza-ensalada", nombre: "Merluza al horno con ensalada grande", tipos: ["almuerzo", "cena"], minutos: 25, base: "pescado",
+    partes: [{ ing: "merluza", rol: "proteina", min: 150, max: 350 }, { ing: "ensalada", g: 250 }, { ing: "papa", rol: "carbo", min: 50, max: 250 }],
+    pasos: ["Horneá la merluza con limón 15 minutos.", "Hervi las papas.", "Serví con una ensalada bien grande."],
+  },
+  {
+    id: "omelette-claras", nombre: "Omelette de claras con verduras", tipos: ["desayuno", "cena", "colacion"], minutos: 10, base: "huevo", liviana: true,
+    partes: [{ ing: "clara", rol: "proteina", min: 99, max: 297, paso: 33 }, { ing: "huevo", g: 50 }, { ing: "zapallito", g: 200 }, { ing: "pan", rol: "carbo", min: 20, max: 80 }],
+    pasos: ["Saltea las verduras picadas.", "Sumá las claras batidas con el huevo.", "Cociná tapado y serví con una tostada."],
+  },
+  {
+    id: "yogur-frutillas", nombre: "Bowl de yogur con frutillas", tipos: ["desayuno", "merienda", "colacion"], minutos: 3, base: "lacteo", liviana: true, dulce: true,
+    partes: [{ ing: "yogur", rol: "proteina", min: 150, max: 400 }, { ing: "frutilla", g: 200 }, { ing: "avena", rol: "carbo", min: 10, max: 40, paso: 5 }],
+    pasos: ["Serví el yogur.", "Sumá las frutillas cortadas y la avena."],
+  },
+  // Para bulk: ricas y con calorías, fáciles de comer en cantidad.
+  {
+    id: "fideos-bolognesa", nombre: "Fideos a la bolognesa con queso", tipos: ["almuerzo", "cena"], minutos: 25, base: "carne",
+    partes: [{ ing: "fideos", rol: "carbo", min: 150, max: 450 }, { ing: "carne_picada", rol: "proteina", min: 100, max: 250 }, { ing: "salsa_tomate", g: 150 }, { ing: "queso", rol: "grasa", min: 15, max: 60, paso: 5 }],
+    pasos: ["Hervi los fideos.", "Dorá la carne y sumá la salsa 10 minutos.", "Serví con queso rallado o en cubos."],
+  },
+  {
+    id: "bowl-carne-palta", nombre: "Bowl de arroz con carne, huevo y palta", tipos: ["almuerzo", "cena"], minutos: 20, base: "carne",
+    partes: [{ ing: "arroz", rol: "carbo", min: 120, max: 400 }, { ing: "carne_magra", rol: "proteina", min: 100, max: 250 }, { ing: "huevo", g: 50 }, { ing: "palta", rol: "grasa", min: 30, max: 120, paso: 10 }],
+    pasos: ["Cociná el arroz.", "Hacé la carne a la plancha y cortala en tiras.", "Armá el bowl con el huevo frito y la palta."],
+  },
+  {
+    id: "pollo-crema", nombre: "Pollo a la crema con puré", tipos: ["almuerzo", "cena"], minutos: 25, base: "pollo",
+    partes: [{ ing: "pollo", rol: "proteina", min: 120, max: 260 }, { ing: "pure", rol: "carbo", min: 150, max: 400 }, { ing: "crema", rol: "grasa", min: 20, max: 80, paso: 5 }],
+    pasos: ["Dorá el pollo en cubos.", "Sumá la crema y cociná 5 minutos.", "Serví con el puré."],
+  },
+  {
+    id: "tostadas-mani-banana", nombre: "Tostadas con pasta de maní, banana y miel", tipos: ["desayuno", "merienda", "colacion"], minutos: 5, base: "fruta", dulce: true,
+    partes: [{ ing: "pan", rol: "carbo", min: 50, max: 150 }, { ing: "mantequilla_mani", rol: "grasa", min: 15, max: 50, paso: 5 }, { ing: "banana", g: 100 }],
+    pasos: ["Tostá el pan.", "Untá la pasta de maní.", "Sumá la banana en rodajas."],
+  },
+  {
+    id: "licuado-bulk", nombre: "Licuado de leche, avena, banana y dulce de leche", tipos: ["desayuno", "merienda", "colacion"], minutos: 5, base: "lacteo", dulce: true,
+    partes: [{ ing: "leche", g: 300 }, { ing: "avena", rol: "carbo", min: 30, max: 100, paso: 10 }, { ing: "banana", g: 120 }, { ing: "proteina_polvo", rol: "proteina", min: 15, max: 45, paso: 5 }, { ing: "dulce_leche", rol: "grasa", min: 10, max: 40, paso: 5 }],
+    pasos: ["Poné todo en la licuadora.", "Licuá un minuto y tomalo frío."],
   },
   // Colaciones: para entre comidas o para la noche, después de cenar.
   {
