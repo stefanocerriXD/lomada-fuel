@@ -1,11 +1,8 @@
-// Reconoce los alimentos de la foto de un plato con Gemini (plan gratuito de Google, sin tarjeta: nunca cobra).
+// Reconoce los alimentos de la foto de un plato, o los números de una tabla nutricional, con Gemini.
 // Devuelve cada alimento con sus gramos estimados y valores por 100 g; la app los cruza con su lista y la persona ajusta.
-// La clave vive solo acá (GEMINI_API_KEY en Vercel): nunca llega al teléfono.
 import { usuarioActual } from "./_auth.js";
+import { ESQUEMA_ALIMENTO, hayGemini, limpiarAlimento, preguntarGemini } from "./_gemini.js";
 
-const API = "https://generativelanguage.googleapis.com/v1beta/models";
-// Google da de baja modelos: si uno no está, se prueba el siguiente. Cada modelo tiene su propio cupo diario.
-const MODELOS = [process.env.GEMINI_MODELO, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-lite-latest"].filter(Boolean);
 const MAXIMO_BASE64 = 2_500_000;
 
 const PEDIDO = `Sos nutricionista en Argentina. Mirá la foto y listá por separado cada alimento o bebida que se ve en el plato o la mesa (por ejemplo: milanesa de carne, puré de papa, ensalada de lechuga y tomate, pan francés).
@@ -46,73 +43,21 @@ const ESQUEMA = {
   properties: {
     es_comida: { type: "BOOLEAN" },
     titulo: { type: "STRING" },
-    alimentos: {
-      type: "ARRAY",
-      items: {
-        type: "OBJECT",
-        properties: {
-          nombre: { type: "STRING" },
-          unidades: { type: "NUMBER" },
-          gramos: { type: "NUMBER" },
-          kcal_100g: { type: "NUMBER" },
-          proteinas_100g: { type: "NUMBER" },
-          carbohidratos_100g: { type: "NUMBER" },
-          grasas_100g: { type: "NUMBER" },
-        },
-        required: ["nombre", "gramos", "kcal_100g", "proteinas_100g", "carbohidratos_100g", "grasas_100g"],
-      },
-    },
+    alimentos: { type: "ARRAY", items: ESQUEMA_ALIMENTO },
   },
   required: ["es_comida", "titulo", "alimentos"],
 };
 
 const num = (v, max) => {
   const n = Number(v);
-  return Number.isFinite(n) && n >= 0 && n <= max ? n : null;
+  return Number.isFinite(n) && n >= 0 && n <= max ? n : 0;
 };
-const redondeo = (n) => Math.round(n * 10) / 10;
-
-// Lo que la IA inventa fuera de lo posible se descarta.
-function limpiar(a) {
-  const nombre = String(a?.nombre || "").replace(/\s+/g, " ").trim().slice(0, 60);
-  const gramos = num(a?.gramos, 2000);
-  const kcal = num(a?.kcal_100g, 950);
-  const p = num(a?.proteinas_100g, 100) ?? 0;
-  const c = num(a?.carbohidratos_100g, 100) ?? 0;
-  const g = num(a?.grasas_100g, 100) ?? 0;
-  if (!nombre || !gramos || kcal == null || p + c + g > 105) return null;
-  const unidades = num(a?.unidades, 50);
-  return { nombre, gramos: Math.round(gramos), unidades: unidades >= 1 ? Math.round(unidades) : null, por100: { kcal: Math.round(kcal), p: redondeo(p), c: redondeo(c), g: redondeo(g) } };
-}
-
-async function preguntar(modelo, imagen, clave, etiqueta = false) {
-  const config = { responseMimeType: "application/json", responseSchema: etiqueta ? ESQUEMA_ETIQUETA : ESQUEMA, temperature: etiqueta ? 0 : 0.2, maxOutputTokens: 2048 };
-  // En los 2.5 se apaga el razonamiento: responde más rápido y alcanza para esto.
-  if (modelo.includes("2.5")) config.thinkingConfig = { thinkingBudget: 0 };
-  const resp = await fetch(`${API}/${modelo}:generateContent`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": clave },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ inline_data: { mime_type: "image/jpeg", data: imagen } }, { text: etiqueta ? PEDIDO_ETIQUETA : PEDIDO }] }],
-      generationConfig: config,
-    }),
-    signal: AbortSignal.timeout(25000),
-  });
-  if (!resp.ok) return { estado: resp.status };
-  const datos = await resp.json();
-  const texto = (datos.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
-  try {
-    return { estado: 200, respuesta: JSON.parse(texto) };
-  } catch {
-    return { estado: 502 };
-  }
-}
+const texto = (v) => String(v || "").replace(/\s+/g, " ").trim().slice(0, 60);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
   if (!(await usuarioActual(req))) return res.status(401).json({ error: "Falta iniciar sesión" });
-  const clave = process.env.GEMINI_API_KEY;
-  if (!clave) return res.status(503).json({ error: "El reconocimiento de fotos todavía no está activado" });
+  if (!hayGemini()) return res.status(503).json({ error: "El reconocimiento de fotos todavía no está activado" });
 
   const imagen = String(req.body?.imagen || "").replace(/^data:image\/\w+;base64,/, "");
   if (!imagen || imagen.length > MAXIMO_BASE64 || !/^[A-Za-z0-9+/=]+$/.test(imagen)) {
@@ -120,37 +65,32 @@ export default async function handler(req, res) {
   }
 
   const etiqueta = req.body?.modo === "etiqueta";
-  let sinCupo = false;
-  for (const modelo of MODELOS) {
-    let r;
-    try {
-      r = await preguntar(modelo, imagen, clave, etiqueta);
-    } catch {
-      continue; // Tardó demasiado: se prueba con otro.
-    }
-    if (r.estado === 429) { sinCupo = true; continue; }
-    if (r.estado !== 200) continue; // Modelo dado de baja o respuesta rota.
-    if (etiqueta) {
-      const e = r.respuesta || {};
-      const n = (v, max) => num(v, max) ?? 0;
-      const texto = (v) => String(v || "").replace(/\s+/g, " ").trim().slice(0, 60);
-      return res.status(200).json({
-        esEtiqueta: e.es_etiqueta !== false,
-        nombre: texto(e.nombre),
-        marca: texto(e.marca),
-        base: e.base === "100g" ? "100g" : "porcion",
-        porcionG: n(e.porcion_g, 2000) || null,
-        valores: { kcal: n(e.kcal, 5000), p: n(e.proteinas, 500), c: n(e.carbohidratos, 500), g: n(e.grasas, 500) },
-      });
-    }
-    const { es_comida: esComida, titulo, alimentos } = r.respuesta || {};
-    const lista = (Array.isArray(alimentos) ? alimentos : []).map(limpiar).filter(Boolean).slice(0, 10);
+  const r = await preguntarGemini({
+    partes: [{ inline_data: { mime_type: "image/jpeg", data: imagen } }, { text: etiqueta ? PEDIDO_ETIQUETA : PEDIDO }],
+    esquema: etiqueta ? ESQUEMA_ETIQUETA : ESQUEMA,
+    temperatura: etiqueta ? 0 : 0.2,
+  });
+  if (r.error) {
+    const error = r.estado === 429 ? "Se terminó el cupo gratis de hoy para reconocer fotos. Cargalo a mano o probá mañana." : "No pudimos reconocer la foto. Probá de nuevo o cargalo a mano.";
+    return res.status(r.estado).json({ error });
+  }
+
+  if (etiqueta) {
+    const e = r.respuesta;
     return res.status(200).json({
-      esComida: esComida !== false && lista.length > 0,
-      titulo: String(titulo || "").trim().slice(0, 80),
-      alimentos: esComida === false ? [] : lista,
+      esEtiqueta: e.es_etiqueta !== false,
+      nombre: texto(e.nombre),
+      marca: texto(e.marca),
+      base: e.base === "100g" ? "100g" : "porcion",
+      porcionG: num(e.porcion_g, 2000) || null,
+      valores: { kcal: num(e.kcal, 5000), p: num(e.proteinas, 500), c: num(e.carbohidratos, 500), g: num(e.grasas, 500) },
     });
   }
-  if (sinCupo) return res.status(429).json({ error: "Se terminó el cupo gratis de hoy para reconocer fotos. Cargalo a mano o probá mañana." });
-  return res.status(502).json({ error: "No pudimos reconocer la foto. Probá de nuevo o cargalo a mano." });
+  const { es_comida: esComida, titulo, alimentos } = r.respuesta;
+  const lista = (Array.isArray(alimentos) ? alimentos : []).map(limpiarAlimento).filter(Boolean).slice(0, 10);
+  return res.status(200).json({
+    esComida: esComida !== false && lista.length > 0,
+    titulo: String(titulo || "").trim().slice(0, 80),
+    alimentos: esComida === false ? [] : lista,
+  });
 }

@@ -31,6 +31,22 @@ export async function avisarGrupo(tipo, id, nombre) {
   }
 }
 
+// "¿Qué puedo comer?" con lo que escribiste: Gemini arma 3 opciones para lo que te falta del día.
+export async function sugerirConIA(datos) {
+  const resp = await fetch("/api/sugerir", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(await encabezados()) },
+    body: JSON.stringify(datos),
+  });
+  if (resp.status === 503) {
+    ia.apagada = true;
+    const error = new Error("La IA todavía no está activada");
+    error.apagado = true;
+    throw error;
+  }
+  return leer(resp);
+}
+
 export const URL_SALUD = `${window.location.origin}/api/salud`;
 
 // Enlace de iCloud del Atajo compartido, sin ninguna llave adentro.

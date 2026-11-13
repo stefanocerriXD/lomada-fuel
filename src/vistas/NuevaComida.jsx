@@ -634,7 +634,7 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
     <motion.div className="fila-item" layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
       <div className="fila-datos">
         <strong>{item.nombre}</strong>
-        <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}{item.ia ? " · por la foto" : ""}</span>
+        <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}{item.ia === "sugerencia" ? " · sugerido por la IA" : item.ia ? " · por la foto" : ""}</span>
       </div>
       <button className="boton-icono chico" onClick={onQuitar} aria-label={`Quitar ${item.nombre}`}><Trash2 size={16} /></button>
       {item.por100 && (

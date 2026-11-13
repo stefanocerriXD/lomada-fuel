@@ -33,12 +33,13 @@ function conMedida(alimento, gramos, unidades) {
   return prepararItem({ ...alimento, unidad: undefined, gramos });
 }
 
-export function itemsDeFoto(alimentos, propios = []) {
+// origen: "foto" (lo vio en la foto) o "sugerencia" (lo propuso para el ¿Qué puedo comer?).
+export function itemsDeFoto(alimentos, propios = [], origen = "foto") {
   return alimentos.map((ia) => {
     const base = buscarBase(ia, propios);
     const alimento = base
-      ? { ...base, id: undefined, ia: true }
-      : { nombre: ia.nombre, marca: "", fuente: "ia", por100: ia.por100, ia: true };
+      ? { ...base, id: undefined, ia: origen }
+      : { nombre: ia.nombre, marca: "", fuente: "ia", por100: ia.por100, ia: origen };
     // Lo de la lista o el historial viene con su cantidad: se reemplaza por lo que se ve en la foto.
     const { cantidad, unidad, gramos, postre, salud_id, estimado, ...limpio } = alimento; // eslint-disable-line no-unused-vars
     return { ...conMedida(limpio, ia.gramos, ia.unidades), id: crypto.randomUUID() };

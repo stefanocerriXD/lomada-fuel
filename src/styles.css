@@ -1965,3 +1965,10 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .preferencia-comida:focus-within { outline: 3px solid var(--acento); outline-offset: 1px; }
 .preferencia-comida .limpiar { display: grid; place-items: center; width: 32px; height: 32px; color: var(--tinta-2); }
 .contexto-hora { color: var(--sobre-acento-suave); font-size: 0.86rem; font-weight: 650; }
+
+/* Opciones de la IA en ¿Qué puedo comer? */
+.pedir-ia { width: 100%; }
+.receta-ia { border: 1.5px solid color-mix(in srgb, var(--acento) 40%, transparent); border-radius: 18px; padding: 14px; }
+.etiqueta-ia { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 3px; color: var(--sobre-acento-suave); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.receta-por-que { color: var(--tinta-2); font-size: 0.88rem; line-height: 1.3; }
+.otra-vez-ia { align-self: center; display: inline-flex; align-items: center; gap: 6px; }
