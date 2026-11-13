@@ -7,6 +7,7 @@ import { cantidades, nivelesGuardados, nivelGeneral } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
 import { castigoDe, marcaDeCaca } from "./multas.js";
 import { marcarActividad } from "./vivo.js";
+import { ponerInsignia } from "./insignia.js";
 
 const Contexto = createContext(null);
 export const useDatos = () => useContext(Contexto);
@@ -133,6 +134,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   // Reacciones a mensajes y hasta dónde leyó cada uno. Si las tablas no existen todavía, quedan vacías.
   const [reaccionesMensajes, setReaccionesMensajes] = useState([]);
   const [lecturas, setLecturas] = useState([]);
+  const [lecturasListas, setLecturasListas] = useState(false);
   const cargarSocial = useCallback(async () => {
     const [r, l] = await Promise.all([
       supabase.from("reacciones_mensajes").select("*").limit(3000),
@@ -140,7 +142,18 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     ]);
     if (!r.error) setReaccionesMensajes(r.data);
     if (!l.error) setLecturas(l.data);
+    setLecturasListas(true);
   }, []);
+
+  // Mensajes de los demás después de lo último que leíste. Quien nunca abrió el chat arranca en cero.
+  const miLectura = lecturas.find((l) => l.usuario_id === usuario.id)?.hasta;
+  const sinLeer = useMemo(() => {
+    if (!mensajesListos || !lecturasListas || !miLectura) return 0;
+    return mensajes.filter((m) => m.usuario_id && m.usuario_id !== usuario.id && !m.pendiente && m.creado_en > miLectura).length;
+  }, [mensajes, mensajesListos, lecturasListas, miLectura, usuario.id]);
+  useEffect(() => {
+    if (mensajesListos && lecturasListas) ponerInsignia(sinLeer);
+  }, [sinLeer, mensajesListos, lecturasListas]);
 
   // Comidas grupales: las invitaciones que mandaste o te llegaron, y las comidas a las que te sumaron.
   const [invitaciones, setInvitaciones] = useState([]);
@@ -587,6 +600,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       reaccionesMensajes,
       alternarReaccionMensaje,
       lecturas,
+      lecturasListas,
+      sinLeer,
       marcarLeido,
       invitaciones,
       comidasInvitadas,
@@ -614,7 +629,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

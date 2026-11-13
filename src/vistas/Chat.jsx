@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import { Award, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
@@ -435,7 +435,7 @@ function VerReacciones({ ver, onCerrar }) {
 export default function Chat({ avisar }) {
   const {
     castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, quitarMensaje, emitirChat, respuesta, responder,
-    lecturas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, abrirPerfil, extras,
+    lecturas, lecturasListas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, abrirPerfil, extras,
   } = useDatos();
   const logrosChat = useMemo(
     () => (extras.medallas || [])
@@ -465,6 +465,16 @@ export default function Chat({ avisar }) {
   const linea = mensajes.slice(-MAXIMO_EN_PANTALLA);
   const ultimo = linea[linea.length - 1];
 
+  // Al entrar, el chat retoma donde lo dejaste: en el primer mensaje que no leíste. Si leíste todo, abajo de todo.
+  // undefined = todavía no se sabe; null = nada sin leer.
+  const miLectura = lecturas.find((l) => l.usuario_id === usuario.id)?.hasta;
+  const [corte, setCorte] = useState(undefined);
+  useEffect(() => {
+    if (corte !== undefined || !cargado || !lecturasListas) return;
+    const nuevos = miLectura ? linea.filter((m) => m.usuario_id && m.usuario_id !== usuario.id && m.creado_en > miLectura) : [];
+    setCorte(nuevos.length ? { id: nuevos[0].id, n: nuevos.length } : null);
+  }, [corte, cargado, lecturasListas, miLectura, linea, usuario.id]);
+
   useEffect(() => {
     if (respuesta) {
       setCitado(null);
@@ -472,11 +482,36 @@ export default function Chat({ avisar }) {
     }
   }, [respuesta]);
 
-  useEffect(() => {
-    // Solo se mueve la lista: en el iPhone, mover la página desacomoda el teclado.
+  // Solo se mueve la lista: en el iPhone, mover la página desacomoda el teclado.
+  const ubicado = useRef(false);
+  const abajo = useRef(true);
+  useLayoutEffect(() => {
     const el = lista.current;
-    el?.scrollTo({ top: el.scrollHeight, behavior: cargado ? "smooth" : "auto" });
-  }, [linea.length, logrosChat.length, cargado]);
+    if (!el || corte === undefined) return;
+    if (!ubicado.current) {
+      ubicado.current = true;
+      const ubicar = () => {
+        const marca = corte && el.querySelector(".chat-no-leidos");
+        if (marca) el.scrollTop += marca.getBoundingClientRect().top - el.getBoundingClientRect().top - 8;
+        else el.scrollTop = el.scrollHeight;
+      };
+      ubicar();
+      // Las fotos de arriba terminan de cargar y empujan todo: se vuelve a ubicar mientras no hayas tocado la lista.
+      const tocar = () => { tocado = true; };
+      let tocado = false;
+      el.addEventListener("touchstart", tocar, { passive: true });
+      el.addEventListener("wheel", tocar, { passive: true });
+      const relojes = [150, 500, 1200].map((ms) => setTimeout(() => { if (!tocado) ubicar(); }, ms));
+      setTimeout(() => { el.removeEventListener("touchstart", tocar); el.removeEventListener("wheel", tocar); }, 1300);
+      return () => relojes.forEach(clearTimeout);
+    }
+    // Lo nuevo baja la lista si estabas abajo o si lo mandaste vos; si estás leyendo más arriba, no te mueve.
+    if (abajo.current || ultimo?.usuario_id === usuario.id) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [linea.length, logrosChat.length, corte]); // eslint-disable-line react-hooks/exhaustive-deps
+  const alDesplazar = useCallback(() => {
+    const el = lista.current;
+    if (el) abajo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+  }, []);
 
   // Si alguien empieza a escribir y estás abajo de todo, se muestra sin que tengas que bajar.
   const bajarSiEstaAbajo = useCallback(() => {
@@ -490,12 +525,11 @@ export default function Chat({ avisar }) {
     else avisarActividad(null);
   }, [subiendo, avisarActividad]);
 
-  // Lo que está en pantalla queda visto.
-  const miLectura = lecturas.find((l) => l.usuario_id === usuario.id)?.hasta;
+  // Lo que está en pantalla queda visto (después de saber desde dónde retomar).
   useEffect(() => {
-    if (!ultimo || document.visibilityState !== "visible") return;
+    if (!ultimo || corte === undefined || document.visibilityState !== "visible") return;
     if (!miLectura || miLectura < ultimo.creado_en) marcarLeido(ultimo.creado_en);
-  }, [ultimo, miLectura, marcarLeido]);
+  }, [ultimo, miLectura, marcarLeido, corte]);
 
   // Cada uno aparece debajo del último mensaje que vio, en todos los mensajes y para todos.
   const otros = Object.values(perfiles).filter((p) => p.id !== usuario.id);
@@ -649,7 +683,7 @@ export default function Chat({ avisar }) {
     <section className="chat">
       <AvisoNotificaciones avisar={avisar} />
 
-      <div className="chat-mensajes" role="log" aria-live="polite" ref={lista}>
+      <div className="chat-mensajes" role="log" aria-live="polite" ref={lista} onScroll={alDesplazar}>
         {cargado && linea.length === 0 && (
           <Vacio icono={MessageCircle} titulo="Todavía no hay mensajes" texto="Mandá el primero." />
         )}
@@ -664,6 +698,7 @@ export default function Chat({ avisar }) {
           const logros = logrosChat.filter((l) => l.ganada_en >= m.creado_en && (!siguiente || l.ganada_en < siguiente.creado_en));
           const conLogros = (elemento) => (
             <Fragment key={m.id}>
+              {corte?.id === m.id && <p className="chat-no-leidos"><span>{corte.n === 1 ? "1 mensaje sin leer" : `${corte.n} mensajes sin leer`}</span></p>}
               {elemento}
               {logros.map((l) => <LineaLogro key={`${l.usuario_id}-${l.codigo}`} logro={l} perfil={perfiles[l.usuario_id]} onPerfil={abrirPerfil} />)}
             </Fragment>

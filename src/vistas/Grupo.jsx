@@ -5,7 +5,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal } from "../lib/fechas.js";
 import { sumarComidas } from "../lib/macros.js";
 import { nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
-import { Indicador, Avatar, Hoja, vibrar } from "../componentes/Base.jsx";
+import { Indicador, Avatar, Hoja, Insignia, vibrar } from "../componentes/Base.jsx";
 import Chat, { EnVivo } from "./Chat.jsx";
 import Imagenes from "./Imagenes.jsx";
 
@@ -44,13 +44,14 @@ function Integrantes({ abierta, onCerrar }) {
 
 export default function Grupo({ seccion, onSeccion, onCargar, avisar, sentido }) {
   const [viendo, setViendo] = useState(false);
+  const { sinLeer } = useDatos();
 
   const barra = (
     <div className="grupo-barra">
       <div className="selector" role="tablist" aria-label="Sección del grupo">
         {SECCIONES.map(([id, texto]) => (
           <button key={id} role="tab" aria-selected={seccion === id} className={seccion === id ? "activo" : ""} onClick={() => { onSeccion(id); vibrar(5); }}>
-            <span>{texto}</span>
+            <span>{texto}{id === "chat" && sinLeer > 0 && seccion !== "chat" && <Insignia n={sinLeer} />}</span>
           </button>
         ))}
         <Indicador indice={SECCIONES.findIndex(([id]) => id === seccion)} total={SECCIONES.length} />

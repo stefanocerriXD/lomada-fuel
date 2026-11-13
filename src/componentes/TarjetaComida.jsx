@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Lock, Maximize2, PenLine, Pencil, Reply, SmilePlus, Star, Trash2, Users } from "lucide-react";
@@ -90,6 +90,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const esperando = grupo && propia ? nombresDe(invitaciones.filter((i) => i.comida_id === comida.id && i.estado === "pendiente").map((i) => i.para_usuario)) : [];
   const [confirmar, setConfirmar] = useState(false);
   const [detalle, setDetalle] = useState(false);
+  const cuerpo = useRef(null);
   const tipo = tipoInfo(comida.tipo);
   // Con la maldición del Bocha, las fotos del grupo se ven borrosas hasta subir la propia.
   const tapada = castigo.diario && !propia;
@@ -167,7 +168,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         </div>
       )}
 
-      <div className="comida-cuerpo">
+      <div className="comida-cuerpo" ref={cuerpo}>
         <p className="comida-texto">{texto}</p>
         {soloFoto && <p className="comida-items">Contada en el total del día</p>}
         {!soloFoto && <ul className="comida-macros">
@@ -185,7 +186,8 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
               <motion.span animate={{ rotate: detalle ? 180 : 0 }}><ChevronDown size={16} /></motion.span>
               {detalle ? "Ocultar alimentos" : "Ver alimentos"}
             </button>
-            <AnimatePresence initial={false}>
+            {/* Al cerrar desde abajo, la tarjeta vuelve a quedar a la vista en vez de dejarte en otra comida. */}
+            <AnimatePresence initial={false} onExitComplete={() => cuerpo.current?.scrollIntoView({ block: "nearest", behavior: "smooth" })}>
               {detalle && (
                 <motion.div className="detalle-pliegue" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                   <DetalleAlimentos alimentos={alimentos} autorComida={comida.usuario_id} />

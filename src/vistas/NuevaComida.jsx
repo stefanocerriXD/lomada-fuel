@@ -71,11 +71,17 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const [descripcion, setDescripcion] = useState(original?.descripcion || carga.receta?.descripcion || "");
   const [items, setItems] = useState(() => {
     if (!original) return (carga.receta?.items || []).map((i) => ({ ...prepararItem(i), id: crypto.randomUUID() }));
-    if (original.alimentos?.length) return original.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: a.id || crypto.randomUUID() }));
+    // Lo que se había cargado como colación y resultó ser el postre pasa adentro de esta comida.
+    const delPostre = (carga.extra?.items || []).map((a) => ({ ...a, id: crypto.randomUUID(), postre: true }));
+    if (original.alimentos?.length) return [...original.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: a.id || crypto.randomUUID() })), ...delPostre];
+    if (delPostre.length && !original.calorias) return delPostre;
+    if (delPostre.length) return [{ id: "base", nombre: original.descripcion || "Comida", fuente: "manual", kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas }, ...delPostre];
     return [{ id: "base", nombre: original.descripcion || "Comida", fuente: "manual", kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas }];
   });
-  const [foto, setFoto] = useState(null);
-  const [vistaFoto, setVistaFoto] = useState(original ? fotos[original.foto_path] : null);
+  // Si la comida no tenía foto, se queda con la del postre.
+  const fotoDelPostre = original && !original.foto_path ? carga.extra?.foto : null;
+  const [foto, setFoto] = useState(fotoDelPostre || null);
+  const [vistaFoto, setVistaFoto] = useState(() => (fotoDelPostre ? URL.createObjectURL(fotoDelPostre) : original ? fotos[original.foto_path] : null));
   const [texto, setTexto] = useState(carga.buscar || "");
   const [panel, setPanel] = useState(null);
   const [importado, setImportado] = useState(null);
@@ -163,8 +169,9 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
   // Lo leído pasa por la carga manual: ahí se corrige antes de sumarlo a la comida.
   function alLeer(filas) {
-    const fila = filaDeComida(filas, tipo);
-    if (!fila && filas.length) return onImportarDia(carga.fecha || fechaLocal(), filas);
+    // El postre suele estar en la colación (Aperitivos/Snacks) de la otra app.
+    const fila = carga.postre ? filas.find((f) => f.tipo === "colacion") || (filas.length === 1 ? filas[0] : null) : filaDeComida(filas, tipo);
+    if (!fila && filas.length && !carga.postre) return onImportarDia(carga.fecha || fechaLocal(), filas);
     if (fila?.alimentos?.length) {
       // Si un alimento igual ya está en la comida, no se vuelve a sumar.
       const firma = (a) => `${String(a.nombre).toLowerCase().trim()}|${Math.round(macrosDeItem(a).kcal)}`;
@@ -173,7 +180,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         const nuevos = fila.alimentos
           .map((a) => {
             const item = itemImportado(a);
-            return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID() };
+            return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID(), ...(carga.postre ? { postre: true } : {}) };
           })
           .filter((a) => !ya.has(firma(a)));
         return [...prev, ...nuevos];
@@ -186,7 +193,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     }
     setImportado({
       clave: Date.now(),
-      nombre: `${tipoInfo(tipo).texto} importado`,
+      nombre: carga.postre ? "Postre importado" : `${tipoInfo(tipo).texto} importado`,
       fuente: "importado",
       aviso: fila ? "Revisá los números y tocá Agregar." : "No encontramos calorías ni macros. Cargalos acá.",
       ...(fila ? { kcal: fila.kcal, p: fila.p, c: fila.c, g: fila.g } : {}),
@@ -362,12 +369,22 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         </div>
       )}
 
-      {!buscando && items.length === 0 && paraPostre && (
-        <button className="postre-opcion" onClick={() => onPostre(paraPostre)}>
-          🍮 ¿Es postre? <strong>Sumalo a tu {paraPostre.tipo === "cena" ? "cena" : "almuerzo"}</strong>
+      {!buscando && paraPostre && (
+        <button className="postre-opcion" onClick={() => onPostre(paraPostre, items.length || foto ? { items, foto } : null)}>
+          🍮 ¿Es postre? <strong>{items.length ? "Pasalo" : "Sumalo"} a tu {paraPostre.tipo === "cena" ? "cena" : "almuerzo"}</strong>
         </button>
       )}
-      {carga.postre && <p className="postre-nota">🍮 Buscá el postre y sumalo. Queda dentro de tu {original?.tipo === "cena" ? "cena" : "almuerzo"}.</p>}
+      {carga.postre && (
+        <>
+          <p className="postre-nota">🍮 Buscá el postre o importalo. Queda dentro de tu {original?.tipo === "cena" ? "cena" : "almuerzo"}.</p>
+          {!buscando && (
+            <button className={panel === "importar" ? "tarjeta accion activa postre-importar" : "tarjeta accion postre-importar"} onClick={() => alternarPanel("importar")} aria-pressed={panel === "importar"}>
+              <ClipboardPaste size={22} />
+              <span><strong>Importar postre</strong><small>Captura o texto de tu otra app</small></span>
+            </button>
+          )}
+        </>
+      )}
       <div className="fila-busqueda">
         <div className="buscador-campo">
           <Search size={19} />

@@ -1932,3 +1932,15 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .nota-ia > span { flex: 1; min-width: 0; }
 .nota-ia .boton-texto { flex: none; display: inline-flex; align-items: center; gap: 4px; }
 .reconocer-foto { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
+
+/* Mensajes sin leer */
+.insignia { position: absolute; top: 4px; left: calc(50% + 5px); z-index: 2; display: grid; place-items: center; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: #e5383b; color: #fff; font-size: 0.68rem; font-weight: 800; line-height: 1; box-shadow: 0 0 0 2px var(--fondo); }
+.selector .insignia { position: relative; top: -1px; left: auto; display: inline-grid; margin-left: 6px; vertical-align: middle; box-shadow: none; }
+.chat-no-leidos { display: flex; justify-content: center; margin: 10px 0 4px; scroll-margin-top: 12px; }
+.chat-no-leidos span { padding: 5px 14px; border-radius: 999px; background: var(--acento-suave); color: var(--sobre-acento-suave); font-size: 0.78rem; font-weight: 700; }
+.postre-importar { width: 100%; }
+
+/* Imágenes del grupo: con los alimentos abiertos, "Ocultar alimentos" queda fijo arriba para cerrarlo sin volver a subir. */
+.grupo-fotos, .fotos-lista, .fotos-lista .comida { overflow: clip; }
+.fotos-lista .comida-cuerpo { scroll-margin-top: calc(130px + env(safe-area-inset-top)); scroll-margin-bottom: 90px; }
+.fotos-lista .ver-alimentos[aria-expanded="true"] { position: sticky; top: calc(118px + env(safe-area-inset-top)); z-index: 6; align-self: stretch; justify-content: flex-start; margin-inline: -16px; padding-inline: 16px; background: var(--fondo); border-bottom: 1px solid var(--borde); }

@@ -11,7 +11,7 @@ import { DatosProvider, GRUPO_BASE, useDatos } from "./lib/datos.jsx";
 import SinGrupo from "./componentes/SinGrupo.jsx";
 import SelectorGrupo from "./componentes/SelectorGrupo.jsx";
 import SubidaNivel from "./componentes/SubidaNivel.jsx";
-import { Aviso, Avatar, Esqueleto, Festejo, Hoja, resorte, vibrar } from "./componentes/Base.jsx";
+import { Aviso, Avatar, Esqueleto, Festejo, Hoja, Insignia, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import InstalarApp from "./componentes/InstalarApp.jsx";
@@ -149,7 +149,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta } = useDatos();
+  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer } = useDatos();
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
@@ -372,7 +372,7 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
         <nav aria-label="Menú principal">
           {VISTAS.map((v) => (
-            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" />
+            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" insignia={v.id === "grupo" ? sinLeer : 0} />
           ))}
         </nav>
         <button className="perfil-lateral" onClick={() => abrirPerfil(yo.id)}>
@@ -411,7 +411,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <nav className="barra-inferior" aria-label="Menú principal">
         {VISTAS.slice(0, 2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} />
         ))}
         <motion.button
           className="boton-subir"
@@ -424,12 +424,12 @@ function Principal({ recuperando, onRecuperado }) {
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
         {VISTAS.slice(2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} />
         ))}
       </nav>
 
       <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
-      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} onPostre={(comida) => setCarga({ comida, postre: true })} avisar={avisar} />
+      <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} onPostre={(comida, extra) => setCarga({ comida, postre: true, extra })} avisar={avisar} />
       <Fiesta abierta={fiesta} onCerrar={() => setFiesta(false)} avisar={avisar} />
       <InformeSemanal abiertoAlInicio={pedida === "informe"} />
       <Importar
@@ -467,13 +467,15 @@ function Principal({ recuperando, onRecuperado }) {
   );
 }
 
-function BotonVista({ datos, activa, onClick, id }) {
+function BotonVista({ datos, activa, onClick, id, insignia = 0 }) {
   const Icono = datos.icono;
   return (
-    <button className={activa ? "item-menu activo" : "item-menu"} onClick={onClick} aria-current={activa ? "page" : undefined}>
+    <button className={activa ? "item-menu activo" : "item-menu"} onClick={onClick} aria-current={activa ? "page" : undefined} aria-label={insignia ? `${datos.texto}, ${insignia} ${insignia === 1 ? "mensaje sin leer" : "mensajes sin leer"}` : undefined}>
       {activa && <motion.span className="item-fondo" layoutId={`fondo-${id}`} transition={resorte} />}
+      {insignia > 0 && <Insignia n={insignia} />}
       <Icono size={21} strokeWidth={activa ? 2.4 : 2} />
       <span>{datos.texto}</span>
     </button>
   );
 }
+

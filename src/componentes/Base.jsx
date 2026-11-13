@@ -329,3 +329,12 @@ export function Esqueleto() {
     </div>
   );
 }
+
+// Globito rojo con los mensajes sin leer.
+export function Insignia({ n }) {
+  return (
+    <motion.span className="insignia" aria-hidden="true" key={n > 99 ? "99+" : n} initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={resorte}>
+      {n > 99 ? "99+" : n}
+    </motion.span>
+  );
+}
