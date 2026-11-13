@@ -23,6 +23,7 @@ import { createPortal } from "react-dom";
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
 const horaDe = (momento) => new Date(momento).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+const MAX_FOTOS_EXTRA = 3;
 const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meriendas", cena: "cenas", colacion: "colaciones", resumen: "días" };
 
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
@@ -80,6 +81,9 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const fotoDelPostre = original && !original.foto_path ? carga.extra?.foto : null;
   const [foto, setFoto] = useState(fotoDelPostre || null);
   const [vistaFoto, setVistaFoto] = useState(() => (fotoDelPostre ? URL.createObjectURL(fotoDelPostre) : original ? fotos[original.foto_path] : null));
+  // Más fotos de la misma comida (la principal es la de arriba).
+  const [fotosExtra, setFotosExtra] = useState(() => (original?.fotos_extra || []).map((ruta) => ({ id: ruta, ruta, vista: fotos[ruta] })));
+  const [extrasQuitadas, setExtrasQuitadas] = useState([]);
   const [texto, setTexto] = useState(carga.buscar || "");
   const [panel, setPanel] = useState(null);
   const [importado, setImportado] = useState(null);
@@ -209,7 +213,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       return;
     }
     // La foto de una comida grupal la siguen usando los demás.
-    if (original.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path]);
+    if (original.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path, ...(original.fotos_extra || [])]);
     await cargarComidas();
     onGuardar("borrada");
   }
@@ -268,10 +272,35 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     }
   }
 
+  async function sumarFotos(e) {
+    const archivos = [...e.target.files].slice(0, MAX_FOTOS_EXTRA - fotosExtra.length);
+    e.target.value = "";
+    try {
+      const nuevas = [];
+      for (const archivo of archivos) {
+        const blob = await comprimirImagen(archivo);
+        nuevas.push({ id: crypto.randomUUID(), blob, vista: URL.createObjectURL(blob) });
+      }
+      setFotosExtra((prev) => [...prev, ...nuevas].slice(0, MAX_FOTOS_EXTRA));
+      vibrar(8);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function quitarFotoExtra(x) {
+    setFotosExtra((prev) => prev.filter((f) => f.id !== x.id));
+    if (x.ruta) setExtrasQuitadas((prev) => [...prev, x.ruta]);
+    else URL.revokeObjectURL(x.vista);
+  }
+
+  // Sin alimentos pero con foto, se publica solo la foto: queda el registro y no suma calorías.
+  const soloFoto = !items.length && !ajuste && Boolean(vistaFoto);
+
   // Antes de publicar algo nuevo, avisa qué quedó sin completar y deja seguir igual.
   function publicar() {
     if (!original) {
-      const vacios = [!vistaFoto && "la foto de la comida", !items.length && !ajuste && "los alimentos", !descripcion.trim() && "el título"].filter(Boolean);
+      const vacios = [!vistaFoto && "la foto de la comida", !items.length && !ajuste && !vistaFoto && "los alimentos", !descripcion.trim() && "el título"].filter(Boolean);
       if (vacios.length && !faltan) return setFaltan(vacios);
     }
     setFaltan(null);
@@ -283,12 +312,22 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     setError("");
     setGuardando(true);
     let rutaNueva = null;
+    const subidas = [];
     try {
       const id = original?.id || crypto.randomUUID();
       if (foto) {
         rutaNueva = `${usuario.id}/${id}-${Date.now()}.jpg`;
         const { error: errFoto } = await supabase.storage.from("fotos").upload(rutaNueva, foto, { contentType: "image/jpeg" });
         if (errFoto) throw errFoto;
+      }
+      const rutasExtra = [];
+      for (const [n, x] of fotosExtra.entries()) {
+        if (x.ruta) { rutasExtra.push(x.ruta); continue; }
+        const ruta = `${usuario.id}/${id}-${Date.now()}-${n + 1}.jpg`;
+        const { error: errExtra } = await supabase.storage.from("fotos").upload(ruta, x.blob, { contentType: "image/jpeg" });
+        if (errExtra) throw errExtra;
+        subidas.push(ruta);
+        rutasExtra.push(ruta);
       }
       const fila = {
         tipo,
@@ -301,13 +340,18 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         macros_editados: !!ajuste,
         ...(extras.disponible ? { privada } : {}),
         ...(eligeGrupos ? { grupos: gruposElegidos } : {}),
-        alimentos: items.map(({ indice, ...i }) => ({ ...i, ...(i.por100 ? macrosDeItem(i) : {}) })),
+        alimentos: items.length
+          ? items.map(({ indice, ...i }) => ({ ...i, ...(i.por100 ? macrosDeItem(i) : {}) }))
+          : !ajuste && (foto || original?.foto_path) ? [{ nombre: "Foto", fuente: "foto" }] : [],
+        // Solo se manda si hay fotos extra (o había): así sigue andando aunque falte el SQL nuevo.
+        ...(rutasExtra.length || original?.fotos_extra?.length ? { fotos_extra: rutasExtra } : {}),
       };
       const { error: errFila } = original
         ? await supabase.from("comidas").update(fila).eq("id", id)
         : await supabase.from("comidas").insert({ ...fila, id, usuario_id: usuario.id, fecha: carga.fecha || fechaLocal() });
       if (errFila) throw errFila;
       if (rutaNueva && original?.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path]);
+      if (extrasQuitadas.length && !original?.grupo_comida) await supabase.storage.from("fotos").remove(extrasQuitadas);
       if (companeros.length) {
         const { error: errInvitar } = await supabase.rpc("invitar_a_comida", { p_comida: id, p_para: companeros });
         if (!errInvitar) {
@@ -319,7 +363,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       if (!original && !privada) avisarGrupo("comida", id);
       onGuardar(!original);
     } catch (err) {
-      if (rutaNueva) await supabase.storage.from("fotos").remove([rutaNueva]);
+      if (rutaNueva || subidas.length) await supabase.storage.from("fotos").remove([rutaNueva, ...subidas].filter(Boolean));
       setError(err.message || "No se pudo guardar");
       setGuardando(false);
     }
@@ -523,6 +567,26 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
             </label>
             <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Título de la comida" aria-label="Nota de la comida" maxLength={200} />
           </div>
+          {vistaFoto && (
+            <div className="fotos-extra" role="group" aria-label="Más fotos de esta comida">
+              {fotosExtra.map((x) => (
+                <span key={x.id} className="miniatura con-foto chica">
+                  {x.vista && <img src={x.vista} alt="Otra foto de la comida" />}
+                  <button type="button" className="quitar-foto" onClick={() => quitarFotoExtra(x)} aria-label="Quitar esta foto"><X size={13} /></button>
+                </span>
+              ))}
+              {fotosExtra.length < MAX_FOTOS_EXTRA && (
+                <label className="miniatura chica agregar-foto">
+                  <input type="file" accept="image/*" multiple onChange={sumarFotos} aria-label="Sumar otra foto de esta comida" />
+                  <Plus size={18} />
+                </label>
+              )}
+              {fotosExtra.length === 0 && <small>Sumá más fotos de esta comida</small>}
+            </div>
+          )}
+          {soloFoto && !reconociendo && (
+            <p className="nota solo-foto"><Camera size={14} /> Se publica solo la foto, sin calorías: queda el registro. Sirve si ya cargás todo con Apple Salud.</p>
+          )}
           {conIA && foto && items.length > 0 && !deFoto && !reconociendo && (
             <button type="button" className="boton-texto reconocer-foto" onClick={() => reconocer(foto, true)}>
               <Sparkles size={15} /> Reconocer los alimentos de la foto

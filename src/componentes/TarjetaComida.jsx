@@ -82,7 +82,8 @@ export function Reacciones({ comidaId, avisar }) {
 const listaNombres = (n) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0]);
 
 export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
-  const { castigo, usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder } = useDatos();
+  const { castigo, usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder, fotos } = useDatos();
+  const fotosExtra = (comida.fotos_extra || []).map((r) => fotos[r]);
   // Comida grupal: los que comieron lo mismo y, para quien la publicó, los que todavía no respondieron.
   const grupo = comida.grupo_comida;
   const nombresDe = (ids) => [...new Set(ids)].map((id) => (id === usuario.id ? "vos" : perfiles[id]?.nombre)).filter(Boolean);
@@ -123,7 +124,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
     // Sin permiso, la base responde sin error pero no borra nada.
     if (error || data?.length === 0) return avisar("No se pudo borrar");
     // La foto de una comida grupal la siguen usando los demás.
-    if (comida.foto_path && !comida.grupo_comida) await supabase.storage.from("fotos").remove([comida.foto_path]);
+    if (comida.foto_path && !comida.grupo_comida) await supabase.storage.from("fotos").remove([comida.foto_path, ...(comida.fotos_extra || [])]);
     await cargarComidas();
     avisar("Comida borrada");
   }
@@ -155,7 +156,9 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         </p>
       )}
 
-      {foto ? (
+      {foto && fotosExtra.length > 0 ? (
+        <CarruselFotos srcs={[foto, ...fotosExtra]} alt={texto} onZoom={onZoom} tapada={tapada} />
+      ) : foto ? (
         <button className="comida-foto" onClick={() => onZoom({ src: foto, alt: texto })} aria-label={`Ampliar foto: ${texto}`}>
           <img src={foto} alt={texto} loading="lazy" className={tapada ? "foto-castigo" : undefined} />
           {tapada && <span className="foto-castigo-texto">Subí tu foto de hoy para ver las del grupo</span>}
@@ -223,3 +226,29 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
     </motion.article>
   );
 }
+
+// Varias fotos de una misma comida: se pasan de costado, con puntitos abajo.
+function CarruselFotos({ srcs, alt, onZoom, tapada }) {
+  const [actual, setActual] = useState(0);
+  // El deslizar de las fotos no cambia de pantalla.
+  const frenar = (e) => e.stopPropagation();
+  return (
+    <div className="carrusel-fotos">
+      <div
+        className="carrusel-pista"
+        onScroll={(e) => setActual(Math.round(e.currentTarget.scrollLeft / Math.max(1, e.currentTarget.clientWidth)))}
+        onTouchStart={frenar}
+        onTouchEnd={frenar}
+      >
+        {srcs.map((src, n) => (
+          <button key={n} type="button" className="comida-foto" onClick={() => src && onZoom({ src, alt })} aria-label={`Ampliar foto ${n + 1} de ${srcs.length}: ${alt}`}>
+            {src ? <img src={src} alt={`${alt} (${n + 1} de ${srcs.length})`} loading="lazy" className={tapada ? "foto-castigo" : undefined} /> : <span className="adjunto-cargando" />}
+          </button>
+        ))}
+      </div>
+      <span className="carrusel-contador" aria-hidden="true">{actual + 1}/{srcs.length}</span>
+      <div className="carrusel-puntos" aria-hidden="true">{srcs.map((_, n) => <i key={n} className={n === actual ? "activo" : undefined} />)}</div>
+    </div>
+  );
+}
+

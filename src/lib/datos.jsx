@@ -88,7 +88,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     guardarFotos(nuevas.map((u) => ({ ruta: u.path, url: u.signedUrl })));
   }, []);
 
-  const firmarFotos = useCallback((lista) => firmarRutas(lista.map((c) => c.foto_path)), [firmarRutas]);
+  const firmarFotos = useCallback((lista) => firmarRutas(lista.flatMap((c) => [c.foto_path, ...(c.fotos_extra || [])])), [firmarRutas]);
 
   const cargarComidas = useCallback(async () => {
     const { data, error } = await supabase

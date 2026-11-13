@@ -2088,3 +2088,26 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .hp-botones { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 10px; }
 .hp-boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border-radius: 16px; background: rgb(255 255 255 / 16%); color: #fff; font-weight: 800; font-size: 1rem; }
 .hp-boton.claro { background: #fff; color: #046a43; }
+
+/* Varias fotos por comida */
+.fotos-extra { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fotos-extra small { color: var(--tinta-2); font-size: 0.8rem; }
+.miniatura.chica { width: 44px; height: 44px; border-radius: 12px; }
+.miniatura.chica .quitar-foto { position: absolute; top: 2px; right: 2px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgb(0 0 0 / 60%); color: #fff; }
+.agregar-foto { border: 1.5px dashed var(--borde); background: transparent; }
+.solo-foto { display: flex; align-items: center; gap: 6px; margin: 0; }
+.solo-foto svg { flex: none; }
+.carrusel-fotos { position: relative; }
+.carrusel-pista { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.carrusel-pista::-webkit-scrollbar { display: none; }
+.carrusel-pista > .comida-foto { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; }
+.fotos-lista .carrusel-pista { border-radius: 16px; }
+.fotos-lista .carrusel-pista > .comida-foto { border-radius: 0; }
+.carrusel-contador { position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 999px; background: rgb(0 0 0 / 50%); color: #fff; font-size: 0.74rem; font-weight: 700; pointer-events: none; }
+.carrusel-puntos { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 5px; pointer-events: none; }
+.carrusel-puntos i { width: 6px; height: 6px; border-radius: 50%; background: rgb(255 255 255 / 55%); transition: width 0.2s, background 0.2s; }
+.carrusel-puntos i.activo { width: 16px; border-radius: 3px; background: #fff; }
+.visor-miniaturas { display: flex; justify-content: center; gap: 8px; padding: 8px 16px 0; }
+.visor-miniaturas button { width: 46px; height: 46px; overflow: hidden; border-radius: 10px; border: 2px solid transparent; opacity: 0.6; background: rgb(255 255 255 / 12%); }
+.visor-miniaturas button.activa { border-color: #fff; opacity: 1; }
+.visor-miniaturas img { width: 100%; height: 100%; object-fit: cover; }

@@ -14,7 +14,9 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
   const { perfiles, fotos, abrirPerfil, responder } = useDatos();
   const [indice, setIndice] = useState(inicio);
   const [paso, setPaso] = useState(0);
+  const [cual, setCual] = useState(0);
   const comida = lista[indice];
+  useEffect(() => setCual(0), [indice]);
 
   function mover(sentido) {
     const proxima = indice + sentido;
@@ -44,6 +46,8 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
   const tipo = tipoInfo(comida.tipo);
   const titulo = comida.descripcion || tipo.texto;
   const soloFoto = comida.alimentos?.[0]?.fuente === "foto" && !comida.calorias;
+  const rutas = [comida.foto_path, ...(comida.fotos_extra || [])].filter(Boolean);
+  const ruta = rutas[Math.min(cual, rutas.length - 1)];
 
   function verPerfil() {
     abrirPerfil(comida.usuario_id);
@@ -66,8 +70,8 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
       <div className="visor-imagen">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.img
-            key={comida.id}
-            src={fotos[comida.foto_path]}
+            key={`${comida.id}-${cual}`}
+            src={fotos[ruta]}
             alt={titulo}
             drag
             dragDirectionLock
@@ -83,6 +87,16 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
         {indice > 0 && <button className="visor-flecha izquierda" onClick={() => mover(-1)} aria-label="Foto anterior"><ChevronLeft size={24} /></button>}
         {indice < lista.length - 1 && <button className="visor-flecha derecha" onClick={() => mover(1)} aria-label="Foto siguiente"><ChevronRight size={24} /></button>}
       </div>
+
+      {rutas.length > 1 && (
+        <div className="visor-miniaturas" role="group" aria-label="Fotos de esta comida">
+          {rutas.map((r, n) => (
+            <button key={r} className={n === cual ? "activa" : undefined} onClick={() => setCual(n)} aria-label={`Foto ${n + 1} de ${rutas.length}`} aria-pressed={n === cual}>
+              {fotos[r] && <img src={fotos[r]} alt="" />}
+            </button>
+          ))}
+        </div>
+      )}
 
       <footer className="visor-pie">
         <p className="visor-texto">{titulo}</p>

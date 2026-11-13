@@ -1,5 +1,5 @@
--- 039: cada uno puede eliminar sus mensajes del chat hasta 4 horas despues de mandarlos.
--- El mensaje queda en su lugar como "Mensaje eliminado": se borra el texto, la foto o el audio y las reacciones.
+-- 039: eliminar mensajes del chat (hasta 4 horas despues), reacciones nuevas en las fotos y varias fotos por comida.
+-- El mensaje eliminado queda en su lugar como "Mensaje eliminado": se borra el texto, la foto o el audio y las reacciones.
 
 alter table public.mensajes add column if not exists eliminado_en timestamptz;
 
@@ -45,4 +45,9 @@ grant execute on function public.eliminar_mensaje(uuid) to authenticated;
 alter table public.reacciones drop constraint if exists reacciones_emoji_check;
 alter table public.reacciones add constraint reacciones_emoji_check check (char_length(emoji) between 1 and 16);
 
-select 'Listo: ya se pueden eliminar mensajes hasta 4 horas despues.' as resultado;
+-- Varias fotos por comida: la principal sigue en foto_path y las demas van aca (hasta 3 mas).
+alter table public.comidas add column if not exists fotos_extra text[] not null default '{}';
+alter table public.comidas drop constraint if exists comidas_fotos_extra_check;
+alter table public.comidas add constraint comidas_fotos_extra_check check (cardinality(fotos_extra) <= 3);
+
+select 'Listo: eliminar mensajes, reacciones nuevas y varias fotos por comida.' as resultado;
