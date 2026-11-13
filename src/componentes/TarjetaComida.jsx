@@ -188,7 +188,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
             <AnimatePresence initial={false}>
               {detalle && (
                 <motion.div className="detalle-pliegue" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-                  <DetalleAlimentos alimentos={alimentos} />
+                  <DetalleAlimentos alimentos={alimentos} autorComida={comida.usuario_id} />
                 </motion.div>
               )}
             </AnimatePresence>

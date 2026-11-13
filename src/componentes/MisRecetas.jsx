@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChefHat, ChevronRight, Plus } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
@@ -8,12 +8,23 @@ import VerReceta from "./VerReceta.jsx";
 
 const redondo = (n) => Math.round(n).toLocaleString("es-AR");
 
-export default function MisRecetas({ avisar }) {
+export default function MisRecetas({ avisar, abrir }) {
   const { extras, perfiles } = useDatos();
   const [editando, setEditando] = useState(null);
   const [viendo, setViendo] = useState(null);
   const recetas = extras.recetas || [];
   const delGrupo = (extras.recetasGrupo || []).filter((r) => perfiles[r.usuario_id]);
+  // Desde "Ver receta" en una comida: se abre esa receta. Si ya no está, se avisa.
+  const [abierta, setAbierta] = useState(null);
+  useEffect(() => {
+    if (!abrir || abierta === abrir.vez || !extras.disponible) return;
+    setAbierta(abrir.vez);
+    const propia = recetas.find((r) => r.id === abrir.receta);
+    const ajena = (extras.recetasGrupo || []).find((r) => r.id === abrir.receta);
+    if (propia) setEditando(propia);
+    else if (ajena) setViendo(ajena);
+    else avisar?.("Esa receta ya no está compartida");
+  }, [abrir, abierta, extras.disponible, extras.recetasGrupo, recetas, avisar]);
 
   return (
     <section className="tarjeta ajuste">

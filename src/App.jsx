@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { borrarFotosGuardadas } from "./lib/fotosGuardadas.js";
+import { EVENTO_IR } from "./lib/navegar.js";
+import InformeSemanal from "./componentes/InformeSemanal.jsx";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { CalendarDays, Plus, Settings, Trophy, Users } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
@@ -158,6 +160,7 @@ function Principal({ recuperando, onRecuperado }) {
   const [logroNuevo, setLogroNuevo] = useState(null);
   const toque = useRef(null);
   const terminarLogro = useCallback(() => setLogroNuevo(null), []);
+  const [pedidoAjustes, setPedidoAjustes] = useState(null);
 
   // La animación entra por el lado hacia el que se va.
   const irA = useCallback((proxima, proximaSeccion) => {
@@ -170,6 +173,19 @@ function Principal({ recuperando, onRecuperado }) {
       return nueva;
     });
   }, []);
+
+  // Links internos (de una comida a su receta): cierra lo que esté abierto y va a la sección.
+  useEffect(() => {
+    const ir = (e) => {
+      abrirPerfil(null);
+      setCarga(null);
+      irA(e.detail.vista);
+      if (e.detail.vista === "ajustes") setPedidoAjustes({ ...e.detail, vez: Date.now() });
+      scrollTo(0, 0);
+    };
+    window.addEventListener(EVENTO_IR, ir);
+    return () => window.removeEventListener(EVENTO_IR, ir);
+  }, [irA, abrirPerfil]);
 
   function alEmpezarToque(e) {
     const t = e.touches[0];
@@ -388,7 +404,7 @@ function Principal({ recuperando, onRecuperado }) {
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} onFiesta={() => setFiesta(true)} avisar={avisar} />}
             {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} sentido={sentido} />}
             {vista === "retos" && <Retos />}
-            {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} />}
+            {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} pedido={pedidoAjustes} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -415,6 +431,7 @@ function Principal({ recuperando, onRecuperado }) {
       <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} onPostre={(comida) => setCarga({ comida, postre: true })} avisar={avisar} />
       <Fiesta abierta={fiesta} onCerrar={() => setFiesta(false)} avisar={avisar} />
+      <InformeSemanal abiertoAlInicio={pedida === "informe"} />
       <Importar
         pedido={importar}
         onCerrar={() => setImportar(null)}

@@ -863,6 +863,9 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .detalle-nombre, .detalle-macros { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
 .detalle-macros { flex: none; align-items: flex-end; text-align: right; }
 .detalle-alimentos small { color: var(--tinta-2); font-size: 0.75rem; }
+.detalle-receta { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; margin: 1px 0; color: var(--tinta-2); font-size: 0.72rem; font-weight: 600; }
+.detalle-receta svg { color: var(--acento); }
+.detalle-receta-link { display: inline-flex; align-items: center; gap: 1px; min-height: 24px; margin-left: 4px; padding: 0 2px; color: var(--acento); font-size: 0.72rem; font-weight: 800; }
 .visor-alimentos summary { min-height: 36px; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
 .visor-alimentos .detalle-alimentos { max-height: 30dvh; overflow-y: auto; }
 .visor-alimentos small { color: rgb(255 255 255 / 76%); }
@@ -1881,3 +1884,39 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* El final se ve prendido aunque todavía falte: es la meta. */
 .camino-paso.final .titulo-legendario { color: transparent; }
 .camino-paso.final .camino-figura { opacity: 0.9; filter: none; }
+
+/* Informe semanal */
+.informe-aviso { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 12px; padding: 12px 14px; border-radius: 18px; background: var(--acento-suave); color: var(--sobre-acento-suave); text-align: left; }
+.informe-aviso > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.informe-aviso strong { font-size: 0.95rem; }
+.informe-aviso small { font-size: 0.78rem; opacity: 0.85; }
+.informe-aviso-icono { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 12px; background: var(--acento); color: var(--sobre-acento); }
+.informe { display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; }
+.informe-rango { margin: -4px 0 0; color: var(--tinta-2); font-size: 0.85rem; font-weight: 600; }
+.informe-heroe { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 20px; background: var(--acento); color: var(--sobre-acento); }
+.informe-etiqueta { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; }
+.informe-numero { font-family: var(--titulo); font-size: 2.6rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.informe-numero small { font-size: 1rem; font-weight: 700; }
+.informe-meta { font-size: 0.85rem; opacity: 0.9; }
+.informe-cambio { display: inline-flex; align-items: center; gap: 2px; font-size: 0.78rem; font-weight: 700; opacity: 0.9; }
+.informe-barras { display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 8px; padding: 4px 4px 0; }
+.informe-dia { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; min-width: 0; }
+.informe-dia i { display: block; width: 100%; max-width: 30px; border-radius: 8px 8px 4px 4px; background: var(--acento); transform-origin: bottom; }
+.informe-dia.sin-datos i { background: var(--borde); }
+.informe-dia.mejor i { background: linear-gradient(var(--acento), #f2b33d); }
+.informe-dia small { color: var(--tinta-2); font-size: 0.75rem; font-weight: 700; }
+.informe-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.informe-macro { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px; border-radius: 16px; background: var(--superficie-2); }
+.informe-macro span { color: var(--tinta-2); font-size: 0.75rem; font-weight: 700; }
+.informe-macro strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.informe-macro small { color: var(--tinta-2); font-size: 0.7rem; }
+.informe-veredicto { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--superficie-2); }
+.informe-veredicto h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 0.92rem; }
+.informe-veredicto h3 svg { color: var(--acento); }
+.informe-veredicto ul { display: flex; flex-direction: column; gap: 5px; margin: 0; padding-left: 20px; font-size: 0.86rem; line-height: 1.35; }
+.informe-datos { display: flex; flex-direction: column; }
+.informe-dato { display: flex; align-items: flex-start; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--borde); }
+.informe-dato > span:last-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.informe-dato strong { font-size: 0.88rem; }
+.informe-dato small { color: var(--tinta-2); font-size: 0.8rem; line-height: 1.35; }
+.informe-dato-icono { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 10px; background: var(--acento-suave); color: var(--sobre-acento-suave); }

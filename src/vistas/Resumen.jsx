@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, Zap } from "lucide-react";
+import { Activity, BarChart3, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { calcularRacha, sumarComidas, TIPOS, tipoInfo } from "../lib/macros.js";
 import { Indicador, Anillo, Avatar, BarraMacros, Numero, vibrar } from "../componentes/Base.jsx";
 import InvitacionesComida from "../componentes/InvitacionesComida.jsx";
+import { abrirInforme } from "../componentes/InformeSemanal.jsx";
 import { FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
 import { esDeAppleSalud } from "../lib/importar.js";
 import { esDeNoche, fechaDeLaNoche } from "../componentes/Fiesta.jsx";
@@ -72,6 +73,14 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
       </div>
 
       <InvitacionesComida avisar={avisar} />
+
+      {fecha === hoy && informeListo() && (
+        <button className="informe-aviso" onClick={abrirInforme}>
+          <span className="informe-aviso-icono" aria-hidden="true"><BarChart3 size={20} /></span>
+          <span><strong>Tu informe de la semana está listo</strong><small>Promedios, tu mejor día y cómo vas contra la semana pasada</small></span>
+          <ChevronRight size={18} aria-hidden="true" />
+        </button>
+      )}
 
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
 
@@ -431,6 +440,12 @@ function ResumenSemana() {
         </div>
       </header>
 
+      <button className="informe-aviso" onClick={abrirInforme}>
+        <span className="informe-aviso-icono" aria-hidden="true"><BarChart3 size={20} /></span>
+        <span><strong>Tu informe semanal</strong><small>De lunes a domingo, con todo lo que cargaste</small></span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </button>
+
       <div className="fichas-personas" role="group" aria-label="Elegir persona">
         {Object.values(perfiles).map((p) => (
           <button key={p.id} className={p.id === personaId ? "ficha activa" : "ficha"} onClick={() => setPersonaId(p.id)} aria-pressed={p.id === personaId}>
@@ -557,4 +572,9 @@ function GraficoSemana({ datos, meta }) {
       </div>
     </div>
   );
+}
+
+// El informe se ofrece el domingo desde las 18 y el lunes.
+function informeListo(ahora = new Date()) {
+  return (ahora.getDay() === 0 && ahora.getHours() >= 18) || ahora.getDay() === 1;
 }

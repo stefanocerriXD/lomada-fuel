@@ -92,7 +92,7 @@ export default function Visor({ lista, inicio = 0, onCerrar }) {
         {alimentosVisibles(comida.alimentos).length > 0 && (
           <details className="visor-alimentos">
             <summary>Ver alimentos</summary>
-            <DetalleAlimentos alimentos={comida.alimentos} />
+            <DetalleAlimentos alimentos={comida.alimentos} autorComida={comida.usuario_id} />
           </details>
         )}
         {!comida.privada && <Reacciones comidaId={comida.id} />}

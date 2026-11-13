@@ -32,7 +32,7 @@ function textoObjetivo(salud) {
   return `${objetivo} · ${detalle} · P ${plan.proteinas} g · C ${plan.carbohidratos} g · G ${plan.grasas} g`;
 }
 
-export default function Ajustes({ avisar, onEditarCuerpo }) {
+export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const { castigo, usuario, yo, cargarPerfiles, salud, grupo, misGrupos } = useDatos();
   const [nombre, setNombre] = useState(yo.nombre);
   const [color, setColor] = useState(yo.color);
@@ -41,7 +41,9 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
   const [tema, setTema] = useState(leerTema());
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
-  const [seccion, setSeccion] = useState(null);
+  const [seccion, setSeccion] = useState(pedido?.seccion || null);
+  // Llegar desde un link (por ejemplo, "Ver receta" en una comida) abre esa sección.
+  useEffect(() => { if (pedido?.seccion) setSeccion(pedido.seccion); }, [pedido]);
 
   const cambios = nombre.trim() !== yo.nombre || color !== yo.color || meta !== yo.meta_calorias;
 
@@ -179,7 +181,7 @@ export default function Ajustes({ avisar, onEditarCuerpo }) {
       {seccion === "whoop" && <ConexionWhoop avisar={avisar} />}
       {seccion === "tutorial" && <Tutorial />}
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}
-      {seccion === "recetas" && <MisRecetas avisar={avisar} />}
+      {seccion === "recetas" && <MisRecetas avisar={avisar} abrir={pedido?.receta ? pedido : null} />}
       {seccion === "caca" && <LaCaca avisar={avisar} />}
       {seccion === "grupos" && <MisGrupos avisar={avisar} />}
 
