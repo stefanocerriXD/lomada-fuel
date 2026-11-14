@@ -32,7 +32,7 @@ export default function Perfil({ onEditar, onEditarComida }) {
 }
 
 function Contenido({ perfil, onEditar, onEditarComida }) {
-  const { usuario, comidas, fotos, extras, cargarHistorial, perfiles, progreso, reacciones } = useDatos();
+  const { usuario, comidas, fotos, extras, cargarHistorial, perfiles, progreso, reacciones, castigo } = useDatos();
   const [abierto, setAbierto] = useState(null);
   const [lista, setLista] = useState(null);
   const [error, setError] = useState(false);
@@ -73,12 +73,13 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
   const abrirFoto = (comida) => setVisor({ lista: conFoto, inicio: Math.max(conFoto.findIndex((c) => c.id === comida.id), 0) });
 
   return (
-    <div className="perfil">
+    <div className={castigo.calavera && !propio ? "perfil fotos-ocultas" : "perfil"}>
       <div className="perfil-cabecera">
         <Avatar perfil={perfil} tam={68} />
         <div>
           {perfil.usuario && <strong>@{perfil.usuario}</strong>}
           <small>Meta: {numero(perfil.meta_calorias)} kcal por día</small>
+          {perfil.calavera && <span className="sello-multas calavera">💀 Dos semanas sin subir fotos</span>}
           {perfil.caca === "evo" && <span className="sello-multas evo">BOCHA EVO esta semana</span>}
           {cacasSemana > 0 && <span className="sello-multas">{"💩".repeat(Math.min(cacasSemana, 7))} esta semana</span>}
           {propio && <button className="boton-texto" onClick={onEditar}><Pencil size={14} /> Editar perfil</button>}

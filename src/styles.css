@@ -2125,3 +2125,41 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .boton-microfono.escuchando .microfono-circulo { background: #e5383b; }
 .boton-microfono.escuchando .microfono-circulo i { background: #e5383b; }
 .enlace-buscar { display: inline; padding: 0; color: var(--sobre-acento-suave); font-weight: 700; text-decoration: underline; }
+
+/* Imágenes: la cabecera de cada comida abierta queda fija arriba, para agruparla desde cualquier lado. */
+:root { --tope-fotos: 118px; }
+.grupo-fotos.abierto > .grupo-fotos-cabecera { position: sticky; top: calc(var(--tope-fotos) + env(safe-area-inset-top)); z-index: 7; min-height: 60px; padding-block: 8px; background: var(--fondo); border-bottom: 1px solid var(--borde); }
+.grupo-fotos-agrupar { color: var(--sobre-acento-suave); font-size: 0.82rem; font-weight: 700; }
+.fotos-lista .ver-alimentos[aria-expanded="true"] { top: calc(var(--tope-fotos) + 60px + env(safe-area-inset-top)); }
+.fotos-lista .comida-cuerpo { scroll-margin-top: calc(var(--tope-fotos) + 74px + env(safe-area-inset-top)); }
+.grupo-fotos { scroll-margin-top: calc(var(--tope-fotos) + env(safe-area-inset-top)); }
+
+/* El postre: una foto más, marcada, y desde la primera se ve que hay. */
+.etiqueta-postre { position: absolute; left: 10px; bottom: 10px; max-width: calc(100% - 20px); overflow: hidden; padding: 6px 11px; border-radius: 999px; background: rgb(0 0 0 / 62%); color: #fff; font-size: 0.84rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; backdrop-filter: blur(6px); }
+.carrusel-fotos { position: relative; }
+.ir-postre { position: absolute; top: 10px; left: 10px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; background: #fff; color: #2b1a0e; font-size: 0.84rem; font-weight: 800; box-shadow: 0 2px 10px rgb(0 0 0 / 25%); }
+.ir-postre span { font-size: 1.05rem; line-height: 1; }
+.carrusel-puntos i.postre { background: #f4a340; }
+.comida-postre { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 2px 0 4px; font-size: 0.92rem; }
+.comida-postre span { color: var(--tinta-2); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.visor-imagen { position: relative; }
+.visor-postre { position: absolute; top: 12px; left: 50%; z-index: 2; padding: 6px 13px; border-radius: 999px; background: rgb(0 0 0 / 62%); color: #fff; font-size: 0.86rem; font-weight: 700; transform: translateX(-50%); white-space: nowrap; }
+.visor-miniaturas button { position: relative; }
+.miniatura-postre { position: absolute; right: 2px; bottom: 2px; font-size: 0.8rem; line-height: 1; }
+.visor-imagen.tapada img { filter: blur(22px) saturate(0.6); }
+.visor-imagen.oculta img { visibility: hidden; }
+.visor-imagen .foto-castigo-texto { z-index: 2; pointer-events: none; }
+
+/* La calavera: dos semanas sin subir fotos y no se ve ninguna del grupo. */
+.foto-oculta { display: grid; place-items: center; aspect-ratio: 4 / 5; max-height: 58dvh; width: 100%; border-radius: 16px; background: repeating-linear-gradient(135deg, #1b1b1d 0 14px, #232326 14px 28px); color: #f2f2f2; }
+.foto-oculta-texto { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 20px; font-weight: 800; text-align: center; }
+.foto-oculta-texto > span { font-size: 2.6rem; }
+.foto-oculta-texto small { color: #bdbdbd; font-weight: 600; }
+.fotos-ocultas .amigo-fotos img, .fotos-ocultas .dia-por-comida-foto img, .fotos-ocultas .perfil-miniatura img, .fotos-ocultas .galeria img { filter: blur(14px) brightness(0.25); }
+.avatar-caca.calavera { filter: none; }
+.sello-multas.calavera { background: #1b1b1d; color: #f2f2f2; }
+
+/* El postre al cargarlo: su foto y su nombre. */
+.postre-datos { display: flex; align-items: center; gap: 12px; }
+.postre-datos input[type="text"], .postre-datos > input { flex: 1; min-width: 0; }
+.miniatura-emoji { font-size: 1.7rem; line-height: 1; }

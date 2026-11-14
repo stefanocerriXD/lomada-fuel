@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
+import { marcaDelNombre } from "../lib/multas.js";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import IconoComida from "./IconoComida.jsx";
@@ -84,6 +85,9 @@ const listaNombres = (n) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[
 export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
   const { castigo, usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder, fotos } = useDatos();
   const fotosExtra = (comida.fotos_extra || []).map((r) => fotos[r]);
+  // El postre va como una foto más, al final, marcada.
+  const fotoPostre = comida.postre_foto ? fotos[comida.postre_foto] : null;
+  const conPostre = Boolean(comida.postre_foto || comida.postre_nombre);
   // Comida grupal: los que comieron lo mismo y, para quien la publicó, los que todavía no respondieron.
   const grupo = comida.grupo_comida;
   const nombresDe = (ids) => [...new Set(ids)].map((id) => (id === usuario.id ? "vos" : perfiles[id]?.nombre)).filter(Boolean);
@@ -95,6 +99,11 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const tipo = tipoInfo(comida.tipo);
   // Con la maldición del Bocha, las fotos del grupo se ven borrosas hasta subir la propia.
   const tapada = castigo.diario && !propia;
+  // Dos semanas sin subir: no se ve ninguna foto de los demás, ni borrosa.
+  const oculta = castigo.calavera && !propia;
+  const fotoPrincipal = comida.foto_path ? foto : fotoPostre;
+  const srcs = comida.foto_path ? [foto, ...fotosExtra, ...(comida.postre_foto ? [fotoPostre] : [])] : [];
+  const ampliar = (n = 0) => (tapada || oculta ? avisar?.(oculta ? "Hace dos semanas que no subís fotos. Subí la tuya para volver a ver las del grupo." : "Subí tu foto de hoy para ver las del grupo.") : onZoom({ n }));
   const alimentos = comida.alimentos || [];
   const texto = comida.descripcion || tipo.texto;
   // Foto de una comida cuyas calorías ya entraron con el total importado del día.
@@ -124,7 +133,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
     // Sin permiso, la base responde sin error pero no borra nada.
     if (error || data?.length === 0) return avisar("No se pudo borrar");
     // La foto de una comida grupal la siguen usando los demás.
-    if (comida.foto_path && !comida.grupo_comida) await supabase.storage.from("fotos").remove([comida.foto_path, ...(comida.fotos_extra || [])]);
+    if ((comida.foto_path || comida.postre_foto) && !comida.grupo_comida) await supabase.storage.from("fotos").remove([comida.foto_path, ...(comida.fotos_extra || []), comida.postre_foto].filter(Boolean));
     await cargarComidas();
     avisar("Comida borrada");
   }
@@ -142,7 +151,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         <button className="comida-autor" onClick={() => abrirPerfil(comida.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}>
           <Avatar perfil={perfil} tam={38} />
           <span className="comida-autor-datos">
-            <strong>{perfil?.nombre || "Amigo"}{perfil?.caca && " 💩"}</strong>
+            <strong>{perfil?.nombre || "Amigo"}{marcaDelNombre(perfil)}</strong>
             <span>{tipo.texto} · {haceCuanto(comida.creado_en)}{comida.privada && <><Lock size={12} className="candado" /> Solo vos</>}</span>
           </span>
         </button>
@@ -156,12 +165,17 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         </p>
       )}
 
-      {foto && fotosExtra.length > 0 ? (
-        <CarruselFotos srcs={[foto, ...fotosExtra]} alt={texto} onZoom={onZoom} tapada={tapada} />
-      ) : foto ? (
-        <button className="comida-foto" onClick={() => onZoom({ src: foto, alt: texto })} aria-label={`Ampliar foto: ${texto}`}>
-          <img src={foto} alt={texto} loading="lazy" className={tapada ? "foto-castigo" : undefined} />
+      {oculta && (comida.foto_path || comida.postre_foto) ? (
+        <button className="comida-foto foto-oculta" onClick={() => ampliar()} aria-label="Foto oculta">
+          <span className="foto-oculta-texto"><span aria-hidden="true">💀</span> Dos semanas sin subir fotos.<small>Subí la tuya para volver a ver las del grupo.</small></span>
+        </button>
+      ) : srcs.length > 1 ? (
+        <CarruselFotos srcs={srcs} alt={texto} onZoom={ampliar} tapada={tapada} postre={comida.postre_foto ? srcs.length - 1 : -1} nombrePostre={comida.postre_nombre} />
+      ) : fotoPrincipal ? (
+        <button className="comida-foto" onClick={() => ampliar()} aria-label={`Ampliar foto: ${texto}`}>
+          <img src={fotoPrincipal} alt={texto} loading="lazy" className={tapada ? "foto-castigo" : undefined} />
           {tapada && <span className="foto-castigo-texto">Subí tu foto de hoy para ver las del grupo</span>}
+          {!comida.foto_path && <span className="etiqueta-postre">🍮 Postre{comida.postre_nombre ? ` · ${comida.postre_nombre}` : ""}</span>}
           <span className="comida-foto-ampliar" aria-hidden="true"><Maximize2 size={15} /></span>
         </button>
       ) : (
@@ -173,6 +187,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
 
       <div className="comida-cuerpo" ref={cuerpo}>
         <p className="comida-texto">{texto}</p>
+        {conPostre && <p className="comida-postre">🍮 <span>Postre</span>{comida.postre_nombre && <strong>{comida.postre_nombre}</strong>}</p>}
         {soloFoto && <p className="comida-items">Contada en el total del día</p>}
         {!soloFoto && <ul className="comida-macros">
           <li><strong>{(comida.calorias || 0).toLocaleString("es-AR")} kcal</strong></li>
@@ -228,26 +243,36 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
 }
 
 // Varias fotos de una misma comida: se pasan de costado, con puntitos abajo.
-function CarruselFotos({ srcs, alt, onZoom, tapada }) {
+// La del postre va al final, con su cartel, y desde la primera se ve que hay postre.
+function CarruselFotos({ srcs, alt, onZoom, tapada, postre = -1, nombrePostre }) {
   const [actual, setActual] = useState(0);
+  const pista = useRef(null);
   // El deslizar de las fotos no cambia de pantalla.
   const frenar = (e) => e.stopPropagation();
+  const irA = (n) => pista.current?.scrollTo({ left: n * pista.current.clientWidth, behavior: "smooth" });
   return (
     <div className="carrusel-fotos">
+      {postre > 0 && actual !== postre && (
+        <button type="button" className="ir-postre" onClick={() => irA(postre)} aria-label="Ver la foto del postre">
+          🍮 Postre <span aria-hidden="true">›</span>
+        </button>
+      )}
       <div
+        ref={pista}
         className="carrusel-pista"
         onScroll={(e) => setActual(Math.round(e.currentTarget.scrollLeft / Math.max(1, e.currentTarget.clientWidth)))}
         onTouchStart={frenar}
         onTouchEnd={frenar}
       >
         {srcs.map((src, n) => (
-          <button key={n} type="button" className="comida-foto" onClick={() => src && onZoom({ src, alt })} aria-label={`Ampliar foto ${n + 1} de ${srcs.length}: ${alt}`}>
-            {src ? <img src={src} alt={`${alt} (${n + 1} de ${srcs.length})`} loading="lazy" className={tapada ? "foto-castigo" : undefined} /> : <span className="adjunto-cargando" />}
+          <button key={n} type="button" className="comida-foto" onClick={() => src && onZoom(n)} aria-label={n === postre ? `Ampliar la foto del postre${nombrePostre ? `: ${nombrePostre}` : ""}` : `Ampliar foto ${n + 1} de ${srcs.length}: ${alt}`}>
+            {src ? <img src={src} alt={n === postre ? `Postre${nombrePostre ? `: ${nombrePostre}` : ""}` : `${alt} (${n + 1} de ${srcs.length})`} loading="lazy" className={tapada ? "foto-castigo" : undefined} /> : <span className="adjunto-cargando" />}
+            {n === postre && <span className="etiqueta-postre">🍮 Postre{nombrePostre ? ` · ${nombrePostre}` : ""}</span>}
           </button>
         ))}
       </div>
       <span className="carrusel-contador" aria-hidden="true">{actual + 1}/{srcs.length}</span>
-      <div className="carrusel-puntos" aria-hidden="true">{srcs.map((_, n) => <i key={n} className={n === actual ? "activo" : undefined} />)}</div>
+      <div className="carrusel-puntos" aria-hidden="true">{srcs.map((_, n) => <i key={n} className={[n === actual && "activo", n === postre && "postre"].filter(Boolean).join(" ") || undefined} />)}</div>
     </div>
   );
 }

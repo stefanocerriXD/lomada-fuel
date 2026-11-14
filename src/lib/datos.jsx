@@ -5,7 +5,7 @@ import { accionWhoop } from "./api.js";
 import { haceDias } from "./fechas.js";
 import { cantidades, nivelesGuardados, nivelGeneral } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
-import { castigoDe, marcaDeCaca } from "./multas.js";
+import { castigoDe, conCalavera, marcaDeCaca } from "./multas.js";
 import { marcarActividad } from "./vivo.js";
 import { ponerInsignia } from "./insignia.js";
 
@@ -88,7 +88,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     guardarFotos(nuevas.map((u) => ({ ruta: u.path, url: u.signedUrl })));
   }, []);
 
-  const firmarFotos = useCallback((lista) => firmarRutas(lista.flatMap((c) => [c.foto_path, ...(c.fotos_extra || [])])), [firmarRutas]);
+  const firmarFotos = useCallback((lista) => firmarRutas(lista.flatMap((c) => [c.foto_path, ...(c.fotos_extra || []), c.postre_foto])), [firmarRutas]);
 
   const cargarComidas = useCallback(async () => {
     const { data, error } = await supabase
@@ -585,11 +585,14 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     return Object.fromEntries(Object.entries(perfiles).map(([id, p]) => [id, {
       ...p,
       nivel: nivelGeneral(nivelesGuardados(medallas.filter((m) => m.usuario_id === id).map((m) => m.codigo))).nivel,
-      ...(extras.multasActivas ? { caca: marcaDeCaca({ usuarioId: id, multas: extras.multas, bochaEvo: extras.bochaEvo }) } : {}),
+      ...(extras.multasActivas ? {
+        caca: marcaDeCaca({ usuarioId: id, multas: extras.multas, bochaEvo: extras.bochaEvo }),
+        calavera: conCalavera({ usuarioId: id, multas: extras.multas, comidas }),
+      } : {}),
     }]));
-  }, [perfiles, extras]);
+  }, [perfiles, extras, comidas]);
   const castigo = useMemo(() => {
-    const base = extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, diario: false, activo: false };
+    const base = extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, calavera: false, diario: false, activo: false };
     if (grupo.conBocha) return { ...base, soloTexto: base.diario };
     // Sin Bocha es tipo BeReal: las fotos de los demás borrosas y sin reaccionar hasta subir la tuya. El chat sigue igual.
     return { ...base, marca: base.marca && "dia", evo: false, activo: base.diario, soloTexto: false };

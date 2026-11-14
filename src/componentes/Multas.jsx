@@ -27,14 +27,14 @@ export default function Multas() {
         {tabla.map(({ perfil, cacas }) => (
           <li key={perfil.id} className={cacas > 0 ? "con-multas" : ""}>
             <Avatar perfil={perfil} tam={30} />
-            <span className="multas-nombre">{perfil.id === usuario.id ? "Vos" : perfil.nombre}</span>
+            <span className="multas-nombre">{perfil.id === usuario.id ? "Vos" : perfil.nombre}{perfil.calavera && " 💀"}</span>
             <strong aria-label={`${cacas} ${cacas === 1 ? "caca" : "cacas"}`}>{cacas > 0 ? "💩".repeat(Math.min(cacas, 7)) : "0"}</strong>
           </li>
         ))}
       </ul>
       <small className="multas-nota">{grupo.conBocha
         ? "Cada día sin foto es una maldición del Bocha. El domingo a la noche, el que más juntó se come al Bocha Evo toda la semana siguiente."
-        : "Cada día sin foto es una 💩. Al día siguiente ves borrosas las fotos de los demás hasta subir la tuya."}</small>
+        : "Cada día sin foto es una 💩. Al día siguiente ves borrosas las fotos de los demás hasta subir la tuya."} Dos semanas sin subir: 💀 y no ves ninguna foto hasta subir la tuya.</small>
     </section>
   );
 }

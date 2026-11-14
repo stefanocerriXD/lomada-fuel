@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, ChevronLeft, ChevronRight, Images } from "lucide-react";
 import { useDatos, VENTANA_DIAS } from "../lib/datos.jsx";
@@ -46,7 +46,7 @@ export default function Imagenes({ onCargar, avisar }) {
     const ids = new Set(base.map((c) => c.id));
     const vistas = new Set();
     return base
-      .filter((c) => c.foto_path && c.tipo !== "resumen")
+      .filter((c) => (c.foto_path || c.postre_foto) && c.tipo !== "resumen")
       .filter((c) => {
         if (!c.grupo_comida) return true;
         if (ids.has(c.grupo_comida)) return c.id === c.grupo_comida;
@@ -61,7 +61,18 @@ export default function Imagenes({ onCargar, avisar }) {
   const grupos = TIPOS.map((t) => ({ ...t, lista: delDia.filter((c) => c.tipo === t.id) }));
   const conLista = grupos.filter((g) => g.lista.length).map((g) => g.id);
   const todasAbiertas = conLista.length > 0 && conLista.every((id) => abiertos.includes(id));
-  const alternar = (id) => setAbiertos((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const secciones = useRef({});
+  // La cabecera de cada comida queda fija arriba mientras bajás: al agruparla desde abajo, vuelve a quedar a la vista.
+  function alternar(id) {
+    const cerrando = abiertos.includes(id);
+    setAbiertos((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    if (!cerrando) return;
+    const seccion = secciones.current[id];
+    const tope = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tope-fotos")) || 118;
+    if (seccion && seccion.getBoundingClientRect().top < tope) {
+      requestAnimationFrame(() => window.scrollTo({ top: window.scrollY + seccion.getBoundingClientRect().top - tope }));
+    }
+  }
 
   return (
     <>
@@ -86,7 +97,7 @@ export default function Imagenes({ onCargar, avisar }) {
             const abierto = abiertos.includes(g.id);
             const vacio = !g.lista.length;
             return (
-              <section key={g.id} className="tarjeta grupo-fotos">
+              <section key={g.id} className={abierto ? "tarjeta grupo-fotos abierto" : "tarjeta grupo-fotos"} ref={(n) => { secciones.current[g.id] = n; }}>
                 <button className="grupo-fotos-cabecera" onClick={() => alternar(g.id)} aria-expanded={abierto} disabled={vacio}>
                   <span className="grupo-fotos-icono"><IconoComida tipo={g.id} size={21} /></span>
                   <span className="grupo-fotos-datos">
@@ -95,9 +106,10 @@ export default function Imagenes({ onCargar, avisar }) {
                   </span>
                   {!abierto && !vacio && (
                     <span className="pila-fotos" aria-hidden="true">
-                      {g.lista.slice(0, 3).map((c) => <img key={c.id} src={fotos[c.foto_path]} alt="" loading="lazy" />)}
+                      {g.lista.slice(0, 3).map((c) => <img key={c.id} src={fotos[c.foto_path || c.postre_foto]} alt="" loading="lazy" />)}
                     </span>
                   )}
+                  {abierto && <span className="grupo-fotos-agrupar">Agrupar</span>}
                   {!vacio && <motion.span animate={{ rotate: abierto ? 180 : 0 }} className="amigo-flecha"><ChevronDown size={18} /></motion.span>}
                 </button>
                 <AnimatePresence initial={false}>
@@ -111,7 +123,7 @@ export default function Imagenes({ onCargar, avisar }) {
                           foto={fotos[c.foto_path]}
                           propia={c.usuario_id === usuario.id}
                           indice={0}
-                          onZoom={() => setVisor({ lista: g.lista, inicio: i })}
+                          onZoom={(z) => setVisor({ lista: g.lista, inicio: i, foto: z?.n || 0 })}
                           onEditar={() => onCargar({ comida: c })}
                           avisar={avisar}
                         />
@@ -126,7 +138,7 @@ export default function Imagenes({ onCargar, avisar }) {
       )}
 
       <AnimatePresence>
-        {visor && <Visor lista={visor.lista} inicio={visor.inicio} onCerrar={() => setVisor(null)} />}
+        {visor && <Visor lista={visor.lista} inicio={visor.inicio} inicioFoto={visor.foto} onCerrar={() => setVisor(null)} />}
       </AnimatePresence>
     </>
   );

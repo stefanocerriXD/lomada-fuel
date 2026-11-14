@@ -1,4 +1,5 @@
 import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { marcaDelNombre } from "../lib/multas.js";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import { Award, Ban, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
@@ -323,7 +324,7 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
             }}
           >
             {m.eliminado_en && <p className="mensaje-eliminado"><Ban size={14} aria-hidden="true" /> {propio ? "Eliminaste este mensaje" : "Mensaje eliminado"}</p>}
-            {!propio && inicio && <strong className="autor" style={{ color: colorDeNombre(perfiles, m.usuario_id) }}>{perfil?.nombre || "Amigo"}{perfil?.caca && " 💩"}</strong>}
+            {!propio && inicio && <strong className="autor" style={{ color: colorDeNombre(perfiles, m.usuario_id) }}>{perfil?.nombre || "Amigo"}{marcaDelNombre(perfil)}</strong>}
             {m.respuesta_mensaje && <CitaMensaje id={m.respuesta_mensaje} />}
             {m.respuesta_comida && <CitaFoto id={m.respuesta_comida} autorId={m.usuario_id} onZoom={onZoom} />}
             {m.adjunto_path && esAudio(m.adjunto_path) && (

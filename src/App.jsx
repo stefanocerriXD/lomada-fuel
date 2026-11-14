@@ -6,12 +6,12 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { CalendarDays, Plus, Settings, Trophy, Users } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
 import { avisarGrupo } from "./lib/api.js";
-import { medallasGanadas, nombreDeCodigo } from "./lib/medallas.js";
+import { medallasGanadas, nivelesGuardados, nivelGeneral, nombreDeCodigo } from "./lib/medallas.js";
 import { DatosProvider, GRUPO_BASE, useDatos } from "./lib/datos.jsx";
 import SinGrupo from "./componentes/SinGrupo.jsx";
 import SelectorGrupo from "./componentes/SelectorGrupo.jsx";
 import SubidaNivel from "./componentes/SubidaNivel.jsx";
-import { Aviso, Avatar, Esqueleto, Festejo, Hoja, Insignia, resorte, vibrar } from "./componentes/Base.jsx";
+import { Aviso, Avatar, datosMarco, Esqueleto, Festejo, Hoja, Insignia, marcoDe, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import InstalarApp from "./componentes/InstalarApp.jsx";
@@ -330,11 +330,12 @@ function Principal({ recuperando, onRecuperado }) {
         if (!error) {
           await cargarExtras();
           const nivel = [...nuevas].reverse().find((c) => nombreDeCodigo(c));
-          if (nivel) {
-            setLogroNuevo(nivel);
-            // El primer nivel de cada logro se festeja solo en tu celular; al grupo se le avisa desde el segundo.
-            if (Number(nivel.split(":")[1]) >= 2) avisarGrupo("medalla", nivel, nombreDeCodigo(nivel));
-          }
+          if (nivel) setLogroNuevo(nivel);
+          // Los logros se festejan solo en tu celular. Al grupo se le avisa solo cuando cambiás de categoría (Plata, Oro… LOMADA LEGENDARY).
+          const antes = marcoDe(nivelGeneral(nivelesGuardados(yaGanadas)).nivel);
+          const ahora = marcoDe(nivelGeneral(nivelesGuardados([...yaGanadas, ...nuevas])).nivel);
+          const marco = ahora !== antes && datosMarco(ahora);
+          if (marco && nivel) avisarGrupo("medalla", nivel, `Llegó a ${marco[2]} ${marco[3]}`);
           setFestejo((n) => n + 1);
           vibrar(30);
         }

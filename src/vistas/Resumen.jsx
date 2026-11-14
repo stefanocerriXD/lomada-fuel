@@ -325,7 +325,7 @@ function TarjetaWhoop({ dia, comidas }) {
 }
 
 function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
-  const { abrirPerfil } = useDatos();
+  const { abrirPerfil, castigo } = useDatos();
   const [abierta, setAbierta] = useState(false);
   const total = sumarComidas(comidas);
   const visibles = comidas.filter((c) => !esDeAppleSalud(c));
@@ -340,7 +340,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
   const conFoto = comidas.filter((c) => fotos[c.foto_path]).slice(0, 3);
 
   return (
-    <motion.li className="tarjeta tarjeta-amigo" variants={{ oculto: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
+    <motion.li className={castigo.calavera && !propio ? "tarjeta tarjeta-amigo fotos-ocultas" : "tarjeta tarjeta-amigo"} variants={{ oculto: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
       <button className="amigo-cabecera" onClick={() => (comidas.length ? setAbierta(!abierta) : abrirPerfil(perfil.id))} aria-expanded={comidas.length ? abierta : undefined}>
         <Avatar perfil={perfil} tam={44} />
         <span className="amigo-datos">

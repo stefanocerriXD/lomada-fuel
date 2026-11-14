@@ -30,11 +30,23 @@ export function marcaDeCaca({ usuarioId, multas, bochaEvo, hoy = fechaLocal() })
   return null;
 }
 
+// Dos semanas seguidas sin subir fotos: calavera al lado del nombre y no ve ninguna foto del grupo hasta subir la suya.
+export const DIAS_CALAVERA = 14;
+export function conCalavera({ usuarioId, multas, comidas, hoy = fechaLocal() }) {
+  const dias = new Set(multas.filter((m) => m.usuario_id === usuarioId).map((m) => m.fecha));
+  for (let n = 1; n <= DIAS_CALAVERA; n++) if (!dias.has(haceDias(n, aFecha(hoy)))) return false;
+  return fotosDelDia(comidas, usuarioId, hoy) < FOTOS_POR_DIA;
+}
+
+// Lo que va al lado del nombre: la calavera pesa más que la caca.
+export const marcaDelNombre = (perfil) => (perfil?.calavera ? " 💀" : perfil?.caca ? " 💩" : "");
+
 // El castigo propio. El del día se levanta subiendo la foto de hoy; el Bocha Evo dura toda la semana.
 export function castigoDe({ usuarioId, multas, bochaEvo, comidas, hoy = fechaLocal() }) {
   const marca = marcaDeCaca({ usuarioId, multas, bochaEvo, hoy });
   const evo = marca === "evo";
   const ayer = multas.some((m) => m.usuario_id === usuarioId && m.fecha === haceDias(1, aFecha(hoy)));
   const subioHoy = fotosDelDia(comidas, usuarioId, hoy) >= FOTOS_POR_DIA;
-  return { marca, evo, diario: ayer && !subioHoy, activo: evo || (ayer && !subioHoy) };
+  const calavera = conCalavera({ usuarioId, multas, comidas, hoy });
+  return { marca, evo, calavera, diario: ayer && !subioHoy, activo: evo || (ayer && !subioHoy) };
 }

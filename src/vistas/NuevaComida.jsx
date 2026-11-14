@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BookmarkPlus, CalendarDays, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Mic, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
+import { BookmarkPlus, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Mic, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo, ia, reconocerFoto, reconocerTexto } from "../lib/api.js";
@@ -78,10 +78,15 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     if (delPostre.length) return [{ id: "base", nombre: original.descripcion || "Comida", fuente: "manual", kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas }, ...delPostre];
     return [{ id: "base", nombre: original.descripcion || "Comida", fuente: "manual", kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas }];
   });
-  // Si la comida no tenía foto, se queda con la del postre.
-  const fotoDelPostre = original && !original.foto_path ? carga.extra?.foto : null;
-  const [foto, setFoto] = useState(fotoDelPostre || null);
-  const [vistaFoto, setVistaFoto] = useState(() => (fotoDelPostre ? URL.createObjectURL(fotoDelPostre) : original ? fotos[original.foto_path] : null));
+  const [foto, setFoto] = useState(null);
+  const [vistaFoto, setVistaFoto] = useState(() => (original ? fotos[original.foto_path] : null));
+  // El postre tiene su foto y su nombre, aparte de los de la comida: en el grupo se ve como una foto más, marcada.
+  // Si la base todavía no tiene las columnas del postre, se guarda como antes (solo los alimentos).
+  const postreGuardable = Boolean(original && "postre_nombre" in original);
+  const [fotoPostre, setFotoPostre] = useState(carga.postre ? carga.extra?.foto || null : null);
+  const [vistaPostre, setVistaPostre] = useState(() => (carga.postre && carga.extra?.foto ? URL.createObjectURL(carga.extra.foto) : fotos[original?.postre_foto] || null));
+  const [nombrePostre, setNombrePostre] = useState(original?.postre_nombre || carga.extra?.nombre || "");
+  const conPostre = Boolean(carga.postre || original?.postre_foto || original?.postre_nombre);
   // Más fotos de la misma comida (la principal es la de arriba).
   const [fotosExtra, setFotosExtra] = useState(() => (original?.fotos_extra || []).map((ruta) => ({ id: ruta, ruta, vista: fotos[ruta] })));
   const [extrasQuitadas, setExtrasQuitadas] = useState([]);
@@ -233,7 +238,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       return;
     }
     // La foto de una comida grupal la siguen usando los demás.
-    if (original.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path, ...(original.fotos_extra || [])]);
+    if ((original.foto_path || original.postre_foto) && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path, ...(original.fotos_extra || []), original.postre_foto].filter(Boolean));
     await cargarComidas();
     onGuardar("borrada");
   }
@@ -292,6 +297,20 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     }
   }
 
+  async function elegirFotoPostre(e) {
+    const archivo = e.target.files[0];
+    e.target.value = "";
+    if (!archivo) return;
+    try {
+      const blob = await comprimirImagen(archivo);
+      setFotoPostre(blob);
+      setVistaPostre(URL.createObjectURL(blob));
+      vibrar(8);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function sumarFotos(e) {
     const archivos = [...e.target.files].slice(0, MAX_FOTOS_EXTRA - fotosExtra.length);
     e.target.value = "";
@@ -332,6 +351,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     setError("");
     setGuardando(true);
     let rutaNueva = null;
+    let rutaPostre = null;
     const subidas = [];
     try {
       const id = original?.id || crypto.randomUUID();
@@ -340,6 +360,14 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         const { error: errFoto } = await supabase.storage.from("fotos").upload(rutaNueva, foto, { contentType: "image/jpeg" });
         if (errFoto) throw errFoto;
       }
+      if (fotoPostre && postreGuardable) {
+        rutaPostre = `${usuario.id}/${id}-postre-${Date.now()}.jpg`;
+        const { error: errPostre } = await supabase.storage.from("fotos").upload(rutaPostre, fotoPostre, { contentType: "image/jpeg" });
+        if (errPostre) throw errPostre;
+        subidas.push(rutaPostre);
+      }
+      // Sin nombre, el postre se llama como lo que se cargó de postre.
+      const nombreDelPostre = (nombrePostre.trim() || items.filter((i) => i.postre).map((i) => i.nombre).join(", ")).slice(0, 80) || null;
       const rutasExtra = [];
       for (const [n, x] of fotosExtra.entries()) {
         if (x.ruta) { rutasExtra.push(x.ruta); continue; }
@@ -365,6 +393,12 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           : !ajuste && (foto || original?.foto_path) ? [{ nombre: "Foto", fuente: "foto" }] : [],
         // Solo se manda si hay fotos extra (o había): así sigue andando aunque falte el SQL nuevo.
         ...(rutasExtra.length || original?.fotos_extra?.length ? { fotos_extra: rutasExtra } : {}),
+        // El postre: nombre y foto. La hora la pone la base y con eso se le avisa al grupo.
+        ...(postreGuardable && conPostre ? {
+          postre_nombre: nombreDelPostre,
+          postre_foto: rutaPostre || original.postre_foto || null,
+          ...(carga.postre ? { postre_en: new Date().toISOString() } : {}),
+        } : {}),
       };
       const { error: errFila } = original
         ? await supabase.from("comidas").update(fila).eq("id", id)
@@ -372,6 +406,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       if (errFila) throw errFila;
       if (rutaNueva && original?.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path]);
       if (extrasQuitadas.length && !original?.grupo_comida) await supabase.storage.from("fotos").remove(extrasQuitadas);
+      if (rutaPostre && original?.postre_foto && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.postre_foto]);
       if (companeros.length) {
         const { error: errInvitar } = await supabase.rpc("invitar_a_comida", { p_comida: id, p_para: companeros });
         if (!errInvitar) {
@@ -381,6 +416,8 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       }
       await cargarComidas();
       if (!original && !privada) avisarGrupo("comida", id);
+      // Sumar postre también le avisa al grupo, con el nombre del postre.
+      if (carga.postre && postreGuardable && !privada) avisarGrupo("postre", id);
       onGuardar(!original);
     } catch (err) {
       if (rutaNueva || subidas.length) await supabase.storage.from("fotos").remove([rutaNueva, ...subidas].filter(Boolean));
@@ -429,7 +466,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       )}
 
       {!buscando && paraPostre && (
-        <button className="postre-opcion" onClick={() => onPostre(paraPostre, items.length || foto ? { items, foto } : null)}>
+        <button className="postre-opcion" onClick={() => onPostre(paraPostre, items.length || foto ? { items, foto, nombre: descripcion.trim() } : null)}>
           🍮 ¿Es postre? <strong>{items.length ? "Pasalo" : "Sumalo"} a tu {paraPostre.tipo === "cena" ? "cena" : "almuerzo"}</strong>
         </button>
       )}
@@ -475,10 +512,6 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
               <button className={panel === "importar" ? "tarjeta accion activa" : "tarjeta accion"} onClick={() => alternarPanel("importar")} aria-pressed={panel === "importar"}>
                 <ClipboardPaste size={22} />
                 <span><strong>Importar {tipoInfo(tipo).texto.toLowerCase()}</strong><small>Captura o texto</small></span>
-              </button>
-              <button className="tarjeta accion" onClick={() => onImportarDia(carga.fecha || fechaLocal())}>
-                <CalendarDays size={22} />
-                <span><strong>Todo el día</strong><small>Importar el total</small></span>
               </button>
               {onFiesta && (
                 <button className="enlace-fiesta" onClick={onFiesta}>
@@ -609,14 +642,25 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
             </div>
           )}
 
-          <div className="foto-y-nota">
-            <label className={vistaFoto ? "miniatura con-foto" : "miniatura"}>
-              <input type="file" accept="image/*" onChange={elegirFoto} aria-label="Foto de la comida" />
-              {vistaFoto ? <img src={vistaFoto} alt="Foto de la comida" /> : <Camera size={24} />}
-            </label>
-            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Título de la comida" aria-label="Nota de la comida" maxLength={200} />
-          </div>
-          {vistaFoto && (
+          {!carga.postre && (
+            <div className="foto-y-nota">
+              <label className={vistaFoto ? "miniatura con-foto" : "miniatura"}>
+                <input type="file" accept="image/*" onChange={elegirFoto} aria-label="Foto de la comida" />
+                {vistaFoto ? <img src={vistaFoto} alt="Foto de la comida" /> : <Camera size={24} />}
+              </label>
+              <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Título de la comida" aria-label="Nota de la comida" maxLength={200} />
+            </div>
+          )}
+          {conPostre && postreGuardable && (
+            <div className="foto-y-nota postre-datos">
+              <label className={vistaPostre ? "miniatura con-foto" : "miniatura"}>
+                <input type="file" accept="image/*" onChange={elegirFotoPostre} aria-label="Foto del postre" />
+                {vistaPostre ? <img src={vistaPostre} alt="Foto del postre" /> : <span className="miniatura-emoji" aria-hidden="true">🍮</span>}
+              </label>
+              <input value={nombrePostre} onChange={(e) => setNombrePostre(e.target.value)} placeholder="Nombre del postre (ej: Flan con dulce de leche)" aria-label="Nombre del postre" maxLength={80} />
+            </div>
+          )}
+          {vistaFoto && !carga.postre && (
             <div className="fotos-extra" role="group" aria-label="Más fotos de esta comida">
               {fotosExtra.map((x) => (
                 <span key={x.id} className="miniatura con-foto chica">
