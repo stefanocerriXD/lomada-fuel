@@ -35,7 +35,8 @@ export default function LaCaca({ avisar }) {
           <li><strong>Mínimo 1 foto de comida por día.</strong> La foto del resumen del día no cuenta.</li>
           <li><strong>Si no subís ninguna,</strong> al día siguiente tenés 💩 al lado del nombre y ves borrosas las fotos de los demás, como en BeReal. Tampoco podés reaccionar.</li>
           <li><strong>Se levanta subiendo tu foto del día.</strong> La 💩 queda hasta el día siguiente.</li>
-          <li>El bot cuenta en el chat quiénes no subieron, y el domingo pasa la tabla de la semana.</li>
+          <li>El bot cuenta en el chat solo a los que caen con caca por primera vez: el que ya venía con caca no se repite.</li>
+          <li><strong>Dos semanas seguidas sin subir fotos:</strong> 💀 al lado del nombre y no ves ninguna foto del grupo, ni borrosa, hasta que subas la tuya.</li>
           <li>A las 22 te llega un aviso si todavía no subiste ninguna foto.</li>
         </ul>
       </section>
@@ -49,7 +50,9 @@ export default function LaCaca({ avisar }) {
         <li><strong>Si no subís ninguna,</strong> al día siguiente tenés 💩 al lado del nombre y te cae la maldición del Bocha: se asoma, se ríe y te mancha la pantalla. Además ves borrosas las fotos del grupo, no podés reaccionar y en el chat solo podés mandar texto.</li>
         <li><strong>Se levanta subiendo tu foto del día.</strong> La 💩 queda hasta el día siguiente.</li>
         <li><strong>La caca se limpia fácil:</strong> tocá Limpiar y tocá o frotá las manchas.</li>
-        <li><strong>El que más cacas junta en la semana</strong> se come al BOCHA EVO de lunes a domingo: app marrón, caca en la pantalla y el teclado del chat tapado.</li>
+        <li><strong>El que más cacas junta en la semana</strong> se come al BOCHA EVO de lunes a domingo: app marrón, caca en la pantalla y el teclado del chat tapado. Le llega un aviso a todo el grupo.</li>
+        <li><strong>Dos semanas seguidas sin subir fotos:</strong> 💀 al lado del nombre y no ves ninguna foto del grupo, ni borrosa, hasta que subas la tuya.</li>
+        <li>En el chat el bot nombra solo a los que caen con caca por primera vez: el que ya venía con caca no se repite.</li>
         <li>A las 22 te llega un aviso si todavía no subiste ninguna foto.</li>
       </ul>
 
