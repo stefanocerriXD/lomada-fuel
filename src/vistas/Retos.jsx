@@ -53,7 +53,7 @@ function Medallas() {
     <>
       <div className="tarjeta nivel-propio"><NivelGeneral niveles={nivelesDe(usuario.id)} perfil={perfiles[usuario.id]} /></div>
       <CaminoNiveles perfil={perfiles[usuario.id]} nivel={nivelGeneral(nivelesDe(usuario.id)).nivel} />
-      {[["objetivos", "Objetivos"], ["alimentacion", "Alimentación"]].map(([grupo, titulo]) => (
+      {[["objetivos", "Objetivos"], ["alimentacion", "Alimentación"], ["fiesta", "Fiesta"]].map(([grupo, titulo]) => (
         <div key={grupo} className="grupo-medallas">
           <h3 className="perfil-subtitulo">{titulo}</h3>
           <ul className="medallas">

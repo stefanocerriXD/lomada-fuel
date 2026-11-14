@@ -86,6 +86,7 @@ const SECCIONES = [
       ["¿Dónde veo cuánto me falta?", "En Logros, tocá cualquiera: ves la barra de avance, cuánto falta y todos sus niveles."],
       ["¿Qué es el nivel de cada uno?", "Cada nivel de cada logro suma un punto, y ese total es tu nivel general. Lo ves en Logros, en los perfiles y en Integrantes."],
       ["¿Las comidas privadas cuentan?", "No para los logros de Alimentación, porque esos los ve el grupo."],
+      ["¿Qué son los logros de Fiesta?", "Salen del modo fiesta: uno por los vasos que vas sumando y otro por las noches que salís. Los goles no dan logros."],
     ],
   },
   {

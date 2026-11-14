@@ -1,6 +1,6 @@
 import {
   Beef, Bomb, Camera, Candy, CupSoda, Droplets, Dumbbell, Flame, Leaf, Moon, Pizza, Repeat, Scale, Soup, Sparkles,
-  Sunrise, Target, Utensils, UtensilsCrossed, Wine, Crown,
+  Sunrise, Target, Utensils, UtensilsCrossed, Wine, Crown, Martini, PartyPopper,
 } from "lucide-react";
 import { calcularPlan } from "./cuerpo.js";
 import { desafioTerminado, puntajes } from "./desafios.js";
@@ -40,6 +40,10 @@ export const LOGROS = [
   logro("cuatro", "alimentacion", Wine, "días con las 4 comidas", [[1, "Cuatro de cuatro"], [7, "Ordenado"], [30, "Reloj suizo"], [90, "Metrónomo"], [300, "Máquina de registrar"]]),
   logro("fotografo", "alimentacion", Camera, "fotos", [[10, "Fotógrafo aficionado"], [50, "Fotógrafo gastronómico"], [150, "Foodie"], [400, "Crítico gastronómico"], [1000, "Leyenda de la foto"]]),
   logro("monotematico", "alimentacion", Repeat, "veces lo mismo", [[7, "Repetidor"], [15, "Monotemático"], [30, "Cabeza dura"], [75, "Fanático"], [200, "Una sola comida"]]),
+
+  // Fiesta: lo que se carga en el modo fiesta. Los goles no dan logros.
+  logro("vasos", "fiesta", Martini, "vasos en el modo fiesta", [[10, "Primer brindis"], [50, "Copa en mano"], [150, "Barra libre"], [400, "Dueño de la barra"], [1000, "Hígado de acero"]]),
+  logro("salidas", "fiesta", PartyPopper, "noches de fiesta", [[1, "Primera salida"], [5, "Salidor"], [15, "Noctámbulo"], [40, "Rey de la noche"], [100, "Leyenda de la noche"]]),
 ];
 
 export const nivelDe = (l, cantidad) => l.niveles.filter((n) => cantidad >= n.meta).length;
@@ -112,7 +116,10 @@ export function mejorRacha(fechas) {
 
 // Cuánto lleva la persona en cada logro.
 export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, victorias = 0 }) {
-  const propias = comidas.filter((c) => c.usuario_id === usuarioId);
+  const suyas = comidas.filter((c) => c.usuario_id === usuarioId);
+  // Las noches del modo fiesta tienen sus propios logros: no cuentan como comidas.
+  const fiestas = suyas.filter((c) => c.tipo === "fiesta" && !c.privada && Array.isArray(c.alimentos) && c.alimentos.length > 0);
+  const propias = suyas.filter((c) => c.tipo !== "fiesta");
   const reales = propias.filter((c) => c.alimentos?.[0]?.fuente !== "foto");
   // Lo marcado como privado no da logros de comida, que después ve todo el grupo.
   const visibles = propias.filter((c) => !c.privada && c.tipo !== "resumen");
@@ -126,6 +133,8 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
     reto: victorias,
     peso: 0,
     fotogenico: 0,
+    vasos: fiestas.reduce((t, c) => t + c.alimentos.length, 0),
+    salidas: new Set(fiestas.map((c) => c.fecha)).size,
   };
 
   if (salud) {
@@ -137,7 +146,7 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
     total.peso = Math.max(0, Math.floor((inicial - Number(salud.peso_kg)) * direccion));
   }
 
-  const ids = new Set(propias.map((c) => c.id));
+  const ids = new Set(suyas.map((c) => c.id));
   total.fotogenico = reacciones.filter((r) => ids.has(r.comida_id)).length;
 
   for (const [codigo, re] of Object.entries(ANTOJOS)) total[codigo] = visibles.filter((c) => re.test(textoDe(c))).length;
