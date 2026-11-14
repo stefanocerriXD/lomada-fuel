@@ -95,6 +95,7 @@ export function Avatar({ perfil, tam = 40 }) {
       {deco && marco === "lomada" && <img className="avatar-lomada" src="/lomada.svg" alt="" />}
       {deco && marco === "lomada" && <span className="avatar-brasas"><i /><i /><i /></span>}
       {deco && ["oro", "diamante", "hielo", "aurora"].includes(marco) && <span className="avatar-chispa">✦</span>}
+      {perfil?.fiesta?.gol && perfil.fiesta.modo === "resaca" && !["legendario", "mitico"].includes(marco) && <span className="avatar-corona avatar-gol">👑</span>}
       {perfil?.calavera ? <span className="avatar-caca calavera">💀</span> : perfil?.caca && <span className={`avatar-caca ${perfil.caca}`}>💩</span>}
     </span>
   );

@@ -17,6 +17,7 @@ import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import InstalarApp from "./componentes/InstalarApp.jsx";
 import Bocha from "./componentes/Bocha.jsx";
 import Fiesta from "./componentes/Fiesta.jsx";
+import HojaFestejo from "./componentes/MarcaFiesta.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Grupo from "./vistas/Grupo.jsx";
@@ -179,7 +180,7 @@ function Principal({ recuperando, onRecuperado }) {
     const ir = (e) => {
       abrirPerfil(null);
       setCarga(null);
-      irA(e.detail.vista);
+      irA(e.detail.vista, e.detail.vista === "grupo" ? e.detail.seccion : undefined);
       if (e.detail.vista === "ajustes") setPedidoAjustes({ ...e.detail, vez: Date.now() });
       scrollTo(0, 0);
     };
@@ -441,6 +442,7 @@ function Principal({ recuperando, onRecuperado }) {
       <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} onPostre={(comida, extra) => setCarga({ comida, postre: true, extra })} avisar={avisar} />
       <Fiesta abierta={fiesta} onCerrar={() => setFiesta(false)} avisar={avisar} />
+      <HojaFestejo />
       <InformeSemanal abiertoAlInicio={pedida === "informe"} />
       <Importar
         pedido={importar}

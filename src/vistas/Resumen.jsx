@@ -12,6 +12,7 @@ import { FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
 import { esDeAppleSalud } from "../lib/importar.js";
 import { esDeNoche, fechaDeLaNoche, nocheActual, sumarUnVaso, ultimoTrago } from "../componentes/Fiesta.jsx";
 import Habitos from "../componentes/Habitos.jsx";
+import { MarcaFiesta } from "../componentes/MarcaFiesta.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
@@ -366,7 +367,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
       <button className="amigo-cabecera" onClick={() => (comidas.length ? setAbierta(!abierta) : abrirPerfil(perfil.id))} aria-expanded={comidas.length ? abierta : undefined}>
         <Avatar perfil={perfil} tam={44} />
         <span className="amigo-datos">
-          <strong>{propio ? `${perfil.nombre} (vos)` : perfil.nombre}</strong>
+          <strong>{propio ? `${perfil.nombre} (vos)` : perfil.nombre}<MarcaFiesta perfil={perfil} /></strong>
           <span>
             {comidas.length
               ? `${Math.round(total.kcal).toLocaleString("es-AR")} kcal${visibles.length ? ` · ${visibles.length} ${visibles.length === 1 ? "comida" : "comidas"}` : ""}`

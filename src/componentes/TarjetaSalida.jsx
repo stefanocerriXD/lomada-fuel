@@ -4,6 +4,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { marcaDelNombre } from "../lib/multas.js";
 import { Avatar } from "./Base.jsx";
+import { MarcaFiesta } from "./MarcaFiesta.jsx";
 import { CarruselFotos, Reacciones } from "./TarjetaComida.jsx";
 
 const vasosDe = (c) => (Array.isArray(c.alimentos) ? c.alimentos : []);
@@ -68,7 +69,7 @@ export default function TarjetaSalida({ miembros, onZoom, avisar }) {
             <li key={c.id}>
               <button type="button" onClick={() => abrirPerfil(c.usuario_id)} aria-label={`Ver perfil de ${nombre(c)}`}><Avatar perfil={perfiles[c.usuario_id]} tam={32} /></button>
               <span className="salida-nombre">
-                <strong>{nombre(c)}{marcaDelNombre(perfiles[c.usuario_id])} · {vasosDe(c).length} {vasosDe(c).length === 1 ? "vaso" : "vasos"}</strong>
+                <strong>{nombre(c)}{marcaDelNombre(perfiles[c.usuario_id])}<MarcaFiesta perfil={perfiles[c.usuario_id]} /> · {vasosDe(c).length} {vasosDe(c).length === 1 ? "vaso" : "vasos"}</strong>
                 <small>{vasosDe(c).length ? `${tragosDe(c)} · ${numero(c.calorias || 0)} kcal` : "Todavía no cargó vasos"}</small>
               </span>
               {typeof c.gol === "boolean" ? <span className={c.gol ? "salida-gol si" : "salida-gol no"}>{c.gol ? "⚽ Gol" : "🥅 No"}</span> : <span />}

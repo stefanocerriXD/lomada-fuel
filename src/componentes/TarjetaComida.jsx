@@ -7,6 +7,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { marcaDelNombre } from "../lib/multas.js";
+import { MarcaFiesta } from "./MarcaFiesta.jsx";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import IconoComida from "./IconoComida.jsx";
@@ -165,7 +166,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         <button className="comida-autor" onClick={() => abrirPerfil(comida.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}>
           <Avatar perfil={perfil} tam={38} />
           <span className="comida-autor-datos">
-            <strong>{perfil?.nombre || "Amigo"}{marcaDelNombre(perfil)}</strong>
+            <strong>{perfil?.nombre || "Amigo"}{marcaDelNombre(perfil)}<MarcaFiesta perfil={perfil} /></strong>
             <span>{tipo.texto} · {haceCuanto(comida.creado_en)}{comida.privada && <><Lock size={12} className="candado" /> Solo vos</>}</span>
           </span>
         </button>

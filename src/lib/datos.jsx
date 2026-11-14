@@ -6,6 +6,7 @@ import { haceDias } from "./fechas.js";
 import { cantidades, nivelesGuardados, nivelGeneral } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
 import { castigoDe, conCalavera, marcaDeCaca } from "./multas.js";
+import { estadoDeFiesta } from "./fiestaEstado.js";
 import { marcarActividad } from "./vivo.js";
 import { ponerInsignia } from "./insignia.js";
 
@@ -589,6 +590,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     return Object.fromEntries(Object.entries(perfiles).map(([id, p]) => [id, {
       ...p,
       nivel: nivelGeneral(nivelesGuardados(medallas.filter((m) => m.usuario_id === id).map((m) => m.codigo))).nivel,
+      // Modo fiesta esta noche, o resaca (y gol) al otro día.
+      fiesta: estadoDeFiesta(id, comidas),
       ...(extras.multasActivas ? {
         caca: marcaDeCaca({ usuarioId: id, multas: extras.multas, bochaEvo: extras.bochaEvo }),
         calavera: conCalavera({ usuarioId: id, multas: extras.multas, comidas }),

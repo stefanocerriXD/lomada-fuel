@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { abrirFestejo } from "../lib/fiestaEstado.js";
 import { AnimatePresence } from "motion/react";
 import { Award, Camera, Pencil, UtensilsCrossed } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
@@ -79,6 +80,11 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
         <div>
           {perfil.usuario && <strong>@{perfil.usuario}</strong>}
           <small>Meta: {numero(perfil.meta_calorias)} kcal por día</small>
+          {perfil.fiesta && (
+            <button type="button" className={`sello-multas sello-fiesta ${perfil.fiesta.modo}${perfil.fiesta.gol && perfil.fiesta.modo === "resaca" ? " gol" : ""}`} onClick={() => abrirFestejo(perfil.id)}>
+              {perfil.fiesta.modo === "fiesta" ? `🍸 En modo fiesta · ${perfil.fiesta.vasos} ${perfil.fiesta.vasos === 1 ? "vaso" : "vasos"}` : perfil.fiesta.gol ? "👑⚽ Hizo gol anoche" : "🥴 Resaca: salió anoche"}
+            </button>
+          )}
           {perfil.calavera && <span className="sello-multas calavera">💀 Dos semanas sin subir fotos</span>}
           {perfil.caca === "evo" && <span className="sello-multas evo">BOCHA EVO esta semana</span>}
           {cacasSemana > 0 && <span className="sello-multas">{"💩".repeat(Math.min(cacasSemana, 7))} esta semana</span>}
