@@ -2297,3 +2297,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .cartel-gol { display: inline-flex; align-items: center; gap: 6px; }
 .fiesta-datos span, .salida-gol { display: inline-flex; align-items: center; gap: 4px; }
 .gol-opciones button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* Comida de Apple Salud: pasar a sus alimentos con la captura */
+.ver-alimentos-salud { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
+.nota-salud small { color: var(--tinta-2); font-size: 0.78rem; }

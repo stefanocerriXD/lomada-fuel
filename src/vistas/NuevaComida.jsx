@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BookmarkPlus, HeartPulse, Camera, ClipboardPaste, LoaderCircle, Martini, Mic, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
+import { BookmarkPlus, HeartPulse, Camera, ClipboardPaste, ListChecks, LoaderCircle, Martini, Mic, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo, ia, reconocerFoto, reconocerTexto } from "../lib/api.js";
@@ -195,7 +195,58 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   }
 
   // Lo leído pasa por la carga manual: ahí se corrige antes de sumarlo a la comida.
+  // La comida que llegó de Apple Salud trae solo los totales: con la captura de MyFitnessPal se cambia por sus alimentos.
+  const [detallando, setDetallando] = useState(null);
+  const deSaludCargado = items.find((i) => i.salud_id && i.fuente === "importado" && !i.detalle_salud);
+  const entradaCargada = deSaludCargado ? deSalud.find((e) => e.id === deSaludCargado.salud_id) : null;
+
+  function verAlimentosDeSalud() {
+    setDetallando(deSaludCargado.salud_id);
+    setPanel("importar");
+    setImportado(null);
+  }
+
+  function detallarSalud(filas) {
+    const base = items.find((i) => i.salud_id === detallando && !i.detalle_salud);
+    const fila = filaDeComida(filas, tipo) || filas.find((f) => f.alimentos?.length);
+    if (!base || !fila?.alimentos?.length) {
+      setError("No encontramos alimentos en la captura. Probá con la captura de esa comida en el diario de MyFitnessPal.");
+      return;
+    }
+    let nuevos = fila.alimentos.map((a) => {
+      const item = itemImportado(a);
+      return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID(), salud_id: detallando, detalle_salud: true };
+    });
+    // Lo que la app tuvo que estimar se ajusta para que cada total (kcal, P, C, G) dé exacto lo que mandó Salud.
+    const claves = { kcal: "kcal", p: "p", c: "c", g: "g" };
+    const factores = {};
+    for (const k of Object.keys(claves)) {
+      const suma = (lista) => lista.reduce((t, i) => t + (macrosDeItem(i)[k] || 0), 0);
+      const propios = suma(nuevos.filter((i) => !i.estimado));
+      const deEstimados = suma(nuevos.filter((i) => i.estimado));
+      const objetivo = Number(base[k]) || 0;
+      if (deEstimados > 0 && objetivo > propios) factores[k] = (objetivo - propios) / deEstimados;
+    }
+    if (Object.keys(factores).length) {
+      nuevos = nuevos.map((i) => {
+        if (!i.estimado) return i;
+        const escalar = (v, k) => (factores[k] !== undefined ? v * factores[k] : v);
+        if (i.por100) return { ...i, por100: Object.fromEntries(Object.entries(i.por100).map(([k, v]) => [k, escalar(v, k)])) };
+        return { ...i, kcal: escalar(i.kcal, "kcal"), p: escalar(i.p, "p"), c: escalar(i.c, "c"), g: escalar(i.g, "g") };
+      });
+    }
+    setItems((prev) => {
+      const lugar = prev.findIndex((i) => i.id === base.id);
+      return [...prev.slice(0, lugar), ...nuevos, ...prev.slice(lugar + 1)];
+    });
+    setDetallando(null);
+    setPanel(null);
+    setError("");
+    vibrar(14);
+  }
+
   function alLeer(filas) {
+    if (detallando) return detallarSalud(filas);
     // El postre suele estar en la colación (Aperitivos/Snacks) de la otra app.
     const fila = carga.postre ? filas.find((f) => f.tipo === "colacion") || (filas.length === 1 ? filas[0] : null) : filaDeComida(filas, tipo);
     if (!fila && filas.length && !carga.postre) return onImportarDia(carga.fecha || fechaLocal(), filas);
@@ -521,7 +572,15 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
             </div>
           )}
 
-          {panel === "importar" && <div className="tarjeta-interna"><Lector onLeido={alLeer} /></div>}
+          {panel === "importar" && (
+            <div className="tarjeta-interna">
+              <Lector
+                onLeido={alLeer}
+                nota={detallando ? "Sacale captura a esta comida en el diario de MyFitnessPal (con sus alimentos) y subila o pegala acá." : undefined}
+              />
+              {detallando && <button type="button" className="boton-texto" onClick={() => { setDetallando(null); setPanel(null); }}>Dejarlo así, solo con los totales</button>}
+            </div>
+          )}
           {panel === "voz" && (
             <PanelVoz
               propios={historial.todos}
@@ -539,11 +598,15 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           {panel === "codigo" && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
           {panel === "mano" && <CargaManual key={importado?.clave || "vacia"} inicial={importado} onAgregar={agregar} />}
 
-          {precargada && items.some((i) => i.salud_id === precargada.id) && (
+          {deSaludCargado && panel !== "importar" && (
             <div className="nota-ia nota-salud">
               <HeartPulse size={15} aria-hidden="true" />
-              <span>Lo trajimos de MyFitnessPal (Apple Salud), cargado a las {horaDe(precargada.momento)}. Sumá la foto y publicá.</span>
-              <button type="button" className="boton-texto" onClick={deshacerPrecarga}><Undo2 size={14} /> Deshacer</button>
+              <span>
+                Lo trajimos de MyFitnessPal (Apple Salud){entradaCargada ? `, cargado a las ${horaDe(entradaCargada.momento)}` : ""}. Sumá la foto y publicá.
+                <button type="button" className="enlace-buscar ver-alimentos-salud" onClick={verAlimentosDeSalud}><ListChecks size={14} /> Ver los alimentos</button>
+                <small> con una captura de esa comida en MyFitnessPal</small>
+              </span>
+              {precargada?.id === deSaludCargado.salud_id && <button type="button" className="boton-texto" onClick={deshacerPrecarga}><Undo2 size={14} /> Deshacer</button>}
             </div>
           )}
           {reconociendo && (
