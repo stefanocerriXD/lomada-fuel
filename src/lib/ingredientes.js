@@ -2,6 +2,7 @@
 // y busca cada uno en la lista de alimentos para tener sus calorías y sus medidas.
 import { buscarTipicos } from "../data/alimentos-ar.js";
 import { prepararItem, unidadesDe } from "./unidades.js";
+import { itemImportado, leerAlimentos } from "./importar.js";
 
 const normal = (t) => String(t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
@@ -77,12 +78,17 @@ function aItem(alimento, cantidad, unidadTexto) {
 //   60 calorías
 // Las calorías de la captura mandan: si el alimento está en la lista se ajusta a ellas; si no, se usa tal cual.
 const CANTIDAD_MFP = /^(\d+(?:[.,]\d+)?)\s*(9|g|gr|grs|gramos?|ml|mililitros?|kg|l|litros?|piezas?|unidad(?:es)?|u|cucharaditas?|cucharadas?|tazas?|gotas?|rebanadas?|fetas?|porci[oó]n(?:es)?|raci[oó]n(?:es)?|vasos?|latas?)?\.?$/i;
-const CALORIAS_MFP = /^([\dOo]+(?:[.,]\d+)?)\s*(?:calor[ií]as?|kcal|cal)$/i;
+const CALORIAS_MFP = /^([\dOo]+(?:[.,]\d+)?)\s*(?:calor[ií]as?|kcal|cal)\.?$/i;
+// A veces el OCR junta la cantidad y las calorías en el mismo renglón: "100 g · 60 calorías".
+const CANTIDAD_Y_CALORIAS = /^(\d+(?:[.,]\d+)?)\s*(9|g|gr|grs|gramos?|ml|mililitros?|kg|l|litros?|piezas?|unidad(?:es)?|u|cucharaditas?|cucharadas?|tazas?|gotas?|rebanadas?|fetas?|porci[oó]n(?:es)?|raci[oó]n(?:es)?|vasos?|latas?)?\.?(?:\s*[,·•|\-–]\s*|\s+)([\dOo]+(?:[.,]\d+)?)\s*(?:calor[ií]as?|kcal|cal)\.?$/i;
+// La flechita del final ("Queso Cottage (Festa) >") el OCR la lee como >, ›, » o la pierde.
+const FLECHA = /\s*[>›»]+\s*$/;
+const esNombreMFP = (l) => /\p{L}{2}/u.test(l) && !CANTIDAD_MFP.test(l) && !CALORIAS_MFP.test(l) && !CANTIDAD_Y_CALORIAS.test(l) && !/calor[ií]as?\s+por|raci[oó]n/i.test(l);
 const RACIONES_MFP = /(\d{1,3})\s*raci[oó]n(?:es)?/i;
 
 function itemDeMFP(nombreTexto, cantidad, unidadTexto, kcal) {
   // "Queso Cottage (Festa)": lo de los paréntesis es la marca, salvo que repita el nombre ("claras (claras)").
-  const completo = nombreTexto.replace(/\s*>\s*$/, "").trim();
+  const completo = nombreTexto.replace(FLECHA, "").trim();
   const partes = completo.match(/^(.+?)\s*\(([^)]*)\)\s*$/);
   const base = partes ? partes[1].trim() : completo;
   const nombre = base.charAt(0).toUpperCase() + base.slice(1);
@@ -117,16 +123,20 @@ function leerRecetaMFP(lineas) {
   const sinReconocer = [];
   let encontrados = 0;
   for (let i = 0; i < lineas.length - 1; i++) {
-    const cantidad = lineas[i + 1].match(CANTIDAD_MFP);
-    const calorias = lineas[i + 2]?.match(CALORIAS_MFP);
-    if (!/>\s*$/.test(lineas[i]) || !cantidad) continue;
+    if (!esNombreMFP(lineas[i])) continue;
+    // Nombre, cantidad y calorías en tres renglones; o cantidad y calorías juntas en uno.
+    const junta = lineas[i + 1].match(CANTIDAD_Y_CALORIAS);
+    const cantidad = junta || lineas[i + 1].match(CANTIDAD_MFP);
+    const calorias = junta ? [null, junta[3]] : lineas[i + 2]?.match(CALORIAS_MFP);
+    // Sin la flechita, solo vale si abajo vienen la cantidad y las calorías.
+    if (!cantidad || (!calorias && !FLECHA.test(lineas[i]))) continue;
     encontrados++;
     const numero = leerNumero(cantidad[1]);
-    const kcal = calorias ? Number(calorias[1].replace(/[Oo]/g, "0").replace(",", ".")) : null;
+    const kcal = calorias ? Number(String(calorias[1]).replace(/[Oo]/g, "0").replace(",", ".")) : null;
     const item = numero > 0 ? itemDeMFP(lineas[i], numero, cantidad[2] || "", kcal) : null;
     if (item) items.push(item);
-    else sinReconocer.push(lineas[i].replace(/\s*>\s*$/, ""));
-    i += calorias ? 2 : 1;
+    else sinReconocer.push(lineas[i].replace(FLECHA, ""));
+    i += junta || !calorias ? 1 : 2;
   }
   if (!encontrados) return null;
   const raciones = lineas.map((l) => l.match(RACIONES_MFP)).find(Boolean);
@@ -134,9 +144,28 @@ function leerRecetaMFP(lineas) {
 }
 
 export function leerIngredientes(texto) {
-  const crudas = String(texto || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  // "100 9" era "100 g": el OCR lee la g como 9 cuando queda sola al final.
+  // La flechita de cada fila queda pegada a cualquier renglón ("100 g >") y a veces se lee como ")" o "|".
+  const crudas = String(texto || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim().replace(/\s+[>›»)\]|]+$/, "").replace(/^(\d+(?:[.,]\d+)?)\s+9$/, "$1 g"))
+    .filter(Boolean);
   const deMFP = leerRecetaMFP(crudas);
-  if (deMFP) return deMFP;
+  if (deMFP?.items.length) return deMFP;
+  const comun = leerLista(crudas);
+  if (!crudas.length || (comun.items.length && !comun.sinReconocer.length)) return comun;
+  const comoComida = leerAlimentos(crudas).map((a) => {
+    const item = itemImportado(a);
+    return item.por100 ? prepararItem(item) : item;
+  });
+  if (comoComida.length > comun.items.length) {
+    const raciones = crudas.map((l) => l.match(RACIONES_MFP)).find(Boolean);
+    return { titulo: comun.titulo, porciones: comun.porciones || (raciones ? Number(raciones[1]) : null), items: comoComida, sinReconocer: [] };
+  }
+  return comun.items.length || !deMFP ? comun : deMFP;
+}
+
+function leerLista(crudas) {
   const lineas = crudas.map((l) => l.replace(/^[\s\-–•*·◦▪✓✔>]+|^\d+[.)]\s+/u, "").trim()).filter(Boolean);
   const items = [];
   const sinReconocer = [];
