@@ -7,6 +7,7 @@ import { avisarGrupo } from "../lib/api.js";
 import { abrirFestejo, EVENTO_FESTEJO } from "../lib/fiestaEstado.js";
 import { EVENTO_IR } from "../lib/navegar.js";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
+import { EtiquetaFiesta, IconoCorona, IconoGol, IconoResaca, IconoTrago } from "./IconosFiesta.jsx";
 
 // Las marcas al lado del nombre: 🍸 en modo fiesta; al otro día ⚽ si hubo gol y 🥴 de resaca.
 export function textoMarcaFiesta(fiesta) {
@@ -16,8 +17,8 @@ export function textoMarcaFiesta(fiesta) {
 }
 
 export function MarcaFiesta({ perfil }) {
-  const texto = textoMarcaFiesta(perfil?.fiesta);
-  if (!texto) return null;
+  const fiesta = perfil?.fiesta;
+  if (!fiesta) return null;
   const tocar = (e) => {
     // Está dentro del botón del nombre: tocar la marca no abre el perfil.
     e.stopPropagation();
@@ -29,11 +30,16 @@ export function MarcaFiesta({ perfil }) {
       className="marca-fiesta"
       role="button"
       tabIndex={0}
-      aria-label={perfil.fiesta.modo === "fiesta" ? `${perfil.nombre} está en modo fiesta` : perfil.fiesta.gol ? `${perfil.nombre} hizo gol anoche` : `${perfil.nombre} tiene resaca`}
+      aria-label={fiesta.modo === "fiesta" ? `${perfil.nombre} está en modo fiesta` : fiesta.gol ? `${perfil.nombre} hizo gol anoche y tiene resaca` : `${perfil.nombre} tiene resaca`}
       onClick={tocar}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tocar(e)}
     >
-      {" "}{texto}
+      {fiesta.modo === "fiesta" ? <EtiquetaFiesta tipo="fiesta" chica /> : (
+        <>
+          {fiesta.gol && <EtiquetaFiesta tipo="gol" chica />}
+          <EtiquetaFiesta tipo="resaca" chica />
+        </>
+      )}
     </span>
   );
 }
@@ -92,15 +98,18 @@ export default function HojaFestejo() {
         <div className="hoja-festejo">
           <div className="festejo-avatar">
             <Avatar perfil={perfil} tam={76} />
-            <span aria-hidden="true">{fiesta.modo === "fiesta" ? "🍸" : fiesta.gol ? "⚽" : "🥴"}</span>
+            <span aria-hidden="true">{fiesta.modo === "fiesta" ? <IconoTrago tam={34} /> : fiesta.gol ? <IconoGol tam={34} /> : <IconoResaca tam={34} />}</span>
           </div>
           <strong>
             {fiesta.modo === "fiesta"
               ? `${propio ? "Estás" : `${perfil.nombre} está`} en modo fiesta`
               : fiesta.gol
-                ? `${propio ? "Hiciste" : `${perfil.nombre} hizo`} gol anoche 👑`
+                ? `${propio ? "Hiciste" : `${perfil.nombre} hizo`} gol anoche`
                 : `${propio ? "Tenés" : `${perfil.nombre} tiene`} resaca`}
           </strong>
+          <span className="festejo-etiquetas">
+            {fiesta.modo === "fiesta" ? <EtiquetaFiesta tipo="fiesta" /> : <>{fiesta.gol && <EtiquetaFiesta tipo="gol" />}<EtiquetaFiesta tipo="resaca" /></>}
+          </span>
           <small>
             {fiesta.modo === "fiesta" ? `Lleva ${vasos} esta noche.` : `Salió anoche: ${vasos}${fiesta.gol ? " y hubo beso." : "."}`}
           </small>

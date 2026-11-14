@@ -5,6 +5,7 @@ import { haceCuanto } from "../lib/fechas.js";
 import { marcaDelNombre } from "../lib/multas.js";
 import { Avatar } from "./Base.jsx";
 import { MarcaFiesta } from "./MarcaFiesta.jsx";
+import { IconoGol } from "./IconosFiesta.jsx";
 import { CarruselFotos, Reacciones } from "./TarjetaComida.jsx";
 
 const vasosDe = (c) => (Array.isArray(c.alimentos) ? c.alimentos : []);
@@ -37,8 +38,8 @@ export default function TarjetaSalida({ miembros, onZoom, avisar }) {
   const goles = miembros.filter((c) => c.gol === true).length;
   const marcados = miembros.filter((c) => typeof c.gol === "boolean").length;
   const cartel = goles
-    ? <span className="cartel-gol si">⚽ {goles === 1 ? "¡HUBO GOL!" : `${goles} GOLES`}</span>
-    : marcados ? <span className="cartel-gol no">🥅 SIN GOL</span> : null;
+    ? <span className="cartel-gol si"><IconoGol tam={18} /> {goles === 1 ? "¡HUBO GOL!" : `${goles} GOLES`}</span>
+    : marcados ? <span className="cartel-gol no"><IconoGol tam={18} apagado /> SIN GOL</span> : null;
   const totalVasos = miembros.reduce((t, c) => t + vasosDe(c).length, 0);
   const totalKcal = miembros.reduce((t, c) => t + (c.calorias || 0), 0);
 
@@ -72,7 +73,7 @@ export default function TarjetaSalida({ miembros, onZoom, avisar }) {
                 <strong>{nombre(c)}{marcaDelNombre(perfiles[c.usuario_id])}<MarcaFiesta perfil={perfiles[c.usuario_id]} /> · {vasosDe(c).length} {vasosDe(c).length === 1 ? "vaso" : "vasos"}</strong>
                 <small>{vasosDe(c).length ? `${tragosDe(c)} · ${numero(c.calorias || 0)} kcal` : "Todavía no cargó vasos"}</small>
               </span>
-              {typeof c.gol === "boolean" ? <span className={c.gol ? "salida-gol si" : "salida-gol no"}>{c.gol ? "⚽ Gol" : "🥅 No"}</span> : <span />}
+              {typeof c.gol === "boolean" ? <span className={c.gol ? "salida-gol si" : "salida-gol no"}><IconoGol tam={14} apagado={!c.gol} /> {c.gol ? "Gol" : "No"}</span> : <span />}
             </li>
           ))}
         </ul>

@@ -9,6 +9,7 @@ import { BEBIDAS_BASE, buscarTragos, TAMANOS, TRAGOS_BASE, valoresDeMezcla, vaso
 import { Resultados } from "../vistas/NuevaComida.jsx";
 import { avisarGrupo } from "../lib/api.js";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
+import { IconoGol } from "./IconosFiesta.jsx";
 
 // La noche sigue siendo la misma hasta las 6 de la mañana.
 export function fechaDeLaNoche(d = new Date()) {
@@ -437,7 +438,7 @@ function Contador({ avisar }) {
                   <button key={p.id} type="button" className={suya || invitado ? "persona-chip activo" : "persona-chip"} aria-pressed={Boolean(suya || invitado)} disabled={Boolean(suya) || (invitado && !invitados.includes(p.id))} onClick={() => alternarInvitado(p.id)}>
                     <Avatar perfil={p} tam={24} />
                     <span>{p.nombre}</span>
-                    {suya ? <small>{(suya.alimentos || []).length} {(suya.alimentos || []).length === 1 ? "vaso" : "vasos"}{suya.gol === true ? " · ⚽" : ""}</small> : invitado ? <small>Invitado</small> : null}
+                    {suya ? <small>{(suya.alimentos || []).length} {(suya.alimentos || []).length === 1 ? "vaso" : "vasos"}{suya.gol === true ? <> · <IconoGol tam={12} /></> : ""}</small> : invitado ? <small>Invitado</small> : null}
                   </button>
                 );
               })}
@@ -449,8 +450,8 @@ function Contador({ avisar }) {
       <div className="fiesta-gol">
         <span id="etiqueta-gol">¿Hubo gol? <small>(beso con chica)</small></span>
         <div className="gol-opciones" role="radiogroup" aria-labelledby="etiqueta-gol">
-          <button role="radio" aria-checked={gol === true} className={gol === true ? "activo si" : ""} onClick={() => elegirGol(true)}>⚽ Sí, gol</button>
-          <button role="radio" aria-checked={gol === false} className={gol === false ? "activo no" : ""} onClick={() => elegirGol(false)}>🥅 No hubo</button>
+          <button role="radio" aria-checked={gol === true} className={gol === true ? "activo si" : ""} onClick={() => elegirGol(true)}><IconoGol tam={18} /> Sí, gol</button>
+          <button role="radio" aria-checked={gol === false} className={gol === false ? "activo no" : ""} onClick={() => elegirGol(false)}><IconoGol tam={18} apagado /> No hubo</button>
         </div>
       </div>
 

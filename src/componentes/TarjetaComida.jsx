@@ -8,6 +8,7 @@ import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { marcaDelNombre } from "../lib/multas.js";
 import { MarcaFiesta } from "./MarcaFiesta.jsx";
+import { IconoGol, IconoTrago } from "./IconosFiesta.jsx";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import IconoComida from "./IconoComida.jsx";
@@ -92,7 +93,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const conPostre = Boolean(comida.postre_foto || comida.postre_nombre);
   // Modo fiesta: si hubo gol (beso) o no, bien a la vista.
   const gol = comida.tipo === "fiesta" && typeof comida.gol === "boolean" ? comida.gol : null;
-  const cartelGol = gol === null ? null : <span className={gol ? "cartel-gol si" : "cartel-gol no"}>{gol ? "⚽ ¡HUBO GOL!" : "🥅 SIN GOL"}</span>;
+  const cartelGol = gol === null ? null : <span className={gol ? "cartel-gol si" : "cartel-gol no"}>{gol ? <><IconoGol tam={18} /> ¡HUBO GOL!</> : <><IconoGol tam={18} apagado /> SIN GOL</>}</span>;
   // Los tragos de la noche, agrupados: "3 × Fernet con coca".
   const esFiesta = comida.tipo === "fiesta";
   const tragos = esFiesta
@@ -212,8 +213,8 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
               </ul>
             )}
             <p className="fiesta-datos">
-              {alcohol > 0 && <span>🍸 {alcohol} g de alcohol</span>}
-              {gol !== null && <span className={gol ? "gol-si" : "gol-no"}>{gol ? "⚽ Hubo gol" : "🥅 Sin gol"}</span>}
+              {alcohol > 0 && <span><IconoTrago tam={15} /> {alcohol} g de alcohol</span>}
+              {gol !== null && <span className={gol ? "gol-si" : "gol-no"}><IconoGol tam={15} apagado={!gol} /> {gol ? "Hubo gol" : "Sin gol"}</span>}
             </p>
           </div>
         )}

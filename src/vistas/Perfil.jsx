@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { IconoCorona, IconoGol, IconoResaca, IconoTrago } from "../componentes/IconosFiesta.jsx";
 import { abrirFestejo } from "../lib/fiestaEstado.js";
 import { AnimatePresence } from "motion/react";
 import { Award, Camera, Pencil, UtensilsCrossed } from "lucide-react";
@@ -82,7 +83,9 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
           <small>Meta: {numero(perfil.meta_calorias)} kcal por día</small>
           {perfil.fiesta && (
             <button type="button" className={`sello-multas sello-fiesta ${perfil.fiesta.modo}${perfil.fiesta.gol && perfil.fiesta.modo === "resaca" ? " gol" : ""}`} onClick={() => abrirFestejo(perfil.id)}>
-              {perfil.fiesta.modo === "fiesta" ? `🍸 En modo fiesta · ${perfil.fiesta.vasos} ${perfil.fiesta.vasos === 1 ? "vaso" : "vasos"}` : perfil.fiesta.gol ? "👑⚽ Hizo gol anoche" : "🥴 Resaca: salió anoche"}
+              {perfil.fiesta.modo === "fiesta"
+                ? <><IconoTrago tam={15} /> En modo fiesta · {perfil.fiesta.vasos} {perfil.fiesta.vasos === 1 ? "vaso" : "vasos"}</>
+                : perfil.fiesta.gol ? <><IconoCorona tam={15} /><IconoGol tam={15} /> Hizo gol anoche</> : <><IconoResaca tam={15} /> Resaca: salió anoche</>}
             </button>
           )}
           {perfil.calavera && <span className="sello-multas calavera">💀 Dos semanas sin subir fotos</span>}
