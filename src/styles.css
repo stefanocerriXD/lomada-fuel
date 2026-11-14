@@ -2251,3 +2251,26 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .hoja-festejo .boton { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; }
 .festejo-avatar { position: relative; }
 .festejo-avatar > span:last-child { position: absolute; right: -6px; bottom: -4px; font-size: 1.8rem; }
+
+/* Fotos de las recetas */
+.fotos-receta { display: flex; flex-direction: column; gap: 8px; }
+.fotos-receta-titulo { display: flex; flex-direction: column; gap: 2px; }
+.fotos-receta-titulo small { color: var(--tinta-2); font-size: 0.8rem; }
+.fotos-receta-lista { display: flex; flex-wrap: wrap; gap: 8px; }
+.fotos-receta .miniatura { width: 64px; height: 64px; }
+.fotos-receta .miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.fotos-receta .agregar-foto { box-shadow: var(--sombra); cursor: pointer; }
+.fotos-receta .agregar-foto input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.elegir-comida-foto { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.elegir-comida-foto button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 0; text-align: left; border-bottom: 1px solid var(--borde); }
+.elegir-comida-foto img, .elegir-comida-foto .adjunto-cargando { width: 60px; height: 60px; flex: none; border-radius: 12px; object-fit: cover; }
+.elegir-comida-foto span { display: flex; flex-direction: column; min-width: 0; }
+.elegir-comida-foto small { color: var(--tinta-2); font-size: 0.8rem; }
+.ver-receta-foto { aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; }
+.ver-receta-foto img { width: 100%; height: 100%; object-fit: cover; }
+.receta-foto-grande { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgb(0 0 0 / 88%); }
+.receta-foto-grande img { max-width: 100%; max-height: 100%; border-radius: 12px; object-fit: contain; }
+.receta-miniatura { width: 44px; height: 44px; flex: none; border-radius: 12px; object-fit: cover; }
+.receta-chat-foto { width: 44px; height: 44px; flex: none; border-radius: 12px; object-fit: cover; }
+.fotos-receta .miniatura { position: relative; overflow: hidden; }
+.fotos-receta .quitar-foto { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgb(0 0 0 / 60%); color: #fff; }

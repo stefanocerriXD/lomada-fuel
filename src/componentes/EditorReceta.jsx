@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence } from "motion/react";
-import { ImageUp, MessageCircle, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { Camera, Images, ImageUp, MessageCircle, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { comprimirImagen } from "../lib/imagen.js";
+import { nombreDia } from "../lib/fechas.js";
+import { tipoInfo } from "../lib/macros.js";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { prepararItem } from "../lib/unidades.js";
@@ -12,6 +16,7 @@ import Lector from "./Lector.jsx";
 import { Hoja, vibrar } from "./Base.jsx";
 
 const redondo = (n) => Math.round(n).toLocaleString("es-AR");
+const MAX_FOTOS_RECETA = 4;
 
 // Armar o editar una receta: ingredientes con sus cantidades, en cuántas porciones se divide y cuánto pesa terminada.
 export default function EditorReceta({ receta, onCerrar, avisar }) {
@@ -23,7 +28,51 @@ export default function EditorReceta({ receta, onCerrar, avisar }) {
 }
 
 function Formulario({ receta, onListo, avisar }) {
-  const { usuario, cargarExtras, mandarRecetaAlChat } = useDatos();
+  const { usuario, cargarExtras, mandarRecetaAlChat, fotos, comidas, comidasLogros, firmarRutas } = useDatos();
+  // Fotos de la receta: las guardadas, las nuevas (se suben al guardar) y las tomadas de una comida ya cargada.
+  const [fotosReceta, setFotosReceta] = useState(() => (receta.fotos || []).map((ruta) => ({ id: ruta, ruta })));
+  const [eligiendoFoto, setEligiendoFoto] = useState(false);
+  const llenas = fotosReceta.length >= MAX_FOTOS_RECETA;
+
+  async function sumarFotos(e) {
+    const archivos = [...e.target.files].slice(0, MAX_FOTOS_RECETA - fotosReceta.length);
+    e.target.value = "";
+    try {
+      const nuevas = [];
+      for (const archivo of archivos) {
+        const blob = await comprimirImagen(archivo);
+        nuevas.push({ id: crypto.randomUUID(), blob, vista: URL.createObjectURL(blob) });
+      }
+      setFotosReceta((prev) => [...prev, ...nuevas].slice(0, MAX_FOTOS_RECETA));
+      vibrar(8);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function elegirDeComida(c) {
+    if (!fotosReceta.some((f) => f.deComida === c.foto_path)) setFotosReceta((prev) => [...prev, { id: crypto.randomUUID(), deComida: c.foto_path }].slice(0, MAX_FOTOS_RECETA));
+    setEligiendoFoto(false);
+    vibrar(10);
+  }
+
+  // Al guardar: las nuevas se suben y las de una comida se copian (si la comida se borra, la receta conserva su foto).
+  async function subirFotos(idReceta) {
+    const rutas = [];
+    for (const [n, f] of fotosReceta.entries()) {
+      if (f.ruta) { rutas.push(f.ruta); continue; }
+      const ruta = `${usuario.id}/recetas/${idReceta}-${Date.now()}-${n}.jpg`;
+      if (f.blob) {
+        const { error: err } = await supabase.storage.from("fotos").upload(ruta, f.blob, { contentType: "image/jpeg" });
+        if (err) throw err;
+        rutas.push(ruta);
+      } else if (f.deComida) {
+        const { error: err } = await supabase.storage.from("fotos").copy(f.deComida, ruta);
+        rutas.push(err ? f.deComida : ruta);
+      }
+    }
+    return rutas;
+  }
   const [compartida, setCompartida] = useState(receta.compartida !== false);
   const [nombre, setNombre] = useState(receta.nombre || "");
   const [porciones, setPorciones] = useState(receta.porciones || 8);
@@ -31,6 +80,17 @@ function Formulario({ receta, onListo, avisar }) {
   const [pesoFinal, setPesoFinal] = useState(receta.peso_final ? String(receta.peso_final) : "");
   const [importando, setImportando] = useState(false);
   const [leido, setLeido] = useState(null);
+  // Las comidas propias con foto: primero las que usaron esta receta, después las más nuevas.
+  const comidasConFoto = useMemo(() => {
+    const propias = (comidasLogros || comidas).filter((c) => c.usuario_id === usuario.id && c.foto_path && c.tipo !== "resumen");
+    const usoLaReceta = (c) => receta.id && (c.alimentos || []).some((a) => a.receta_id === receta.id);
+    const clave = nombre.trim().toLowerCase().slice(0, 12);
+    const parecida = (c) => clave.length >= 3 && String(c.descripcion || "").toLowerCase().includes(clave);
+    return [...propias]
+      .sort((a, b) => Number(usoLaReceta(b) || parecida(b)) - Number(usoLaReceta(a) || parecida(a)) || (a.creado_en < b.creado_en ? 1 : -1))
+      .slice(0, 40)
+      .map((c) => ({ ...c, deEstaReceta: Boolean(usoLaReceta(c) || parecida(c)) }));
+  }, [comidasLogros, comidas, usuario.id, receta.id, nombre]);
 
   // Una foto o el texto de la receta: cada ingrediente reconocido entra con su cantidad.
   function alLeer({ titulo, porciones: rinde, items: nuevos, sinReconocer }) {
@@ -69,15 +129,30 @@ function Formulario({ receta, onListo, avisar }) {
       ingredientes: items.map(({ id, indice, medidas, ...i }) => ({ ...i, ...(i.por100 ? macrosDeItem(i) : {}) })),
       actualizado_en: new Date().toISOString(),
     };
+    const idReceta = receta.id || crypto.randomUUID();
     const escribir = (datos) => {
       const consulta = supabase.from("recetas_propias");
-      return receta.id ? consulta.update(datos).eq("id", receta.id) : consulta.insert({ ...datos, usuario_id: usuario.id });
+      return receta.id ? consulta.update(datos).eq("id", receta.id) : consulta.insert({ ...datos, id: idReceta, usuario_id: usuario.id });
     };
-    let { error: err } = await escribir({ ...fila, compartida });
+    let rutasFotos = [];
+    try {
+      rutasFotos = await subirFotos(idReceta);
+    } catch {
+      setGuardando(false);
+      return setError("No se pudo subir la foto. Probá de nuevo.");
+    }
+    // Las fotos se mandan solo si hay (o había): así sigue andando aunque falte el SQL nuevo.
+    const conFotos = rutasFotos.length || receta.fotos?.length ? { fotos: rutasFotos } : {};
+    let { error: err } = await escribir({ ...fila, compartida, ...conFotos });
+    if (err && /fotos/.test(err.message || "")) ({ error: err } = await escribir({ ...fila, compartida }));
     // Si todavía no se corrió el SQL de recetas compartidas, se guarda igual.
     if (err && /compartida/.test(err.message || "")) ({ error: err } = await escribir(fila));
     setGuardando(false);
     if (err) return setError("No se pudo guardar la receta.");
+    // Las fotos que se sacaron (solo las de la carpeta de recetas: las de comidas siguen siendo de su comida).
+    const sacadas = (receta.fotos || []).filter((r) => !rutasFotos.includes(r) && r.includes("/recetas/"));
+    if (sacadas.length) supabase.storage.from("fotos").remove(sacadas).catch(() => {});
+    if (rutasFotos.length) firmarRutas(rutasFotos).catch(() => {});
     await cargarExtras();
     vibrar(20);
     avisar(receta.id ? "Receta actualizada" : "Receta guardada. Buscala al cargar una comida.");
@@ -110,6 +185,50 @@ function Formulario({ receta, onListo, avisar }) {
         <span>Nombre</span>
         <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Budín de banana" maxLength={80} aria-label="Nombre de la receta" />
       </label>
+
+      <div className="fotos-receta" role="group" aria-label="Fotos de la receta">
+        <span className="fotos-receta-titulo"><strong>Fotos</strong><small>De cómo queda. Las ve el grupo si la compartís.</small></span>
+        <div className="fotos-receta-lista">
+          {fotosReceta.map((f) => {
+            const src = f.vista || fotos[f.ruta] || fotos[f.deComida];
+            return (
+              <span key={f.id} className="miniatura con-foto">
+                {src ? <img src={src} alt="Foto de la receta" /> : <Camera size={18} />}
+                <button type="button" className="quitar-foto" onClick={() => setFotosReceta((prev) => prev.filter((x) => x.id !== f.id))} aria-label="Quitar esta foto"><X size={13} /></button>
+              </span>
+            );
+          })}
+          {!llenas && (
+            <>
+              <label className="miniatura agregar-foto">
+                <input type="file" accept="image/*" multiple onChange={sumarFotos} aria-label="Subir fotos de la receta" />
+                <Camera size={18} />
+              </label>
+              {comidasConFoto.length > 0 && (
+                <button type="button" className="miniatura agregar-foto" onClick={() => setEligiendoFoto(true)} aria-label="Elegir la foto de una comida que ya cargaste">
+                  <Images size={18} />
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      {createPortal(
+        <Hoja abierta={eligiendoFoto} onCerrar={() => setEligiendoFoto(false)} titulo="Elegí una comida" ancha>
+          <p className="nota">Su foto pasa a ser una foto de la receta.</p>
+          <ul className="elegir-comida-foto">
+            {comidasConFoto.map((c) => (
+              <li key={c.id}>
+                <button type="button" onClick={() => elegirDeComida(c)} aria-label={`Usar la foto de ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                  {fotos[c.foto_path] ? <img src={fotos[c.foto_path]} alt="" loading="lazy" /> : <span className="adjunto-cargando" />}
+                  <span><strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong><small>{c.deEstaReceta ? "Con esta receta · " : ""}{tipoInfo(c.tipo).texto} · {nombreDia(c.fecha)}</small></span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Hoja>,
+        document.body,
+      )}
 
       {desdeComida && <p className="nota">Si es algo que dividís (un budín, una tarta), poné en cuántas porciones. Si es tu comida de siempre, dejá 1.</p>}
       <div className="campos-dobles">

@@ -258,13 +258,15 @@ function ActividadEnChat({ perfiles, yoId, alCambiar }) {
 // Una receta compartida: se toca para verla y guardarla.
 function RecetaEnChat({ id, onVer }) {
   const receta = useReceta(id);
+  const { fotos } = useDatos();
+  const foto = receta?.fotos?.[0] ? fotos[receta.fotos[0]] : null;
   if (receta === undefined) return <span className="receta-chat cargando" aria-hidden="true" />;
   if (!receta) return <span className="receta-chat sin-datos">La receta ya no está disponible</span>;
   const porciones = Math.max(1, Number(receta.porciones) || 1);
   const kcal = Math.round(totalesDeReceta(receta.ingredientes || []).kcal / porciones);
   return (
     <button type="button" className="receta-chat" onClick={() => onVer(receta)} onPointerDown={(e) => e.stopPropagation()} aria-label={`Ver receta: ${receta.nombre}`}>
-      <span className="receta-chat-icono"><ChefHat size={20} aria-hidden="true" /></span>
+      {foto ? <img className="receta-chat-foto" src={foto} alt="" loading="lazy" /> : <span className="receta-chat-icono"><ChefHat size={20} aria-hidden="true" /></span>}
       <span><strong>{receta.nombre}</strong><small>{kcal.toLocaleString("es-AR")} kcal {porciones > 1 ? `la porción · ${porciones} porciones` : ""} · Ver receta</small></span>
     </button>
   );

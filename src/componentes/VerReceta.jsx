@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { BookmarkPlus, ChefHat, MessageCircle } from "lucide-react";
+import { BookmarkPlus, ChefHat, MessageCircle, Pencil } from "lucide-react";
+import EditorReceta from "./EditorReceta.jsx";
+import { CarruselFotos } from "./TarjetaComida.jsx";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { macrosDeItem } from "../lib/macros.js";
@@ -11,10 +13,15 @@ const medidaDe = (i) => i.medida || (i.gramos ? `${redondo(i.gramos)} g` : "");
 
 // Una receta en la que se busca, se lee o se encuentra en el chat. Las de otros se pueden guardar como propias.
 export default function VerReceta({ receta, onCerrar, avisar }) {
+  // Editar abre el editor y cierra esta hoja (el editor vive acá afuera para no cerrarse con ella).
+  const [editando, setEditando] = useState(null);
   return (
-    <Hoja abierta={!!receta} onCerrar={onCerrar} titulo="Receta" ancha>
-      {receta && <Detalle key={receta.id} receta={receta} onCerrar={onCerrar} avisar={avisar} />}
-    </Hoja>
+    <>
+      <Hoja abierta={!!receta} onCerrar={onCerrar} titulo="Receta" ancha>
+        {receta && <Detalle key={receta.id} receta={receta} onCerrar={onCerrar} avisar={avisar} onEditar={() => { setEditando(receta); onCerrar(); }} />}
+      </Hoja>
+      <EditorReceta receta={editando} onCerrar={() => setEditando(null)} avisar={avisar} />
+    </>
   );
 }
 
@@ -32,8 +39,10 @@ export function useReceta(id) {
   return cargada || traida;
 }
 
-function Detalle({ receta, onCerrar, avisar }) {
-  const { usuario, perfiles, extras, cargarExtras, mandarRecetaAlChat } = useDatos();
+function Detalle({ receta, onCerrar, avisar, onEditar }) {
+  const { usuario, perfiles, extras, cargarExtras, mandarRecetaAlChat, fotos } = useDatos();
+  const fotosReceta = (receta.fotos || []).map((r) => fotos[r]);
+  const [ampliada, setAmpliada] = useState(null);
   const [ocupado, setOcupado] = useState("");
   const propia = receta.usuario_id === usuario.id;
   const autor = perfiles[receta.usuario_id];
@@ -75,6 +84,18 @@ function Detalle({ receta, onCerrar, avisar }) {
 
   return (
     <div className="carga ver-receta">
+      {fotosReceta.length > 1 ? (
+        <CarruselFotos srcs={fotosReceta} alt={receta.nombre} onZoom={(n) => fotosReceta[n] && setAmpliada(fotosReceta[n])} />
+      ) : fotosReceta.length === 1 && fotosReceta[0] ? (
+        <button type="button" className="comida-foto ver-receta-foto" onClick={() => setAmpliada(fotosReceta[0])} aria-label={`Ampliar la foto de ${receta.nombre}`}>
+          <img src={fotosReceta[0]} alt={receta.nombre} />
+        </button>
+      ) : null}
+      {ampliada && (
+        <div className="receta-foto-grande" role="dialog" aria-label={`Foto de ${receta.nombre}`} onClick={() => setAmpliada(null)}>
+          <img src={ampliada} alt={receta.nombre} />
+        </div>
+      )}
       <header className="ver-receta-cabecera">
         <span className="ver-receta-icono"><ChefHat size={22} aria-hidden="true" /></span>
         <div>
@@ -103,6 +124,11 @@ function Detalle({ receta, onCerrar, avisar }) {
         ))}
       </ul>
       <div className="ver-receta-botones">
+        {propia && (
+          <button className="boton boton-secundario" onClick={onEditar}>
+            <Pencil size={18} /> Editar receta
+          </button>
+        )}
         {!propia && (
           <button className="boton" onClick={guardarCopia} disabled={Boolean(ocupado) || yaLaTengo}>
             <BookmarkPlus size={18} /> {yaLaTengo ? "Ya la tenés" : ocupado === "guardar" ? "Guardando…" : "Guardar en mis recetas"}

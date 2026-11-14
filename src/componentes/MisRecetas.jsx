@@ -9,7 +9,7 @@ import VerReceta from "./VerReceta.jsx";
 const redondo = (n) => Math.round(n).toLocaleString("es-AR");
 
 export default function MisRecetas({ avisar, abrir }) {
-  const { extras, perfiles } = useDatos();
+  const { extras, perfiles, fotos } = useDatos();
   const [editando, setEditando] = useState(null);
   const [viendo, setViendo] = useState(null);
   const recetas = extras.recetas || [];
@@ -38,6 +38,7 @@ export default function MisRecetas({ avisar, abrir }) {
             return (
               <li key={r.id}>
                 <button onClick={() => setEditando(r)}>
+                  {r.fotos?.[0] && fotos[r.fotos[0]] && <img className="receta-miniatura" src={fotos[r.fotos[0]]} alt="" loading="lazy" />}
                   <span className="resultado-datos">
                     <strong>{r.nombre}</strong>
                     <span>{porciones} {porciones === 1 ? "porción" : "porciones"} de {redondo(pesoDeReceta(r) / porciones)} g · {redondo(total.kcal / porciones)} kcal cada una</span>
@@ -60,7 +61,7 @@ export default function MisRecetas({ avisar, abrir }) {
             return (
               <li key={r.id}>
                 <button onClick={() => setViendo(r)}>
-                  <Avatar perfil={perfiles[r.usuario_id]} tam={30} />
+                  {r.fotos?.[0] && fotos[r.fotos[0]] ? <img className="receta-miniatura" src={fotos[r.fotos[0]]} alt="" loading="lazy" /> : <Avatar perfil={perfiles[r.usuario_id]} tam={30} />}
                   <span className="resultado-datos">
                     <strong>{r.nombre}</strong>
                     <span>De {perfiles[r.usuario_id].nombre} · {redondo(total.kcal / porciones)} kcal {porciones > 1 ? "la porción" : ""}</span>

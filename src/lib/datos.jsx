@@ -340,7 +340,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       imagenesBocha: { dia: valorDe(ajustes, "bocha"), evo: valorDe(ajustes, "bocha_evo") },
       admin: !admin.error && Boolean(admin.data),
     });
-    firmarRutas([valorDe(ajustes, "bocha"), valorDe(ajustes, "bocha_evo")]).catch(() => {});
+    firmarRutas([valorDe(ajustes, "bocha"), valorDe(ajustes, "bocha_evo"), ...(recetas.data || []).flatMap((r) => r.fotos || [])]).catch(() => {});
   }, [usuario.id, firmarRutas]);
 
   const cambiarAgua = useCallback(
