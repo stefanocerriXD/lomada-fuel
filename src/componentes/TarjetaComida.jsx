@@ -88,6 +88,9 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   // El postre va como una foto más, al final, marcada.
   const fotoPostre = comida.postre_foto ? fotos[comida.postre_foto] : null;
   const conPostre = Boolean(comida.postre_foto || comida.postre_nombre);
+  // Modo fiesta: si hubo gol (beso) o no, bien a la vista.
+  const gol = comida.tipo === "fiesta" && typeof comida.gol === "boolean" ? comida.gol : null;
+  const cartelGol = gol === null ? null : <span className={gol ? "cartel-gol si" : "cartel-gol no"}>{gol ? "⚽ ¡HUBO GOL!" : "🥅 SIN GOL"}</span>;
   // Comida grupal: los que comieron lo mismo y, para quien la publicó, los que todavía no respondieron.
   const grupo = comida.grupo_comida;
   const nombresDe = (ids) => [...new Set(ids)].map((id) => (id === usuario.id ? "vos" : perfiles[id]?.nombre)).filter(Boolean);
@@ -170,18 +173,20 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           <span className="foto-oculta-texto"><span aria-hidden="true">💀</span> Dos semanas sin subir fotos.<small>Subí la tuya para volver a ver las del grupo.</small></span>
         </button>
       ) : srcs.length > 1 ? (
-        <CarruselFotos srcs={srcs} alt={texto} onZoom={ampliar} tapada={tapada} postre={comida.postre_foto ? srcs.length - 1 : -1} nombrePostre={comida.postre_nombre} />
+        <CarruselFotos srcs={srcs} alt={texto} onZoom={ampliar} tapada={tapada} postre={comida.postre_foto ? srcs.length - 1 : -1} nombrePostre={comida.postre_nombre} encima={cartelGol} />
       ) : fotoPrincipal ? (
         <button className="comida-foto" onClick={() => ampliar()} aria-label={`Ampliar foto: ${texto}`}>
           <img src={fotoPrincipal} alt={texto} loading="lazy" className={tapada ? "foto-castigo" : undefined} />
           {tapada && <span className="foto-castigo-texto">Subí tu foto de hoy para ver las del grupo</span>}
-          {!comida.foto_path && <span className="etiqueta-postre">🍮 Postre{comida.postre_nombre ? ` · ${comida.postre_nombre}` : ""}</span>}
+          {cartelGol}
+          {!comida.foto_path && comida.postre_foto && <span className="etiqueta-postre">🍮 Postre{comida.postre_nombre ? ` · ${comida.postre_nombre}` : ""}</span>}
           <span className="comida-foto-ampliar" aria-hidden="true"><Maximize2 size={15} /></span>
         </button>
       ) : (
-        <div className="comida-sinfoto">
+        <div className={gol === null ? "comida-sinfoto" : "comida-sinfoto fiesta-sinfoto"}>
+          {cartelGol}
           <IconoComida tipo={comida.tipo} size={32} />
-          <strong>{(comida.calorias || 0).toLocaleString("es-AR")} kcal</strong>
+          <strong>{gol !== null ? `${(comida.alimentos || []).length} ${(comida.alimentos || []).length === 1 ? "vaso" : "vasos"} · ` : ""}{(comida.calorias || 0).toLocaleString("es-AR")} kcal</strong>
         </div>
       )}
 
@@ -244,7 +249,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
 
 // Varias fotos de una misma comida: se pasan de costado, con puntitos abajo.
 // La del postre va al final, con su cartel, y desde la primera se ve que hay postre.
-function CarruselFotos({ srcs, alt, onZoom, tapada, postre = -1, nombrePostre }) {
+function CarruselFotos({ srcs, alt, onZoom, tapada, postre = -1, nombrePostre, encima }) {
   const [actual, setActual] = useState(0);
   const pista = useRef(null);
   // El deslizar de las fotos no cambia de pantalla.
@@ -252,6 +257,7 @@ function CarruselFotos({ srcs, alt, onZoom, tapada, postre = -1, nombrePostre })
   const irA = (n) => pista.current?.scrollTo({ left: n * pista.current.clientWidth, behavior: "smooth" });
   return (
     <div className="carrusel-fotos">
+      {encima}
       {postre > 0 && actual !== postre && (
         <button type="button" className="ir-postre" onClick={() => irA(postre)} aria-label="Ver la foto del postre">
           🍮 Postre <span aria-hidden="true">›</span>

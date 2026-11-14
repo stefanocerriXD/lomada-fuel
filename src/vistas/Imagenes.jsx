@@ -46,7 +46,7 @@ export default function Imagenes({ onCargar, avisar }) {
     const ids = new Set(base.map((c) => c.id));
     const vistas = new Set();
     return base
-      .filter((c) => (c.foto_path || c.postre_foto) && c.tipo !== "resumen")
+      .filter((c) => c.tipo !== "resumen" && (c.foto_path || c.postre_foto || (c.tipo === "fiesta" && typeof c.gol === "boolean")))
       .filter((c) => {
         if (!c.grupo_comida) return true;
         if (ids.has(c.grupo_comida)) return c.id === c.grupo_comida;
@@ -58,7 +58,10 @@ export default function Imagenes({ onCargar, avisar }) {
   }, [antiguo, comidas, fecha, viejos]);
 
   const conFotos = useMemo(() => new Set(comidas.filter((c) => c.foto_path).map((c) => c.fecha)), [comidas]);
-  const grupos = TIPOS.map((t) => ({ ...t, lista: delDia.filter((c) => c.tipo === t.id) }));
+  // La fiesta aparece solo si alguien la subió (con foto o diciendo si hubo gol).
+  const grupos = [...TIPOS, { id: "fiesta", texto: "Fiesta", plural: "Fiesta" }]
+    .map((t) => ({ ...t, lista: delDia.filter((c) => c.tipo === t.id) }))
+    .filter((g) => g.id !== "fiesta" || g.lista.length);
   const conLista = grupos.filter((g) => g.lista.length).map((g) => g.id);
   const todasAbiertas = conLista.length > 0 && conLista.every((id) => abiertos.includes(id));
   const secciones = useRef({});
@@ -106,7 +109,7 @@ export default function Imagenes({ onCargar, avisar }) {
                   </span>
                   {!abierto && !vacio && (
                     <span className="pila-fotos" aria-hidden="true">
-                      {g.lista.slice(0, 3).map((c) => <img key={c.id} src={fotos[c.foto_path || c.postre_foto]} alt="" loading="lazy" />)}
+                      {g.lista.filter((c) => fotos[c.foto_path || c.postre_foto]).slice(0, 3).map((c) => <img key={c.id} src={fotos[c.foto_path || c.postre_foto]} alt="" loading="lazy" />)}
                     </span>
                   )}
                   {abierto && <span className="grupo-fotos-agrupar">Agrupar</span>}
@@ -115,7 +118,7 @@ export default function Imagenes({ onCargar, avisar }) {
                 <AnimatePresence initial={false}>
                   {abierto && (
                     <motion.div className="fotos-lista" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-                      {g.lista.map((c, i) => (
+                      {g.lista.map((c) => (
                         <TarjetaComida
                           key={c.id}
                           comida={c}
@@ -123,7 +126,10 @@ export default function Imagenes({ onCargar, avisar }) {
                           foto={fotos[c.foto_path]}
                           propia={c.usuario_id === usuario.id}
                           indice={0}
-                          onZoom={(z) => setVisor({ lista: g.lista, inicio: i, foto: z?.n || 0 })}
+                          onZoom={(z) => {
+                            const conFoto = g.lista.filter((x) => x.foto_path || x.postre_foto);
+                            setVisor({ lista: conFoto, inicio: Math.max(0, conFoto.findIndex((x) => x.id === c.id)), foto: z?.n || 0 });
+                          }}
                           onEditar={() => onCargar({ comida: c })}
                           avisar={avisar}
                         />

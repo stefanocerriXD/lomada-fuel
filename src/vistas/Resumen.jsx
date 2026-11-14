@@ -10,7 +10,7 @@ import InvitacionesComida from "../componentes/InvitacionesComida.jsx";
 import { abrirInforme, CartelInforme } from "../componentes/InformeSemanal.jsx";
 import { FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
 import { esDeAppleSalud } from "../lib/importar.js";
-import { esDeNoche, fechaDeLaNoche } from "../componentes/Fiesta.jsx";
+import { esDeNoche, fechaDeLaNoche, nocheActual, sumarUnVaso, ultimoTrago } from "../componentes/Fiesta.jsx";
 import Habitos from "../componentes/Habitos.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
@@ -39,15 +39,28 @@ export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta
 }
 
 function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
-  const { usuario, yo, perfiles, comidas, fotos, whoop, salud, extras } = useDatos();
+  const { usuario, yo, perfiles, comidas, fotos, whoop, salud, extras, cargarComidas } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
+  const [, setVasoRapido] = useState(0);
 
   const delDia = useMemo(() => comidas.filter((c) => c.fecha === fecha), [comidas, fecha]);
   const fotosHoy = fotosDelDia(comidas, usuario.id, hoy);
   const mias = delDia.filter((c) => c.usuario_id === usuario.id);
   // Hoy, la fiesta de esta noche (sigue siendo la de anoche hasta las 6); otro día, la de ese día.
   const nocheDeFiesta = fecha === hoy ? comidas.find((c) => c.usuario_id === usuario.id && c.tipo === "fiesta" && c.fecha === fechaDeLaNoche()) : mias.find((c) => c.tipo === "fiesta");
+  // Esta noche (con lo que quedó en el celu sin señal) y el último trago, para sumar otro con un toque.
+  const estaNoche = fecha === hoy ? nocheActual(usuario.id, comidas) : null;
+  const vasosNoche = estaNoche ? estaNoche.vasos : nocheDeFiesta?.alimentos || [];
+  const tragoRapido = estaNoche && (vasosNoche.length || esDeNoche()) ? ultimoTrago(vasosNoche) : null;
+  function otroVaso() {
+    const r = sumarUnVaso(usuario.id, comidas);
+    if (!r) return;
+    vibrar(18);
+    setVasoRapido((n) => n + 1);
+    avisar(`+1 ${r.trago.nombre} · ${r.noche.vasos.length} ${r.noche.vasos.length === 1 ? "vaso" : "vasos"}`);
+    r.subida.then((ok) => (ok ? cargarComidas().catch(() => {}) : avisar("Sin señal: quedó guardado en el celu y se sube solo.")));
+  }
   const total = sumarComidas(mias);
   const restante = yo.meta_calorias - Math.round(total.kcal);
   // El de Apple Salud cuenta en el total pero no se muestra aparte: parecería sumado dos veces.
@@ -133,14 +146,22 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
 
       <div className="acciones-rapidas">
         {fecha === hoy && <Recomendador yo={yo} salud={salud} total={total} cargadas={mias.map((c) => c.tipo)} fecha={fecha} onCargar={onCargar} />}
-        {(nocheDeFiesta || (fecha === hoy && esDeNoche())) && (
-          <motion.button className="tarjeta accion fiesta-accion" whileTap={{ scale: 0.97 }} onClick={onFiesta}>
-            <Martini size={22} />
-            <span>
-              <strong>Modo fiesta</strong>
-              <small>{nocheDeFiesta ? `${nocheDeFiesta.alimentos.length} ${nocheDeFiesta.alimentos.length === 1 ? "vaso" : "vasos"} · ${Math.round(nocheDeFiesta.calorias).toLocaleString("es-AR")} kcal` : "Cargá tus vasos"}</small>
-            </span>
-          </motion.button>
+        {(nocheDeFiesta || vasosNoche.length > 0 || (fecha === hoy && esDeNoche())) && (
+          <div className="fiesta-fila">
+            <motion.button className="tarjeta accion fiesta-accion" whileTap={{ scale: 0.97 }} onClick={onFiesta}>
+              <Martini size={22} />
+              <span>
+                <strong>Modo fiesta</strong>
+                <small>{vasosNoche.length ? `${vasosNoche.length} ${vasosNoche.length === 1 ? "vaso" : "vasos"} · ${Math.round(vasosNoche.reduce((t, v) => t + (v.kcal || 0), 0)).toLocaleString("es-AR")} kcal` : "Cargá tus vasos"}</small>
+              </span>
+            </motion.button>
+            {tragoRapido && (
+              <motion.button className="fiesta-mas-uno" whileTap={{ scale: 0.9 }} onClick={otroVaso} aria-label={`Sumar otro ${tragoRapido.nombre}`}>
+                <strong>+1</strong>
+                <small>{tragoRapido.nombre}</small>
+              </motion.button>
+            )}
+          </div>
         )}
         <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => onImportar(fecha)}>
           <ClipboardPaste size={22} />

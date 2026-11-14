@@ -2163,3 +2163,46 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .postre-datos { display: flex; align-items: center; gap: 12px; }
 .postre-datos input[type="text"], .postre-datos > input { flex: 1; min-width: 0; }
 .miniatura-emoji { font-size: 1.7rem; line-height: 1; }
+
+/* Modo fiesta: gol, foto de la noche y +1 rápido */
+.fiesta-sin-senal { color: #b4561c; }
+.fiesta-gol { display: flex; flex-direction: column; gap: 8px; }
+.fiesta-gol > span { font-weight: 750; }
+.fiesta-gol small { color: var(--tinta-2); font-weight: 600; }
+.gol-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gol-opciones button { min-height: 50px; border-radius: 14px; background: var(--superficie); box-shadow: var(--sombra); font-weight: 750; }
+.gol-opciones button.activo.si { background: #1f8a4c; color: #fff; }
+.gol-opciones button.activo.no { background: #3a2a4d; color: #f3e8ff; }
+.fiesta-foto { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 0; cursor: pointer; }
+.fiesta-foto input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.fiesta-foto > svg, .fiesta-foto img { display: grid; flex: none; place-items: center; width: 56px; height: 56px; border-radius: 15px; background: var(--superficie); object-fit: cover; }
+.fiesta-foto > svg { padding: 16px; color: #7a2b8f; }
+.fiesta-foto > span { display: flex; flex-direction: column; gap: 2px; }
+.fiesta-foto small { color: var(--tinta-2); font-size: 0.8rem; }
+.fiesta-fila { display: flex; align-items: stretch; gap: 10px; }
+.fiesta-fila .fiesta-accion { flex: 1; min-width: 0; }
+.fiesta-mas-uno { display: flex; flex: none; flex-direction: column; align-items: center; justify-content: center; width: 86px; padding: 6px; border-radius: 18px; background: linear-gradient(135deg, #2b1452, #5a1f6b); color: #f3e8ff; }
+.fiesta-mas-uno strong { font-family: var(--titulo); font-size: 1.35rem; font-weight: 800; line-height: 1; }
+.fiesta-mas-uno small { max-width: 100%; overflow: hidden; font-size: 0.7rem; text-overflow: ellipsis; white-space: nowrap; }
+.cartel-gol { position: absolute; top: 12px; left: 50%; z-index: 2; padding: 7px 15px; border-radius: 999px; font-family: var(--titulo); font-size: 1rem; font-weight: 800; letter-spacing: 0.03em; transform: translateX(-50%) rotate(-3deg); white-space: nowrap; box-shadow: 0 3px 14px rgb(0 0 0 / 30%); }
+.cartel-gol.si { background: #1f8a4c; color: #fff; }
+.cartel-gol.no { background: #fff; color: #3a2a4d; }
+.comida-sinfoto { position: relative; }
+.fiesta-sinfoto { min-height: 190px; padding-top: 56px; border-radius: 16px; background: linear-gradient(135deg, #2b1452, #5a1f6b); color: #f3e8ff; }
+.fiesta-fila { grid-column: 1 / -1; }
+
+/* Modo fiesta: sacar un vaso con un toque y varias fotos de la noche */
+.sumar-fila { display: flex; align-items: stretch; gap: 10px; }
+.sumar-fila .sumar-vaso { flex: 1; min-width: 0; }
+.sacar-vaso { display: flex; flex: none; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 84px; border-radius: 18px; background: var(--superficie); box-shadow: var(--sombra); color: var(--tinta); }
+.sacar-vaso small { font-size: 0.7rem; font-weight: 650; line-height: 1.1; text-align: center; }
+.fiesta-fotos { display: flex; flex-direction: column; gap: 8px; }
+.fiesta-fotos-titulo { display: flex; flex-direction: column; gap: 2px; }
+.fiesta-fotos-titulo small { color: var(--tinta-2); font-size: 0.8rem; }
+.fiesta-fotos-lista { display: flex; flex-wrap: wrap; gap: 8px; }
+.fiesta-miniatura { position: relative; display: grid; place-items: center; width: 72px; height: 72px; overflow: hidden; border-radius: 15px; background: var(--superficie); color: #7a2b8f; }
+.fiesta-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.fiesta-miniatura.agregar { display: flex; flex-direction: column; justify-content: center; gap: 2px; cursor: pointer; box-shadow: var(--sombra); }
+.fiesta-miniatura.agregar small { font-size: 0.72rem; font-weight: 700; }
+.fiesta-miniatura.agregar input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.fiesta-miniatura .quitar-foto { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgb(0 0 0 / 60%); color: #fff; }
