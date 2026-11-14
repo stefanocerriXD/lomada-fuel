@@ -104,7 +104,7 @@ export default function AppleSalud({ avisar }) {
           <strong>Instalá el Atajo</strong>
           {ATAJO_SALUD ? (
             <>
-              <span>Tocá Agregar atajo. Después abrilo en la app Atajos, tocá el campo vacío al lado de token y pegá tu llave.</span>
+              <span>Copiá tu llave de arriba, tocá Instalar Atajo y, cuando te la pida, pegala. Manda tus totales y cada comida de MyFitnessPal con su hora: al tocar + ya aparece cargada.</span>
               <a className="boton boton-secundario" href={ATAJO_SALUD} target="_blank" rel="noreferrer"><Download size={17} /> Instalar Atajo</a>
             </>
           ) : (
@@ -115,7 +115,7 @@ export default function AppleSalud({ avisar }) {
           <strong>Que se actualice solo</strong>
           <span>En la app Atajos tocá Automatización y +. Creá estas, todas con Ejecutar inmediatamente y el Atajo {NOMBRE_ATAJO}:</span>
           <ul className="automatizaciones">
-            <li><b>App:</b> elegí Salud, o la app donde cargás tus comidas, y marcá Se cierra. Así se actualiza cada vez que cargás algo.</li>
+            <li><b>App:</b> elegí MyFitnessPal (o la app donde cargás tus comidas) y marcá Se cierra. Así se manda cada vez que cargás algo.</li>
             <li><b>Hora del día:</b> una por cada horario que quieras, por ejemplo 9, 12, 15, 18, 21 y 23:30.</li>
           </ul>
           <span>Corren solas en segundo plano: no hace falta abrir nada.</span>

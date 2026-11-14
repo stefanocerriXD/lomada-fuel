@@ -66,10 +66,10 @@ export async function sugerirConIA(datos) {
 export const URL_SALUD = `${window.location.origin}/api/salud`;
 
 // Enlace de iCloud del Atajo compartido, sin ninguna llave adentro.
-export const ATAJO_SALUD = "https://www.icloud.com/shortcuts/cb157d1bd83242408043eb22360f3d7c";
+export const ATAJO_SALUD = "https://www.icloud.com/shortcuts/55d8f38bf6544514a40b1bb5f0d24a1b";
 
 // Nombre con el que se instala el Atajo compartido.
-export const NOMBRE_ATAJO = "Lomada fuel";
+export const NOMBRE_ATAJO = "Lomada fuel compartido";
 
 const memoria = new Map();
 
