@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { fotosGuardadas, guardarFotos } from "./fotosGuardadas.js";
 import { supabase } from "./supabase.js";
-import { accionWhoop } from "./api.js";
+import { accionWhoop, avisarGrupo } from "./api.js";
 import { haceDias } from "./fechas.js";
 import { cantidades, nivelesGuardados, nivelGeneral } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
@@ -197,6 +197,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       ? consulta.delete().eq("mensaje_id", mensajeId).eq("usuario_id", usuario.id).eq("emoji", emoji)
       : consulta.insert(fila));
     if (error) cargarSocial().catch(() => {});
+    // Al que le reaccionaron le llega un aviso (solo a él).
+    else if (!tenia) avisarGrupo("reaccion_mensaje", mensajeId, emoji);
   }, [usuario.id, cargarSocial, ponerReaccion, emitirChat]);
 
   const ponerLectura = useCallback(({ usuario_id, hasta }) => {
@@ -300,6 +302,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
         ? consulta.delete().eq("comida_id", comidaId).eq("usuario_id", usuario.id).eq("emoji", emoji)
         : consulta.insert(fila));
       if (error) cargarReacciones();
+      // Al que le reaccionaron la foto le llega un aviso (solo a él).
+      else if (!tenia) avisarGrupo("reaccion", comidaId, emoji);
     },
     [usuario.id, cargarReacciones],
   );

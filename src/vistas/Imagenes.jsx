@@ -7,6 +7,7 @@ import { TIPOS } from "../lib/macros.js";
 import { Vacio } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TarjetaComida from "../componentes/TarjetaComida.jsx";
+import TarjetaSalida from "../componentes/TarjetaSalida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
 import Visor from "../componentes/Visor.jsx";
 
@@ -40,13 +41,16 @@ export default function Imagenes({ onCargar, avisar }) {
   // Un día viejo también tiene que reflejar lo editado o borrado.
   useEffect(() => setViejos({}), [comidas]);
 
+  // La fiesta se ve la noche en que se cargó y todo el día siguiente (la de anoche sigue arriba hasta la noche).
+  const conFiesta = (c) => c.tipo === "fiesta" && ((c.alimentos || []).length > 0 || c.foto_path || typeof c.gol === "boolean");
   const delDia = useMemo(() => {
-    const base = antiguo ? viejos[fecha] || [] : comidas.filter((c) => c.fecha === fecha);
+    const ayer = moverDia(fecha, -1);
+    const base = antiguo ? viejos[fecha] || [] : comidas.filter((c) => c.fecha === fecha || (c.tipo === "fiesta" && c.fecha === ayer));
     // Una comida grupal se muestra una vez, con todos los que comieron.
     const ids = new Set(base.map((c) => c.id));
     const vistas = new Set();
     return base
-      .filter((c) => c.tipo !== "resumen" && (c.foto_path || c.postre_foto || (c.tipo === "fiesta" && typeof c.gol === "boolean")))
+      .filter((c) => c.tipo !== "resumen" && (c.tipo === "fiesta" ? conFiesta(c) : c.foto_path || c.postre_foto))
       .filter((c) => {
         if (!c.grupo_comida) return true;
         if (ids.has(c.grupo_comida)) return c.id === c.grupo_comida;
@@ -58,10 +62,27 @@ export default function Imagenes({ onCargar, avisar }) {
   }, [antiguo, comidas, fecha, viejos]);
 
   const conFotos = useMemo(() => new Set(comidas.filter((c) => c.foto_path).map((c) => c.fecha)), [comidas]);
-  // La fiesta aparece solo si alguien la subió (con foto o diciendo si hubo gol).
-  const grupos = [...TIPOS, { id: "fiesta", texto: "Fiesta", plural: "Fiesta" }]
+  // La fiesta aparece solo si alguien salió y cargó vasos; va primera, bien a la vista.
+  const grupos = [{ id: "fiesta", texto: "Fiesta", plural: "Fiesta" }, ...TIPOS]
     .map((t) => ({ ...t, lista: delDia.filter((c) => c.tipo === t.id) }))
     .filter((g) => g.id !== "fiesta" || g.lista.length);
+  // Quiénes salieron, de qué noche y cuántos goles.
+  function resumenFiesta(lista) {
+    const nombres = [...new Set(lista.map((c) => (c.usuario_id === usuario.id ? "Vos" : perfiles[c.usuario_id]?.nombre || "Amigo")))];
+    const goles = lista.filter((c) => c.gol === true).length;
+    // "Anoche" o "Esta noche" solo si todas son de la misma noche.
+    const noche = lista.every((c) => c.fecha !== fecha) ? "Anoche · " : lista.every((c) => c.fecha === fecha) ? (fecha === hoy ? "Esta noche · " : "Esa noche · ") : "";
+    return `${noche}${nombres.join(", ")}${goles ? ` · ⚽ ${goles} ${goles === 1 ? "gol" : "goles"}` : ""}`;
+  }
+  // Las fiestas de una misma salida van juntas: cada uno con sus vasos.
+  function salidasDe(lista) {
+    const porSalida = new Map();
+    for (const c of lista) {
+      const clave = c.salida || c.id;
+      porSalida.set(clave, [...(porSalida.get(clave) || []), c]);
+    }
+    return [...porSalida.values()];
+  }
   const conLista = grupos.filter((g) => g.lista.length).map((g) => g.id);
   const todasAbiertas = conLista.length > 0 && conLista.every((id) => abiertos.includes(id));
   const secciones = useRef({});
@@ -100,12 +121,12 @@ export default function Imagenes({ onCargar, avisar }) {
             const abierto = abiertos.includes(g.id);
             const vacio = !g.lista.length;
             return (
-              <section key={g.id} className={abierto ? "tarjeta grupo-fotos abierto" : "tarjeta grupo-fotos"} ref={(n) => { secciones.current[g.id] = n; }}>
+              <section key={g.id} className={["tarjeta grupo-fotos", abierto && "abierto", g.id === "fiesta" && "grupo-fiesta"].filter(Boolean).join(" ")} ref={(n) => { secciones.current[g.id] = n; }}>
                 <button className="grupo-fotos-cabecera" onClick={() => alternar(g.id)} aria-expanded={abierto} disabled={vacio}>
                   <span className="grupo-fotos-icono"><IconoComida tipo={g.id} size={21} /></span>
                   <span className="grupo-fotos-datos">
-                    <strong>{g.plural || g.texto}</strong>
-                    <small>{vacio ? "Sin fotos" : `${g.lista.length} ${g.lista.length === 1 ? "foto" : "fotos"}`}</small>
+                    <strong>{g.id === "fiesta" ? "🪩 Fiesta" : g.plural || g.texto}</strong>
+                    <small>{vacio ? "Sin fotos" : g.id === "fiesta" ? resumenFiesta(g.lista) : `${g.lista.length} ${g.lista.length === 1 ? "foto" : "fotos"}`}</small>
                   </span>
                   {!abierto && !vacio && (
                     <span className="pila-fotos" aria-hidden="true">
@@ -118,7 +139,18 @@ export default function Imagenes({ onCargar, avisar }) {
                 <AnimatePresence initial={false}>
                   {abierto && (
                     <motion.div className="fotos-lista" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-                      {g.lista.map((c) => (
+                      {g.id === "fiesta" && salidasDe(g.lista).filter((s) => s.length > 1).map((s) => (
+                        <TarjetaSalida
+                          key={s[0].salida}
+                          miembros={s}
+                          avisar={avisar}
+                          onZoom={(comida, n) => {
+                            const conFoto = g.lista.filter((x) => x.foto_path || x.postre_foto);
+                            setVisor({ lista: conFoto, inicio: Math.max(0, conFoto.findIndex((x) => x.id === comida.id)), foto: n });
+                          }}
+                        />
+                      ))}
+                      {(g.id === "fiesta" ? salidasDe(g.lista).filter((s) => s.length === 1).map((s) => s[0]) : g.lista).map((c) => (
                         <TarjetaComida
                           key={c.id}
                           comida={c}

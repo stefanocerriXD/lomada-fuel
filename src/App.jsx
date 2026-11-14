@@ -228,7 +228,7 @@ function Principal({ recuperando, onRecuperado }) {
   }, []);
 
   const abrirCarga = useCallback((datos = {}) => setCarga(datos), []);
-  const [fiesta, setFiesta] = useState(false);
+  const [fiesta, setFiesta] = useState(pedida === "fiesta");
 
   // Responder una foto lleva al chat desde cualquier pantalla.
   useEffect(() => {

@@ -7,7 +7,8 @@ import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal, haceDias, nombreDia } from "../lib/fechas.js";
 import { BEBIDAS_BASE, buscarTragos, TAMANOS, TRAGOS_BASE, valoresDeMezcla, vasoDe } from "../data/tragos.js";
 import { Resultados } from "../vistas/NuevaComida.jsx";
-import { Hoja, vibrar } from "./Base.jsx";
+import { avisarGrupo } from "../lib/api.js";
+import { Avatar, Hoja, vibrar } from "./Base.jsx";
 
 // La noche sigue siendo la misma hasta las 6 de la mañana.
 export function fechaDeLaNoche(d = new Date()) {
@@ -49,11 +50,14 @@ export function nocheActual(usuarioId, comidas, fecha = fechaDeLaNoche()) {
     gol: guardada?.gol ?? null,
     foto_path: guardada?.foto_path || null,
     fotos_extra: guardada?.fotos_extra || [],
+    salida: guardada?.salida || null,
+    salida_con: guardada?.salida_con || [],
     pendiente: false,
   };
 }
 
 // Sube la noche entera (es una sola carga que se va actualizando). Si ya existe la actualiza; si no, la crea.
+// Las columnas nuevas (gol y salida) se mandan solo si la base ya las tiene.
 async function subirNoche(usuarioId, noche, conGol = true) {
   const t = sumarVasos(noche.vasos);
   const fila = {
@@ -67,18 +71,19 @@ async function subirNoche(usuarioId, noche, conGol = true) {
     foto_path: noche.foto_path || null,
     ...(noche.fotos_extra?.length || noche.habiaExtras ? { fotos_extra: noche.fotos_extra || [] } : {}),
     ...(conGol && typeof noche.gol === "boolean" ? { gol: noche.gol } : {}),
+    ...(conGol && noche.salida ? { salida: noche.salida, salida_con: noche.salida_con || [] } : {}),
   };
-  if (!noche.vasos.length && !noche.foto_path && typeof noche.gol !== "boolean") {
+  if (!noche.vasos.length && !noche.foto_path && typeof noche.gol !== "boolean" && !noche.salida) {
     const { error } = await supabase.from("comidas").delete().eq("id", noche.id);
     return !error;
   }
   const { data, error } = await supabase.from("comidas").update(fila).eq("id", noche.id).select("id");
   // Si la base todavía no tiene lo del gol (falta el SQL), los vasos se guardan igual.
-  if (error && conGol && /gol/.test(error.message || "")) return subirNoche(usuarioId, noche, false);
+  if (error && conGol && /gol|salida/.test(error.message || "")) return subirNoche(usuarioId, noche, false);
   if (error) return false;
   if (data?.length) return true;
   const { error: errNueva } = await supabase.from("comidas").insert({ ...fila, id: noche.id, usuario_id: usuarioId, tipo: "fiesta", fecha: noche.fecha, privada: false });
-  if (errNueva && conGol && /gol/.test(errNueva.message || "")) return subirNoche(usuarioId, noche, false);
+  if (errNueva && conGol && /gol|salida/.test(errNueva.message || "")) return subirNoche(usuarioId, noche, false);
   return !errNueva;
 }
 
@@ -138,7 +143,7 @@ export default function Fiesta({ abierta, onCerrar, avisar }) {
 }
 
 function Contador({ avisar }) {
-  const { usuario, comidas, cargarComidas, fotos } = useDatos();
+  const { usuario, comidas, cargarComidas, fotos, perfiles } = useDatos();
   const fecha = useMemo(() => fechaDeLaNoche(), []);
   // Al abrir: lo de esta noche (del celu si quedó sin subir) y el último trago, listo para sumar otro.
   const inicio = useMemo(() => nocheActual(usuario.id, comidas, fecha), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -154,7 +159,14 @@ function Contador({ avisar }) {
   const [mezcla, setMezcla] = useState([["Fernet", 30], ["Pomelo light", 70]]);
   const [sinSenal, setSinSenal] = useState(inicio.pendiente);
   const id = useRef(inicio.id);
-  const estado = useRef({ vasos: inicio.vasos, gol: inicio.gol, foto_path: inicio.foto_path, fotos_extra: inicio.fotos_extra || [], habiaExtras: Boolean(inicio.fotos_extra?.length) });
+  const estado = useRef({ vasos: inicio.vasos, gol: inicio.gol, foto_path: inicio.foto_path, fotos_extra: inicio.fotos_extra || [], habiaExtras: Boolean(inicio.fotos_extra?.length), salida: inicio.salida || null, salida_con: inicio.salida_con || [] });
+  // Salida en grupo: cada uno carga sus vasos y quedan unidos por la misma salida.
+  const [salida, setSalida] = useState(inicio.salida || null);
+  const [invitados, setInvitados] = useState(inicio.salida_con || []);
+  const otros = Object.values(perfiles).filter((p) => p.id !== usuario.id);
+  const deLaSalida = salida ? comidas.filter((c) => c.tipo === "fiesta" && c.usuario_id !== usuario.id && (c.id === salida || c.salida === salida)) : [];
+  const invitadosDeTodos = new Set([...invitados, ...deLaSalida.flatMap((c) => c.salida_con || [])]);
+  const invitacion = !salida ? comidas.find((c) => c.tipo === "fiesta" && c.fecha === fecha && c.usuario_id !== usuario.id && (c.salida_con || []).includes(usuario.id)) : null;
   const totales = sumarVasos(vasos);
   const vaso = vasoDe(trago, ml);
 
@@ -179,6 +191,27 @@ function Contador({ avisar }) {
       setSinSenal(!ok);
       if (ok) cargarComidas().catch(() => {});
     });
+    return subida;
+  }
+
+  // Sumar (o sacar) a alguien de la salida: le llega un aviso para que cargue sus vasos.
+  function alternarInvitado(persona) {
+    const sacar = invitados.includes(persona);
+    const lista = sacar ? invitados.filter((x) => x !== persona) : [...invitados, persona];
+    const idNoche = id.current || crypto.randomUUID();
+    id.current = idNoche;
+    const laSalida = salida || idNoche;
+    setSalida(laSalida);
+    setInvitados(lista);
+    vibrar(10);
+    guardar({ salida: laSalida, salida_con: lista }).then((ok) => { if (ok && !sacar) avisarGrupo("salida", idNoche); });
+  }
+
+  function sumarmeALaSalida() {
+    const laSalida = invitacion.salida || invitacion.id;
+    setSalida(laSalida);
+    guardar({ salida: laSalida });
+    vibrar([20, 40, 20]);
   }
 
   function sumar() {
@@ -284,6 +317,13 @@ function Contador({ avisar }) {
         <strong>{vasos.length} {vasos.length === 1 ? "vaso" : "vasos"}</strong>
         <small>{numero(totales.kcal)} kcal · C {numero(totales.c)} g · {numero(totales.alcohol)} g de alcohol</small>
       </div>
+      {invitacion && (
+        <div className="salida-invitacion">
+          <Avatar perfil={perfiles[invitacion.usuario_id]} tam={36} />
+          <span><strong>🪩 {perfiles[invitacion.usuario_id]?.nombre || "Alguien"} te sumó a su salida</strong><small>Cada uno carga sus vasos y en el grupo sale todo junto.</small></span>
+          <button className="boton-chico activo" onClick={sumarmeALaSalida}>Sumarme</button>
+        </div>
+      )}
       {sinSenal && <p className="nota fiesta-sin-senal" role="status">Sin señal: los vasos quedan guardados en el celu y se suben solos cuando vuelva.</p>}
 
       <div className="sumar-fila">
@@ -384,6 +424,27 @@ function Contador({ avisar }) {
         )}
       </AnimatePresence>
 
+
+      <div className="fiesta-salida">
+        {!invitacion && (
+          <>
+            <span className="fiesta-salida-titulo"><strong>{salida ? "🪩 Salida en grupo" : "¿Salieron juntos?"}</strong><small>Sumá a los que salieron con vos: cada uno carga sus vasos y en el grupo sale todo junto.</small></span>
+            <div className="comida-grupal-lista" role="group" aria-label="Con quién saliste">
+              {otros.map((p) => {
+                const suya = deLaSalida.find((c) => c.usuario_id === p.id);
+                const invitado = invitados.includes(p.id) || invitadosDeTodos.has(p.id);
+                return (
+                  <button key={p.id} type="button" className={suya || invitado ? "persona-chip activo" : "persona-chip"} aria-pressed={Boolean(suya || invitado)} disabled={Boolean(suya) || (invitado && !invitados.includes(p.id))} onClick={() => alternarInvitado(p.id)}>
+                    <Avatar perfil={p} tam={24} />
+                    <span>{p.nombre}</span>
+                    {suya ? <small>{(suya.alimentos || []).length} {(suya.alimentos || []).length === 1 ? "vaso" : "vasos"}{suya.gol === true ? " · ⚽" : ""}</small> : invitado ? <small>Invitado</small> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       <div className="fiesta-gol">
         <span id="etiqueta-gol">¿Hubo gol? <small>(beso con chica)</small></span>

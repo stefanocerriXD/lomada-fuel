@@ -2206,3 +2206,34 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .fiesta-miniatura.agregar small { font-size: 0.72rem; font-weight: 700; }
 .fiesta-miniatura.agregar input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .fiesta-miniatura .quitar-foto { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgb(0 0 0 / 60%); color: #fff; }
+
+/* La fiesta en el grupo: primera, con los tragos de la noche */
+.grupo-fiesta .grupo-fotos-icono { color: #7a2b8f; }
+.grupo-fiesta .grupo-fotos-datos small { color: #7a2b8f; font-weight: 650; }
+.fiesta-resumen { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 6px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, #7a2b8f 10%, transparent); }
+.fiesta-tragos { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 0; list-style: none; font-size: 0.92rem; }
+.fiesta-tragos small { color: var(--tinta-2); }
+.fiesta-datos { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; font-size: 0.86rem; font-weight: 650; }
+.fiesta-datos .gol-si { color: #1f8a4c; }
+.fiesta-datos .gol-no { color: var(--tinta-2); }
+
+/* Salida en grupo */
+.fiesta-salida { display: flex; flex-direction: column; gap: 8px; }
+.fiesta-salida-titulo { display: flex; flex-direction: column; gap: 2px; }
+.fiesta-salida-titulo small, .salida-invitacion small { color: var(--tinta-2); font-size: 0.8rem; }
+.salida-invitacion { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 16px; background: color-mix(in srgb, #7a2b8f 12%, transparent); }
+.salida-invitacion > span { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.tarjeta.salida .salida-cabecera { display: flex; align-items: center; gap: 10px; padding: 4px 0 10px; }
+.salida-avatares { display: flex; flex: none; }
+.salida-avatares > * + * { margin-left: -10px; }
+.salida-cabecera > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.salida-cabecera small { color: var(--tinta-2); font-size: 0.82rem; }
+.salida-ranking { display: flex; flex-direction: column; margin: 6px 0; padding: 0; list-style: none; }
+.salida-ranking > li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 10px; padding: 9px 0; border-bottom: 1px solid var(--borde); }
+.salida-ranking > li:last-child { border-bottom: 0; }
+.salida-ranking .salida-nombre { display: flex; flex-direction: column; min-width: 0; }
+.salida-ranking .salida-nombre small { color: var(--tinta-2); font-size: 0.8rem; }
+.salida-ranking .salida-gol { font-size: 0.82rem; font-weight: 750; }
+.salida-ranking .salida-gol.si { color: #1f8a4c; }
+.salida-ranking .salida-gol.no { color: var(--tinta-2); }
+.salida-total { margin: 0; color: var(--tinta-2); font-size: 0.86rem; font-weight: 650; }

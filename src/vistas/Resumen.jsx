@@ -53,6 +53,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
   const estaNoche = fecha === hoy ? nocheActual(usuario.id, comidas) : null;
   const vasosNoche = estaNoche ? estaNoche.vasos : nocheDeFiesta?.alimentos || [];
   const tragoRapido = estaNoche && (vasosNoche.length || esDeNoche()) ? ultimoTrago(vasosNoche) : null;
+  const invitacionFiesta = estaNoche && !estaNoche.salida ? comidas.find((c) => c.tipo === "fiesta" && c.fecha === estaNoche.fecha && c.usuario_id !== usuario.id && (c.salida_con || []).includes(usuario.id)) : null;
   function otroVaso() {
     const r = sumarUnVaso(usuario.id, comidas);
     if (!r) return;
@@ -146,13 +147,13 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
 
       <div className="acciones-rapidas">
         {fecha === hoy && <Recomendador yo={yo} salud={salud} total={total} cargadas={mias.map((c) => c.tipo)} fecha={fecha} onCargar={onCargar} />}
-        {(nocheDeFiesta || vasosNoche.length > 0 || (fecha === hoy && esDeNoche())) && (
+        {(nocheDeFiesta || vasosNoche.length > 0 || invitacionFiesta || (fecha === hoy && esDeNoche())) && (
           <div className="fiesta-fila">
             <motion.button className="tarjeta accion fiesta-accion" whileTap={{ scale: 0.97 }} onClick={onFiesta}>
               <Martini size={22} />
               <span>
                 <strong>Modo fiesta</strong>
-                <small>{vasosNoche.length ? `${vasosNoche.length} ${vasosNoche.length === 1 ? "vaso" : "vasos"} · ${Math.round(vasosNoche.reduce((t, v) => t + (v.kcal || 0), 0)).toLocaleString("es-AR")} kcal` : "Cargá tus vasos"}</small>
+                <small>{invitacionFiesta ? `🪩 ${perfiles[invitacionFiesta.usuario_id]?.nombre || "Alguien"} te sumó a su salida` : vasosNoche.length ? `${vasosNoche.length} ${vasosNoche.length === 1 ? "vaso" : "vasos"} · ${Math.round(vasosNoche.reduce((t, v) => t + (v.kcal || 0), 0)).toLocaleString("es-AR")} kcal` : "Cargá tus vasos"}</small>
               </span>
             </motion.button>
             {tragoRapido && (

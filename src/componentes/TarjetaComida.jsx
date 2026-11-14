@@ -80,6 +80,7 @@ export function Reacciones({ comidaId, avisar }) {
   );
 }
 
+const alimentosDe = (c) => (Array.isArray(c.alimentos) ? c.alimentos : []);
 const listaNombres = (n) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0]);
 
 export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
@@ -91,6 +92,16 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   // Modo fiesta: si hubo gol (beso) o no, bien a la vista.
   const gol = comida.tipo === "fiesta" && typeof comida.gol === "boolean" ? comida.gol : null;
   const cartelGol = gol === null ? null : <span className={gol ? "cartel-gol si" : "cartel-gol no"}>{gol ? "⚽ ¡HUBO GOL!" : "🥅 SIN GOL"}</span>;
+  // Los tragos de la noche, agrupados: "3 × Fernet con coca".
+  const esFiesta = comida.tipo === "fiesta";
+  const tragos = esFiesta
+    ? Object.values(alimentosDe(comida).reduce((t, v) => {
+        const clave = `${v.nombre}|${v.ml || ""}`;
+        t[clave] = { nombre: v.nombre, ml: v.ml, cuantos: (t[clave]?.cuantos || 0) + 1 };
+        return t;
+      }, {}))
+    : [];
+  const alcohol = esFiesta ? Math.round(alimentosDe(comida).reduce((t, v) => t + (v.alcohol || 0), 0)) : 0;
   // Comida grupal: los que comieron lo mismo y, para quien la publicó, los que todavía no respondieron.
   const grupo = comida.grupo_comida;
   const nombresDe = (ids) => [...new Set(ids)].map((id) => (id === usuario.id ? "vos" : perfiles[id]?.nombre)).filter(Boolean);
@@ -183,15 +194,28 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           <span className="comida-foto-ampliar" aria-hidden="true"><Maximize2 size={15} /></span>
         </button>
       ) : (
-        <div className={gol === null ? "comida-sinfoto" : "comida-sinfoto fiesta-sinfoto"}>
+        <div className={esFiesta ? "comida-sinfoto fiesta-sinfoto" : "comida-sinfoto"}>
           {cartelGol}
           <IconoComida tipo={comida.tipo} size={32} />
-          <strong>{gol !== null ? `${(comida.alimentos || []).length} ${(comida.alimentos || []).length === 1 ? "vaso" : "vasos"} · ` : ""}{(comida.calorias || 0).toLocaleString("es-AR")} kcal</strong>
+          <strong>{esFiesta ? `${tragos.reduce((t, x) => t + x.cuantos, 0)} vasos · ` : ""}{(comida.calorias || 0).toLocaleString("es-AR")} kcal</strong>
         </div>
       )}
 
       <div className="comida-cuerpo" ref={cuerpo}>
         <p className="comida-texto">{texto}</p>
+        {esFiesta && (tragos.length > 0 || gol !== null) && (
+          <div className="fiesta-resumen">
+            {tragos.length > 0 && (
+              <ul className="fiesta-tragos" aria-label="Tragos de la noche">
+                {tragos.map((t) => <li key={`${t.nombre}|${t.ml}`}><strong>{t.cuantos} ×</strong> {t.nombre}{t.ml ? <small> · {t.ml} ml</small> : null}</li>)}
+              </ul>
+            )}
+            <p className="fiesta-datos">
+              {alcohol > 0 && <span>🍸 {alcohol} g de alcohol</span>}
+              {gol !== null && <span className={gol ? "gol-si" : "gol-no"}>{gol ? "⚽ Hubo gol" : "🥅 Sin gol"}</span>}
+            </p>
+          </div>
+        )}
         {conPostre && <p className="comida-postre">🍮 <span>Postre</span>{comida.postre_nombre && <strong>{comida.postre_nombre}</strong>}</p>}
         {soloFoto && <p className="comida-items">Contada en el total del día</p>}
         {!soloFoto && <ul className="comida-macros">
@@ -203,7 +227,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
             <li className="comida-editado"><PenLine size={12} /> ajustado</li>
           )}
         </ul>}
-        {!soloFoto && conDetalle && (
+        {!soloFoto && conDetalle && !esFiesta && (
           <>
             <button className="boton-texto ver-alimentos" onClick={() => setDetalle(!detalle)} aria-expanded={detalle}>
               <motion.span animate={{ rotate: detalle ? 180 : 0 }}><ChevronDown size={16} /></motion.span>
@@ -249,7 +273,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
 
 // Varias fotos de una misma comida: se pasan de costado, con puntitos abajo.
 // La del postre va al final, con su cartel, y desde la primera se ve que hay postre.
-function CarruselFotos({ srcs, alt, onZoom, tapada, postre = -1, nombrePostre, encima }) {
+export function CarruselFotos({ srcs, alt, onZoom, tapada, postre = -1, nombrePostre, encima }) {
   const [actual, setActual] = useState(0);
   const pista = useRef(null);
   // El deslizar de las fotos no cambia de pantalla.

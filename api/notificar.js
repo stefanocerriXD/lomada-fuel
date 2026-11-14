@@ -26,6 +26,9 @@ export default async function handler(req, res) {
       mejora: () => rpc("aviso_mejora", { p_id: id }),
       mejora_hecha: () => rpc("aviso_mejora_hecha", { p_id: id }),
       invitacion: () => rpc("aviso_invitacion", { p_id: id }),
+      salida: () => rpc("aviso_salida", { p_id: id }),
+      reaccion: () => rpc("aviso_reaccion", { p_tipo: "comida", p_id: id, p_emoji: String(nombre || "").slice(0, 16) }),
+      reaccion_mensaje: () => rpc("aviso_reaccion", { p_tipo: "mensaje", p_id: id, p_emoji: String(nombre || "").slice(0, 16) }),
     }[tipo];
     const resp = await (pedido ? pedido() : rpc("destinos_aviso", { p_tipo: tipo, p_id: id }));
     if (!resp.ok) return res.status(resp.status === 401 ? 401 : 400).json({ error: "No autorizado" });
