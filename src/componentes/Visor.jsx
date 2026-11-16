@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronLeft, ChevronRight, Lock, Reply, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Reply, Share2, X } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Avatar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import { Reacciones } from "./TarjetaComida.jsx";
+import CompartirInstagram from "./CompartirInstagram.jsx";
 
 // Foto a pantalla completa, con sus datos y una respuesta que cae en el chat del grupo.
 export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
@@ -15,6 +16,7 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
   const [indice, setIndice] = useState(inicio);
   const [paso, setPaso] = useState(0);
   const [cual, setCual] = useState(inicioFoto);
+  const [instagram, setInstagram] = useState(false);
   const comida = lista[indice];
   // Al pasar a otra comida vuelve a su primera foto (al abrir, la que tocaste).
   const anterior = useRef(indice);
@@ -125,6 +127,10 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
           </details>
         )}
         {!comida.privada && <Reacciones comidaId={comida.id} />}
+        {!ajena && !soloFoto && comida.tipo !== "fiesta" && comida.tipo !== "resumen" && (
+          <button className="boton-texto visor-instagram" onClick={() => setInstagram(true)}><Share2 size={16} /> Compartir en Instagram</button>
+        )}
+        {instagram && <CompartirInstagram abierta onCerrar={() => setInstagram(false)} comida={comida} foto={fotos[ruta]} />}
         {!comida.privada && (
           <button className="boton visor-responder" onClick={() => { responder(comida); onCerrar(); }}>
             <Reply size={18} /> Responder en el chat

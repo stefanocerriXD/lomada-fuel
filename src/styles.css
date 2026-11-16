@@ -2301,3 +2301,18 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* Comida de Apple Salud: pasar a sus alimentos con la captura */
 .ver-alimentos-salud { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
 .nota-salud small { color: var(--tinta-2); font-size: 0.78rem; }
+
+/* Compartir una comida en Instagram */
+.compartir-ig { display: grid; flex: 0 0 auto; gap: 12px; }
+.compartir-ig .segmentos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--superficie); }
+.compartir-ig .segmentos button { padding: 8px 10px; border-radius: 11px; color: var(--tinta-2); font-weight: 600; font-size: 0.9rem; }
+.compartir-ig .segmentos button.activo { background: var(--acento); color: #fff; }
+.compartir-ig-vista { display: grid; place-items: center; justify-self: center; height: min(50dvh, 520px); width: auto; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 18px; overflow: hidden; background: #140d08; color: #fff; }
+.compartir-ig-vista.ig-publicacion { aspect-ratio: 4 / 5; }
+.compartir-ig-vista img { width: 100%; height: 100%; object-fit: contain; }
+.compartir-ig .girando { animation: girar-ig 0.9s linear infinite; }
+@keyframes girar-ig { to { transform: rotate(360deg); } }
+.compartir-ig .boton-texto { justify-self: center; }
+.compartir-ig .nota { text-align: center; }
+.capa:has(.compartir-ig) { z-index: 90; }
+.visor-instagram { justify-self: start; color: #fff; }

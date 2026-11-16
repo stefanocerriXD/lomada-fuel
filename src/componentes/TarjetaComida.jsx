@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, Lock, Maximize2, PenLine, Pencil, Reply, SmilePlus, Star, Trash2, Users } from "lucide-react";
+import { ChevronDown, Lock, Maximize2, PenLine, Pencil, Reply, Share2, SmilePlus, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
@@ -12,6 +12,7 @@ import { IconoGol, IconoTrago } from "./IconosFiesta.jsx";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import IconoComida from "./IconoComida.jsx";
+import CompartirInstagram from "./CompartirInstagram.jsx";
 
 const OPCIONES = ["🔥", "🤤", "😂", "👏", "🐷", "🤮", "🏳️‍🌈"];
 
@@ -111,6 +112,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const esperando = grupo && propia ? nombresDe(invitaciones.filter((i) => i.comida_id === comida.id && i.estado === "pendiente").map((i) => i.para_usuario)) : [];
   const [confirmar, setConfirmar] = useState(false);
   const [detalle, setDetalle] = useState(false);
+  const [instagram, setInstagram] = useState(false);
   const cuerpo = useRef(null);
   const tipo = tipoInfo(comida.tipo);
   // Con la maldición del Bocha, las fotos del grupo se ven borrosas hasta subir la propia.
@@ -254,6 +256,9 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         {propia && (
           <div className="comida-acciones">
             <button className="boton-texto" onClick={onEditar}><Pencil size={15} /> Editar</button>
+            {!soloFoto && !esFiesta && comida.tipo !== "resumen" && (
+              <button className="boton-texto" onClick={() => setInstagram(true)}><Share2 size={15} /> Instagram</button>
+            )}
             {extras.disponible && !soloFoto && (
               <button className={favorita ? "boton-texto favorita" : "boton-texto"} onClick={alternarFavorita} aria-pressed={!!favorita}>
                 <Star size={15} fill={favorita ? "currentColor" : "none"} /> Favorita
@@ -269,6 +274,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           </div>
         )}
       </div>
+      {instagram && <CompartirInstagram abierta onCerrar={() => setInstagram(false)} comida={comida} foto={fotoPrincipal} />}
     </motion.article>
   );
 }

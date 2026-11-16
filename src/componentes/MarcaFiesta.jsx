@@ -13,7 +13,7 @@ import { EtiquetaFiesta, IconoCorona, IconoGol, IconoResaca, IconoTrago } from "
 export function textoMarcaFiesta(fiesta) {
   if (!fiesta) return "";
   if (fiesta.modo === "fiesta") return "🍸";
-  return fiesta.gol ? "⚽🥴" : "🥴";
+  return `${fiesta.gol ? "⚽" : ""}${fiesta.resaca ? "🥴" : ""}`;
 }
 
 export function MarcaFiesta({ perfil }) {
@@ -30,14 +30,14 @@ export function MarcaFiesta({ perfil }) {
       className="marca-fiesta"
       role="button"
       tabIndex={0}
-      aria-label={fiesta.modo === "fiesta" ? `${perfil.nombre} está en modo fiesta` : fiesta.gol ? `${perfil.nombre} hizo gol anoche y tiene resaca` : `${perfil.nombre} tiene resaca`}
+      aria-label={fiesta.modo === "fiesta" ? `${perfil.nombre} está en modo fiesta` : fiesta.gol ? `${perfil.nombre} hizo gol anoche${fiesta.resaca ? " y tiene resaca" : ""}` : `${perfil.nombre} tiene resaca`}
       onClick={tocar}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && tocar(e)}
     >
       {fiesta.modo === "fiesta" ? <EtiquetaFiesta tipo="fiesta" chica /> : (
         <>
           {fiesta.gol && <EtiquetaFiesta tipo="gol" chica />}
-          <EtiquetaFiesta tipo="resaca" chica />
+          {fiesta.resaca && <EtiquetaFiesta tipo="resaca" chica />}
         </>
       )}
     </span>
@@ -108,7 +108,7 @@ export default function HojaFestejo() {
                 : `${propio ? "Tenés" : `${perfil.nombre} tiene`} resaca`}
           </strong>
           <span className="festejo-etiquetas">
-            {fiesta.modo === "fiesta" ? <EtiquetaFiesta tipo="fiesta" /> : <>{fiesta.gol && <EtiquetaFiesta tipo="gol" />}<EtiquetaFiesta tipo="resaca" /></>}
+            {fiesta.modo === "fiesta" ? <EtiquetaFiesta tipo="fiesta" /> : <>{fiesta.gol && <EtiquetaFiesta tipo="gol" />}{fiesta.resaca && <EtiquetaFiesta tipo="resaca" />}</>}
           </span>
           <small>
             {fiesta.modo === "fiesta" ? `Lleva ${vasos} esta noche.` : `Salió anoche: ${vasos}${fiesta.gol ? " y hubo beso." : "."}`}
