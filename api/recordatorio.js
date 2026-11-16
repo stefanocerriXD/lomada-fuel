@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
   try {
     // La caca (aviso de las 22 y anuncio), el viaje y el informe del domingo tienen su propia función; el resto, la de siempre.
-    const funcion = ["caca", "anuncio_caca"].includes(tipo) ? "destinos_caca" : tipo === "viaje" ? "destinos_viaje" : tipo === "informe" ? "destinos_informe" : "destinos_programados";
+    const funcion = ["caca", "anuncio_caca"].includes(tipo) ? "destinos_caca" : tipo === "viaje" ? "destinos_viaje" : tipo === "informe" ? "destinos_informe" : tipo === "registros" ? "destinos_registros" : "destinos_programados";
     const resp = await rpc(funcion, { p_clave: clave, p_tipo: tipo });
     if (!resp.ok) return res.status(401).json({ error: "No autorizado" });
     const aviso = await resp.json();

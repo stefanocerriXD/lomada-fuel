@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Droplets, Minus, Plus } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { vibrar } from "./Base.jsx";
+import RegistrosDiarios from "./RegistrosDiarios.jsx";
 
 const VASO_ML = 250;
 
@@ -12,6 +13,7 @@ export default function Habitos({ fecha }) {
   return (
     <section className="habitos" aria-label="Hábitos del día">
       <Agua fecha={fecha} />
+      <RegistrosDiarios fecha={fecha} />
     </section>
   );
 }

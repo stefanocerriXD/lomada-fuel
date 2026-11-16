@@ -7,7 +7,7 @@ import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
 import MisGrupos from "../componentes/MisGrupos.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, ListChecks, Lock, LogOut, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -16,6 +16,7 @@ import { calcularPlan, OBJETIVOS, PRIORIDADES } from "../lib/cuerpo.js";
 import { FormularioContrasena } from "../componentes/Contrasena.jsx";
 import { activarAvisos, avisosActivos, desactivarAvisos, estadoAvisos } from "../lib/avisos.js";
 import { Avatar } from "../componentes/Base.jsx";
+import { AjustesRegistros } from "../componentes/RegistrosDiarios.jsx";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
@@ -73,6 +74,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     { id: "grupos", titulo: "Grupos", detalle: misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Sumarte a otro grupo con un código", icono: Users },
     { id: "caca", titulo: "La caca 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
+    { id: "registros", titulo: "Registros diarios", detalle: "Creatina, gym, magnesio", icono: ListChecks },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
     { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
     { id: "salud", titulo: "Apple Salud", detalle: estadoSalud?.ultimo ? textoEstadoSalud(estadoSalud) : "Traer calorías y macros", icono: HeartPulse },
@@ -183,6 +185,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}
       {seccion === "recetas" && <MisRecetas avisar={avisar} abrir={pedido?.receta ? pedido : null} />}
       {seccion === "caca" && <LaCaca avisar={avisar} />}
+      {seccion === "registros" && <AjustesRegistros avisar={avisar} />}
       {seccion === "grupos" && <MisGrupos avisar={avisar} />}
 
       {seccion === "apariencia" && (
