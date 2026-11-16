@@ -68,7 +68,7 @@ export function CartelInforme() {
             <span className="cartel-chispas" aria-hidden="true">{[0, 1, 2, 3, 4].map((i) => <i key={i} style={{ "--i": i }} />)}</span>
             <span className="cartel-logo" aria-hidden="true">
               <span className="cartel-pulso" />
-              <img src="/lomada.svg" alt="" width="40" height="40" />
+              <img src="/icono.svg" alt="" width="40" height="40" />
             </span>
             <span className="cartel-texto">
               <small>Informe semanal</small>
@@ -218,7 +218,7 @@ function Historia({ informe: i, onCerrar, onLista }) {
           ))}
         </div>
         <div className="historia-marca">
-          <img src="/lomada.svg" alt="" width="26" height="26" />
+          <img src="/icono.svg" alt="" width="26" height="26" />
           <span><strong>Lomada Fuel</strong><small>Informe semanal · {fechaCorta(i.desde)} al {fechaCorta(i.hasta)}</small></span>
           <button className="historia-cerrar" onClick={onCerrar} aria-label="Cerrar el informe"><X size={22} /></button>
         </div>
@@ -251,7 +251,7 @@ function Pantalla({ id, i, nombre, onCerrar, onLista }) {
   if (id === "portada") {
     return (
       <div className="hp hp-portada">
-        <motion.img className="hp-logo" src="/lomada.svg" alt="" initial={{ scale: 0.4, rotate: -25, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }} />
+        <motion.img className="hp-logo" src="/icono.svg" alt="" initial={{ scale: 0.4, rotate: -25, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }} />
         <motion.p className="hp-chico" {...aparecer(1)}>{nombre}, esta fue</motion.p>
         <motion.h2 className="hp-titulo" {...aparecer(2)}>Tu semana</motion.h2>
         <motion.p className="hp-sub" {...aparecer(3)}>Del {fechaLarga(i.desde)} al {fechaLarga(i.hasta)}</motion.p>
@@ -380,7 +380,7 @@ function Pantalla({ id, i, nombre, onCerrar, onLista }) {
   // Cierre
   return (
     <div className="hp hp-portada">
-      <motion.img className="hp-logo" src="/lomada.svg" alt="" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 180, damping: 14 }} />
+      <motion.img className="hp-logo" src="/icono.svg" alt="" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 180, damping: 14 }} />
       <motion.h2 className="hp-titulo" {...aparecer(1)}>¡A romperla esta semana!</motion.h2>
       <motion.p className="hp-sub" {...aparecer(2)}>Son estimaciones para llevar la cuenta entre amigos. No reemplazan a un profesional de la nutrición.</motion.p>
       <motion.div className="hp-botones" {...aparecer(3)} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>

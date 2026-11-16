@@ -148,7 +148,8 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
 
       <div className="acciones-rapidas">
         {fecha === hoy && <Recomendador yo={yo} salud={salud} total={total} cargadas={mias.map((c) => c.tipo)} fecha={fecha} onCargar={onCargar} />}
-        {(nocheDeFiesta || vasosNoche.length > 0 || invitacionFiesta || (fecha === hoy && esDeNoche())) && (
+        {/* Solo si ya hay una noche en marcha (para sumar vasos con un toque); si no, se abre desde el + o desde abajo de todo. */}
+        {(nocheDeFiesta || vasosNoche.length > 0 || invitacionFiesta) && (
           <div className="fiesta-fila">
             <motion.button className="tarjeta accion fiesta-accion" whileTap={{ scale: 0.97 }} onClick={onFiesta}>
               <Martini size={22} />
@@ -183,6 +184,12 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
           ))}
         </motion.ul>
       </section>
+
+      {fecha === hoy && !nocheDeFiesta && !vasosNoche.length && !invitacionFiesta && (
+        <button className="enlace-fiesta enlace-fiesta-pie" onClick={onFiesta}>
+          <Martini size={16} /> ¿Salís de fiesta? Modo fiesta
+        </button>
+      )}
     </>
   );
 }

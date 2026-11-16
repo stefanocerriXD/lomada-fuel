@@ -86,8 +86,8 @@ const fechaLinda = (fecha) => {
   return new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short" }).format(d).replace(/[.,]/g, "");
 };
 
-// El logo de Lomada (el círculo azul, blanco y verde), dibujado a mano para que salga igual en todos los celus.
-function logoLomada(ctx, x, y, tam) {
+// El círculo de Lomada (azul, blanco y verde), dibujado a mano para que salga igual en todos los celus.
+function circuloLomada(ctx, x, y, tam) {
   const r = tam / 2;
   const u = tam / 100;
   ctx.save();
@@ -110,11 +110,36 @@ function logoLomada(ctx, x, y, tam) {
   loma([63, 52, 47, 49], "#fff");
   loma([69, 58, 54, 56], "#046a43");
   ctx.restore();
-  ctx.lineWidth = Math.max(2, 3 * u);
-  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+}
+
+// El logo de la app: el plato con Lomada adentro y los cubiertos al costado (igual que /icono.svg, en 64x64).
+const TENEDOR = "M9.5 15v9a3.5 3.5 0 0 0 3.5 3.5h0a3.5 3.5 0 0 0 3.5-3.5v-9M13 15v35";
+const CUCHILLO = "M52 50V15c-3.6 1.6-5 6-5 11 0 3 1.8 5 5 5";
+function logoApp(ctx, x, y, tam) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(tam / 64, tam / 64);
   ctx.beginPath();
-  ctx.arc(x + r, y + r, r - ctx.lineWidth / 2, 0, Math.PI * 2);
+  ctx.roundRect ? ctx.roundRect(0, 0, 64, 64, 16) : ctx.rect(0, 0, 64, 64);
+  ctx.fillStyle = "#C43D15";
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  const circulo = (cy, r, color) => { ctx.beginPath(); ctx.arc(32, cy, r, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); };
+  circulo(34, 15.5, "rgba(0,0,0,0.16)");
+  circulo(33, 15.5, "#FFF3E8");
+  ctx.beginPath();
+  ctx.arc(32, 33, 12.4, 0, Math.PI * 2);
+  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = "#E6D3C2";
   ctx.stroke();
+  circuloLomada(ctx, 32 - 11.4, 33 - 11.4, 22.8);
+  ctx.strokeStyle = "#FFF3E8";
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke(new Path2D(TENEDOR));
+  ctx.stroke(new Path2D(CUCHILLO));
+  ctx.restore();
 }
 
 export async function armarImagenInstagram({ comida, foto, formato = "historia" }) {
@@ -157,10 +182,10 @@ export async function armarImagenInstagram({ comida, foto, formato = "historia" 
   ctx.shadowColor = "rgba(0,0,0,0.35)";
   ctx.shadowBlur = 12;
 
-  // Arriba: el logo de Lomada (debajo de la barra de Instagram en las historias).
+  // Arriba: el logo de la app (debajo de la barra de Instagram en las historias).
   const arriba = historia ? 160 : 56;
-  const tamLogo = 64;
-  logoLomada(ctx, margen, arriba, tamLogo);
+  const tamLogo = 72;
+  logoApp(ctx, margen, arriba, tamLogo);
   ctx.fillStyle = "#fff";
   ctx.textBaseline = "middle";
   ctx.font = "800 34px Poppins, sans-serif";
