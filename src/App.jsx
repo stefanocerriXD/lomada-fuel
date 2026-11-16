@@ -28,6 +28,7 @@ import NuevaComida from "./vistas/NuevaComida.jsx";
 import Bienvenida from "./vistas/Bienvenida.jsx";
 import Importar from "./vistas/Importar.jsx";
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
+import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -153,7 +154,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, registrosLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
+  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, registrosLogros, actualizarTodo, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
   // Puntito en Ajustes cuando hay actualizaciones que no viste.
   const [novedad, setNovedad] = useState(hayNovedades);
   useEffect(() => {
@@ -413,6 +414,7 @@ function Principal({ recuperando, onRecuperado }) {
       </header>
 
       <InstalarApp />
+      <TirarParaActualizar activo={!(vista === "grupo" && seccion === "chat")} onActualizar={actualizarTodo} />
       <main className={vista === "grupo" && seccion === "chat" ? "contenido contenido-chat" : "contenido"} onTouchStart={alEmpezarToque} onTouchEnd={alTerminarToque}>
         <AnimatePresence initial={false}>
           <motion.div

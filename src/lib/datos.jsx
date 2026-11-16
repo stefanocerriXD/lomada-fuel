@@ -435,6 +435,12 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarExtras(), cargarSocial(), cargarInvitaciones()]);
   }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarExtras, cargarSocial, cargarInvitaciones]);
 
+  // Deslizar hacia abajo: trae todo de nuevo, también los logros y lo de cada pantalla.
+  const actualizarTodo = useCallback(async () => {
+    await Promise.allSettled([refrescar(true), cargarLogros()]);
+    window.dispatchEvent(new Event("lomada:registros"));
+  }, [refrescar, cargarLogros]);
+
   const canalRef = useRef(null);
   const estadoCanal = useRef("");
   const reintento = useRef(null);
@@ -668,6 +674,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       comidasLogros,
       aguaLogros,
       progreso,
+      registrosLogros,
+      actualizarTodo,
       cargarDia,
       perfilId,
       abrirPerfil,
@@ -683,7 +691,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, actualizarTodo, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

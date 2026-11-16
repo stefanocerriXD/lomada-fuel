@@ -2357,3 +2357,11 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .actualizacion-emoji { display: grid; flex: none; place-items: center; width: 40px; height: 40px; border-radius: 13px; background: var(--acento-suave); font-size: 1.3rem; }
 .actualizacion strong { display: block; font-size: 0.98rem; line-height: 1.25; }
 .actualizacion p { margin-top: 3px; color: var(--tinta-2); font-size: 0.86rem; line-height: 1.4; }
+
+/* Deslizar hacia abajo para actualizar: el logo de Lomada baja y gira */
+.tirar-actualizar { position: fixed; top: calc(env(safe-area-inset-top) + 10px); left: 50%; z-index: 45; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--superficie); box-shadow: 0 6px 18px rgb(0 0 0 / 18%); opacity: 0; transform: translate(-50%, -64px); pointer-events: none; }
+.tirar-actualizar img { width: 34px; height: 34px; border-radius: 50%; }
+.tirar-actualizar.listo { box-shadow: 0 0 0 3px var(--acento), 0 6px 18px rgb(0 0 0 / 18%); }
+.tirar-actualizar.girando img { animation: girar-lomada 0.8s linear infinite; }
+@keyframes girar-lomada { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .tirar-actualizar.girando img { animation-duration: 2.4s; } }
