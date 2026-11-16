@@ -50,6 +50,8 @@ function seMueveDeCostado(elemento) {
     if (el.matches("input, textarea, select")) return true;
     // Sobre un mensaje, deslizar es para responderlo.
     if (el.matches(".burbuja")) return true;
+    // Fotos ampliadas y hojas abiertas: el gesto es de ellas (pasar de foto, agrandar, cerrar).
+    if (el.matches(".visor-foto, .imagen-zoom, .lupa, .receta-foto-grande, .capa")) return true;
     if (el.scrollWidth > el.clientWidth + 2 && ["auto", "scroll"].includes(getComputedStyle(el).overflowX)) return true;
   }
   return false;

@@ -9,6 +9,7 @@ import { Avatar } from "./Base.jsx";
 import DetalleAlimentos, { alimentosVisibles } from "./DetalleAlimentos.jsx";
 import { Reacciones } from "./TarjetaComida.jsx";
 import CompartirInstagram from "./CompartirInstagram.jsx";
+import ImagenZoom from "./ImagenZoom.jsx";
 
 // Foto a pantalla completa, con sus datos y una respuesta que cae en el chat del grupo.
 export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
@@ -17,6 +18,7 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
   const [paso, setPaso] = useState(0);
   const [cual, setCual] = useState(inicioFoto);
   const [instagram, setInstagram] = useState(false);
+  const [agrandada, setAgrandada] = useState(false);
   const comida = lista[indice];
   // Al pasar a otra comida vuelve a su primera foto (al abrir, la que tocaste).
   const anterior = useRef(indice);
@@ -31,12 +33,6 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
     if (proxima < 0 || proxima >= lista.length) return;
     setPaso(sentido);
     setIndice(proxima);
-  }
-
-  // De costado cambia de foto; hacia abajo cierra.
-  function alSoltar(_, gesto) {
-    if (Math.abs(gesto.offset.x) > 70) mover(gesto.offset.x < 0 ? 1 : -1);
-    else if (gesto.offset.y > 110) onCerrar();
   }
 
   useEffect(() => {
@@ -84,23 +80,20 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
         {esPostre && <span className="visor-postre">🍮 Postre{comida.postre_nombre ? ` · ${comida.postre_nombre}` : ""}</span>}
         {(oculta || tapada) && <span className="foto-castigo-texto">{oculta ? "💀 Dos semanas sin subir fotos. Subí la tuya para volver a verlas." : "Subí tu foto de hoy para ver las del grupo"}</span>}
         <AnimatePresence mode="popLayout" initial={false}>
-          <motion.img
+          <motion.div
             key={`${comida.id}-${cual}`}
-            src={fotos[ruta]}
-            alt={titulo}
-            drag
-            dragDirectionLock
-            dragSnapToOrigin
-            dragElastic={0.7}
-            onDragEnd={alSoltar}
+            className="visor-capa-foto"
             initial={{ opacity: 0, x: paso * 70 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0 }}
             transition={{ type: "spring", stiffness: 340, damping: 32 }}
-          />
+          >
+            {/* Con dos dedos o doble toque se agranda; de costado cambia de foto y hacia abajo cierra. */}
+            <ImagenZoom src={fotos[ruta]} alt={titulo} desactivado={oculta || tapada} onDeslizar={mover} onBajar={onCerrar} onZoom={setAgrandada} />
+          </motion.div>
         </AnimatePresence>
-        {indice > 0 && <button className="visor-flecha izquierda" onClick={() => mover(-1)} aria-label="Foto anterior"><ChevronLeft size={24} /></button>}
-        {indice < lista.length - 1 && <button className="visor-flecha derecha" onClick={() => mover(1)} aria-label="Foto siguiente"><ChevronRight size={24} /></button>}
+        {!agrandada && indice > 0 && <button className="visor-flecha izquierda" onClick={() => mover(-1)} aria-label="Foto anterior"><ChevronLeft size={24} /></button>}
+        {!agrandada && indice < lista.length - 1 && <button className="visor-flecha derecha" onClick={() => mover(1)} aria-label="Foto siguiente"><ChevronRight size={24} /></button>}
       </div>
 
       {rutas.length > 1 && (

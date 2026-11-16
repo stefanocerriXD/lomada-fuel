@@ -17,6 +17,7 @@ import IconoComida from "../componentes/IconoComida.jsx";
 import VerReceta, { useReceta } from "../componentes/VerReceta.jsx";
 import { totalesDeReceta } from "../lib/recetasPropias.js";
 import { nombreDeCodigo } from "../lib/medallas.js";
+import ImagenZoom from "../componentes/ImagenZoom.jsx";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
@@ -881,7 +882,9 @@ export default function Chat({ avisar }) {
         {zoom && (
           <motion.div className="lupa" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setZoom(null)}>
             <button className="boton-icono" aria-label="Cerrar foto"><X size={22} /></button>
-            <motion.img src={zoom.src} alt={zoom.alt} initial={{ scale: 0.92 }} animate={{ scale: 1 }} exit={{ scale: 0.92 }} />
+            <motion.div className="lupa-foto" initial={{ scale: 0.92 }} animate={{ scale: 1 }} exit={{ scale: 0.92 }} onClick={(e) => e.stopPropagation()}>
+              <ImagenZoom src={zoom.src} alt={zoom.alt} onBajar={() => setZoom(null)} />
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

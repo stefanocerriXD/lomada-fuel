@@ -2316,3 +2316,12 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .compartir-ig .nota { text-align: center; }
 .capa:has(.compartir-ig) { z-index: 90; }
 .visor-instagram { justify-self: start; color: #fff; }
+
+/* Zoom de las fotos: dos dedos, doble toque o Ctrl + rueda */
+.imagen-zoom { position: relative; display: grid; place-items: center; width: 100%; height: 100%; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.imagen-zoom img { width: 100%; height: 100%; object-fit: contain; transform-origin: center; will-change: transform; -webkit-user-drag: none; pointer-events: none; }
+.visor-capa-foto { position: absolute; inset: 0; }
+.lupa-foto { width: 100%; height: 90dvh; }
+.lupa-foto .imagen-zoom img { border-radius: 14px; }
+.receta-foto-zoom { width: 100%; height: 100%; }
+.receta-foto-cerrar { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: 14px; z-index: 2; background: rgb(255 255 255 / 16%); color: #fff; }

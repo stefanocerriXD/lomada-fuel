@@ -1,4 +1,4 @@
-// La imagen para subir a Instagram: la foto de la comida, el título, las calorías, los macros y la marca de Lomada Fuel.
+// La imagen para subir a Instagram: la foto de la comida, el título, las calorías, los macros y el logo de Lomada.
 // Se dibuja en el celu (canvas), sin servicios de afuera.
 import { tipoInfo } from "./macros.js";
 
@@ -86,142 +86,156 @@ const fechaLinda = (fecha) => {
   return new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short" }).format(d).replace(/[.,]/g, "");
 };
 
+// El logo de Lomada (el círculo azul, blanco y verde), dibujado a mano para que salga igual en todos los celus.
+function logoLomada(ctx, x, y, tam) {
+  const r = tam / 2;
+  const u = tam / 100;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = "#0165a0";
+  ctx.fillRect(x, y, tam, tam);
+  const loma = (alto, color) => {
+    ctx.beginPath();
+    ctx.moveTo(x, y + alto[0] * u);
+    ctx.bezierCurveTo(x + 25 * u, y + alto[1] * u, x + 60 * u, y + alto[2] * u, x + 100 * u, y + alto[3] * u);
+    ctx.lineTo(x + tam, y + tam);
+    ctx.lineTo(x, y + tam);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  };
+  loma([63, 52, 47, 49], "#fff");
+  loma([69, 58, 54, 56], "#046a43");
+  ctx.restore();
+  ctx.lineWidth = Math.max(2, 3 * u);
+  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+  ctx.beginPath();
+  ctx.arc(x + r, y + r, r - ctx.lineWidth / 2, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
 export async function armarImagenInstagram({ comida, foto, formato = "historia" }) {
   const { ancho: W, alto: H } = FORMATOS[formato];
-  const k = formato === "historia" ? 1 : 0.84;
-  const margen = 72;
-  await Promise.all(["500", "600", "700", "800"].map((p) => document.fonts?.load?.(`${p} 40px Poppins`)).filter(Boolean)).catch(() => {});
-  const [img, logo] = await Promise.all([cargarFoto(foto), cargarImagen("/icono-192.png").catch(() => null)]);
+  const historia = formato === "historia";
+  const margen = 64;
+  await Promise.all(["600", "700", "800"].map((p) => document.fonts?.load?.(`${p} 40px Poppins`)).filter(Boolean)).catch(() => {});
+  const img = await cargarFoto(foto);
 
   const lienzo = document.createElement("canvas");
   lienzo.width = W;
   lienzo.height = H;
   const ctx = lienzo.getContext("2d");
-  ctx.fillStyle = FONDO;
-  ctx.fillRect(0, 0, W, H);
 
-  // La foto ocupa la parte de arriba y se funde con el fondo.
-  const altoFoto = Math.round(H * (formato === "historia" ? 0.66 : 0.64));
+  // La foto ocupa toda la imagen; abajo se oscurece de a poco para que se lea el texto.
   if (img) {
-    dibujarCubriendo(ctx, img, 0, 0, W, altoFoto);
+    dibujarCubriendo(ctx, img, 0, 0, W, H);
   } else {
-    const brillo = ctx.createRadialGradient(W * 0.7, altoFoto * 0.35, 40, W * 0.6, altoFoto * 0.4, W);
+    const brillo = ctx.createRadialGradient(W * 0.7, H * 0.3, 40, W * 0.6, H * 0.35, H);
     brillo.addColorStop(0, "#c43d15");
-    brillo.addColorStop(0.55, "#5a1d0b");
+    brillo.addColorStop(0.5, "#5a1d0b");
     brillo.addColorStop(1, FONDO);
     ctx.fillStyle = brillo;
-    ctx.fillRect(0, 0, W, altoFoto);
-    if (logo) {
-      ctx.globalAlpha = 0.18;
-      const t = 520 * k;
-      ctx.drawImage(logo, (W - t) / 2, altoFoto * 0.42 - t / 2, t, t);
-      ctx.globalAlpha = 1;
-    }
+    ctx.fillRect(0, 0, W, H);
   }
-  const fundido = ctx.createLinearGradient(0, altoFoto * 0.5, 0, altoFoto + 2);
-  fundido.addColorStop(0, "rgba(20,13,8,0)");
-  fundido.addColorStop(0.7, "rgba(20,13,8,0.82)");
-  fundido.addColorStop(1, FONDO);
-  ctx.fillStyle = fundido;
-  ctx.fillRect(0, altoFoto * 0.5, W, altoFoto * 0.5 + 2);
-  const sombraArriba = ctx.createLinearGradient(0, 0, 0, 330 * k);
-  sombraArriba.addColorStop(0, "rgba(0,0,0,0.55)");
+  const desde = H * (historia ? 0.52 : 0.42);
+  const sombra = ctx.createLinearGradient(0, desde, 0, H);
+  sombra.addColorStop(0, "rgba(12,8,5,0)");
+  sombra.addColorStop(0.45, "rgba(12,8,5,0.5)");
+  sombra.addColorStop(1, "rgba(12,8,5,0.86)");
+  ctx.fillStyle = sombra;
+  ctx.fillRect(0, desde, W, H - desde);
+  const arribaAlto = historia ? 380 : 220;
+  const sombraArriba = ctx.createLinearGradient(0, 0, 0, arribaAlto);
+  sombraArriba.addColorStop(0, "rgba(0,0,0,0.42)");
   sombraArriba.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = sombraArriba;
-  ctx.fillRect(0, 0, W, 330 * k);
+  ctx.fillRect(0, 0, W, arribaAlto);
 
-  // Arriba: el logo y el nombre de la app (debajo de la barra de Instagram).
-  const arriba = formato === "historia" ? 150 : 64;
-  const tamLogo = 88 * k;
-  if (logo) {
-    ctx.save();
-    redondeado(ctx, margen, arriba, tamLogo, tamLogo, 22 * k);
-    ctx.clip();
-    ctx.drawImage(logo, margen, arriba, tamLogo, tamLogo);
-    ctx.restore();
-  }
+  ctx.shadowColor = "rgba(0,0,0,0.35)";
+  ctx.shadowBlur = 12;
+
+  // Arriba: el logo de Lomada (debajo de la barra de Instagram en las historias).
+  const arriba = historia ? 160 : 56;
+  const tamLogo = 64;
+  logoLomada(ctx, margen, arriba, tamLogo);
   ctx.fillStyle = "#fff";
   ctx.textBaseline = "middle";
-  ctx.font = `800 ${50 * k}px Poppins, sans-serif`;
-  ctx.fillText("Lomada Fuel", margen + tamLogo + 24, arriba + tamLogo / 2 + 2);
+  ctx.font = "800 34px Poppins, sans-serif";
+  ctx.fillText("LOMADA FUEL", margen + tamLogo + 18, arriba + tamLogo / 2 + 2);
 
   // Abajo hacia arriba: pie, macros, calorías, título y la etiqueta de la comida.
   ctx.textBaseline = "alphabetic";
-  let y = H - (formato === "historia" ? 220 : 76);
-  ctx.font = `600 ${32 * k}px Poppins, sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.62)";
-  const pie = "Registrado en la app Lomada Fuel";
-  ctx.fillText(pie, margen, y);
+  let y = H - (historia ? 230 : 60);
+  ctx.font = "600 24px Poppins, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.fillText("Registrado en la app Lomada Fuel", margen, y);
 
-  const kcal = Math.round(Number(comida.calorias) || 0);
   const hayMacros = MACROS.some(([c]) => Number(comida[c]) > 0);
   if (hayMacros) {
-    const altoCaja = 176 * k;
-    const sep = 22;
-    const anchoCaja = (W - margen * 2 - sep * 2) / 3;
-    y -= 64 * k + altoCaja;
-    MACROS.forEach(([campo, letra, nombre, color], i) => {
-      const x = margen + i * (anchoCaja + sep);
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      redondeado(ctx, x, y, anchoCaja, altoCaja, 30 * k);
+    const alto = 56;
+    y -= 36 + alto;
+    let x = margen;
+    ctx.font = "700 26px Poppins, sans-serif";
+    MACROS.forEach(([campo, letra, , color]) => {
+      const texto = `${letra} ${Math.round(Number(comida[campo]) || 0)} g`;
+      const ancho = ctx.measureText(texto).width + 72;
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "rgba(255,255,255,0.16)";
+      redondeado(ctx, x, y, ancho, alto, alto / 2);
       ctx.fill();
       ctx.fillStyle = color;
-      redondeado(ctx, x + 30 * k, y + 30 * k, 50 * k, 50 * k, 14 * k);
+      ctx.beginPath();
+      ctx.arc(x + 30, y + alto / 2, 9, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#fff";
-      ctx.font = `800 ${30 * k}px Poppins, sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText(letra, x + 55 * k, y + 66 * k);
-      ctx.textAlign = "left";
-      ctx.font = `600 ${27 * k}px Poppins, sans-serif`;
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.fillText(nombre, x + 94 * k, y + 65 * k);
-      ctx.fillStyle = "#fff";
-      ctx.font = `800 ${62 * k}px Poppins, sans-serif`;
-      const valor = String(Math.round(Number(comida[campo]) || 0));
-      ctx.fillText(valor, x + 30 * k, y + 148 * k);
-      const anchoValor = ctx.measureText(valor).width;
-      ctx.font = `700 ${34 * k}px Poppins, sans-serif`;
-      ctx.fillStyle = color;
-      ctx.fillText("g", x + 30 * k + anchoValor + 8, y + 148 * k);
+      ctx.textBaseline = "middle";
+      ctx.fillText(texto, x + 50, y + alto / 2 + 2);
+      ctx.textBaseline = "alphabetic";
+      x += ancho + 12;
     });
+    ctx.shadowBlur = 12;
   }
 
+  const kcal = Math.round(Number(comida.calorias) || 0);
   if (kcal > 0) {
-    y -= (hayMacros ? 48 : 64) * k;
-    ctx.font = `800 ${170 * k}px Poppins, sans-serif`;
+    y -= 26;
+    ctx.font = "800 96px Poppins, sans-serif";
     ctx.fillStyle = "#fff";
     const numero = new Intl.NumberFormat("es-AR").format(kcal);
-    ctx.fillText(numero, margen - 6, y);
+    ctx.fillText(numero, margen - 3, y);
     const anchoNumero = ctx.measureText(numero).width;
-    ctx.font = `700 ${58 * k}px Poppins, sans-serif`;
-    ctx.fillStyle = ACENTO;
-    ctx.fillText("kcal", margen + anchoNumero + 14, y);
-    y -= 170 * k * 0.78;
+    ctx.font = "700 38px Poppins, sans-serif";
+    ctx.fillStyle = "#ff8a5c";
+    ctx.fillText("kcal", margen + anchoNumero + 12, y);
+    y -= 96 * 0.74;
   }
 
   const tipo = tipoInfo(comida.tipo).texto;
   const titulo = (comida.descripcion || tipo).trim();
-  ctx.font = `800 ${74 * k}px Poppins, sans-serif`;
-  const lineas = renglones(ctx, titulo, W - margen * 2, formato === "historia" ? 3 : 2);
-  const alto = 86 * k;
-  y -= 52 * k;
+  ctx.font = "800 50px Poppins, sans-serif";
+  const lineas = renglones(ctx, titulo, W - margen * 2, 2);
+  const altoLinea = 60;
+  y -= 42;
   ctx.fillStyle = "#fff";
-  lineas.slice().reverse().forEach((l, i) => ctx.fillText(l, margen, y - i * alto));
-  y -= lineas.length * alto;
+  lineas.slice().reverse().forEach((l, i) => ctx.fillText(l, margen, y - i * altoLinea));
+  y -= (lineas.length - 1) * altoLinea + 50;
 
   // La etiqueta: "CENA · LUN 16 NOV".
   const etiqueta = [tipo, fechaLinda(comida.fecha)].filter(Boolean).join(" · ").toUpperCase();
-  ctx.font = `700 ${30 * k}px Poppins, sans-serif`;
-  const anchoEtiqueta = ctx.measureText(etiqueta).width + 52 * k;
-  const altoEtiqueta = 60 * k;
-  y -= altoEtiqueta - 4;
+  ctx.shadowBlur = 0;
+  ctx.font = "700 22px Poppins, sans-serif";
+  const anchoEtiqueta = ctx.measureText(etiqueta).width + 40;
+  const altoEtiqueta = 44;
+  y -= altoEtiqueta + 14;
   ctx.fillStyle = ACENTO;
   redondeado(ctx, margen, y, anchoEtiqueta, altoEtiqueta, altoEtiqueta / 2);
   ctx.fill();
   ctx.fillStyle = "#fff";
   ctx.textBaseline = "middle";
-  ctx.fillText(etiqueta, margen + 26 * k, y + altoEtiqueta / 2 + 2);
+  ctx.fillText(etiqueta, margen + 20, y + altoEtiqueta / 2 + 1);
 
   const blob = await new Promise((ok) => lienzo.toBlob(ok, "image/jpeg", 0.92));
   if (!blob) throw new Error("No se pudo armar la imagen");

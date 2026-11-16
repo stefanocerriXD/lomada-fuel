@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { BookmarkPlus, ChefHat, MessageCircle, Pencil } from "lucide-react";
+import { BookmarkPlus, ChefHat, MessageCircle, Pencil, X } from "lucide-react";
+import ImagenZoom from "./ImagenZoom.jsx";
 import EditorReceta from "./EditorReceta.jsx";
 import { CarruselFotos } from "./TarjetaComida.jsx";
 import { supabase } from "../lib/supabase.js";
@@ -93,7 +94,10 @@ function Detalle({ receta, onCerrar, avisar, onEditar }) {
       ) : null}
       {ampliada && (
         <div className="receta-foto-grande" role="dialog" aria-label={`Foto de ${receta.nombre}`} onClick={() => setAmpliada(null)}>
-          <img src={ampliada} alt={receta.nombre} />
+          <button type="button" className="boton-icono receta-foto-cerrar" aria-label="Cerrar foto"><X size={22} /></button>
+          <div className="receta-foto-zoom" onClick={(e) => e.stopPropagation()}>
+            <ImagenZoom src={ampliada} alt={receta.nombre} onBajar={() => setAmpliada(null)} />
+          </div>
         </div>
       )}
       <header className="ver-receta-cabecera">
