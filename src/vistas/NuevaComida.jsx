@@ -20,6 +20,7 @@ import Lector from "../componentes/Lector.jsx";
 import Escaner from "./Escaner.jsx";
 import EditorReceta from "../componentes/EditorReceta.jsx";
 import { createPortal } from "react-dom";
+import { filaParaSalud } from "../lib/capturasSalud.js";
 
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
 const ORDEN_FUENTE = { argentina: 0, mundo: 1, usda: 2 };
@@ -109,14 +110,25 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
   // Lo que llegó de Apple Salud (MyFitnessPal escribe una entrada por comida): se precarga y solo falta la foto.
   const [deSalud, setDeSalud] = useState([]);
+  // Las capturas de MyFitnessPal que mandó el Atajo (toque atrás): traen los alimentos de cada comida.
+  const [capturas, setCapturas] = useState([]);
   useEffect(() => {
     if (original || carga.postre || !extras.disponible) return undefined;
     let vigente = true;
+    const fecha = carga.fecha || fechaLocal();
+    supabase
+      .from("salud_capturas")
+      .select("id, texto, creado_en")
+      .eq("usuario_id", usuario.id)
+      .eq("fecha", fecha)
+      .order("creado_en", { ascending: false })
+      .limit(15)
+      .then(({ data, error }) => { if (vigente && !error) setCapturas(data || []); });
     supabase
       .from("salud_comidas")
       .select("id, momento, kcal, proteinas, carbohidratos, grasas")
       .eq("usuario_id", usuario.id)
-      .eq("fecha", carga.fecha || fechaLocal())
+      .eq("fecha", fecha)
       .order("momento", { ascending: false })
       .then(({ data, error }) => { if (vigente && !error) setDeSalud(data || []); });
     return () => { vigente = false; };
@@ -206,16 +218,16 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     setImportado(null);
   }
 
-  function detallarSalud(filas) {
-    const base = items.find((i) => i.salud_id === detallando && !i.detalle_salud);
-    const fila = filaDeComida(filas, tipo) || filas.find((f) => f.alimentos?.length);
+  function detallarSalud(filas, saludId = detallando, elegida = null) {
+    const base = items.find((i) => i.salud_id === saludId && !i.detalle_salud);
+    const fila = elegida || filaDeComida(filas, tipo) || filas.find((f) => f.alimentos?.length);
     if (!base || !fila?.alimentos?.length) {
-      setError("No encontramos alimentos en la captura. Probá con la captura de esa comida en el diario de MyFitnessPal.");
-      return;
+      if (!elegida) setError("No encontramos alimentos en la captura. Probá con la captura de esa comida en el diario de MyFitnessPal.");
+      return false;
     }
     let nuevos = fila.alimentos.map((a) => {
       const item = itemImportado(a);
-      return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID(), salud_id: detallando, detalle_salud: true };
+      return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID(), salud_id: saludId, detalle_salud: true };
     });
     // Lo que la app tuvo que estimar se ajusta para que cada total (kcal, P, C, G) dé exacto lo que mandó Salud.
     const claves = { kcal: "kcal", p: "p", c: "c", g: "g" };
@@ -243,6 +255,30 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     setPanel(null);
     setError("");
     vibrar(14);
+    return true;
+  }
+
+  // Si ya llegó la captura de esa comida (toque atrás en MyFitnessPal), los alimentos se ponen solos.
+  const [deCaptura, setDeCaptura] = useState(null);
+  const capturasProbadas = useRef(new Set());
+  useEffect(() => {
+    if (!deSaludCargado || !capturas.length || capturasProbadas.current.has(deSaludCargado.salud_id)) return;
+    capturasProbadas.current.add(deSaludCargado.salud_id);
+    const entrada = deSalud.find((e) => e.id === deSaludCargado.salud_id) || { kcal: deSaludCargado.kcal };
+    const hallada = filaParaSalud(capturas, entrada);
+    if (!hallada) return;
+    const base = deSaludCargado;
+    if (detallarSalud([hallada.fila], base.salud_id, hallada.fila)) setDeCaptura({ saludId: base.salud_id, base });
+  }, [deSaludCargado?.salud_id, capturas]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function deshacerCaptura() {
+    setItems((prev) => {
+      const lugar = prev.findIndex((i) => i.salud_id === deCaptura.saludId && i.detalle_salud);
+      const resto = prev.filter((i) => !(i.salud_id === deCaptura.saludId && i.detalle_salud));
+      const en = lugar < 0 ? resto.length : lugar;
+      return [...resto.slice(0, en), deCaptura.base, ...resto.slice(en)];
+    });
+    setDeCaptura(null);
   }
 
   function alLeer(filas) {
@@ -598,6 +634,13 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           {panel === "codigo" && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
           {panel === "mano" && <CargaManual key={importado?.clave || "vacia"} inicial={importado} onAgregar={agregar} />}
 
+          {deCaptura && !deSaludCargado && items.some((i) => i.salud_id === deCaptura.saludId && i.detalle_salud) && (
+            <div className="nota-ia nota-salud nota-captura">
+              <HeartPulse size={15} aria-hidden="true" />
+              <span>Los alimentos llegaron de tu captura de MyFitnessPal, con los totales que mandó Apple Salud. Sumá la foto y publicá.</span>
+              <button type="button" className="boton-texto" onClick={deshacerCaptura}><Undo2 size={14} /> Solo totales</button>
+            </div>
+          )}
           {deSaludCargado && panel !== "importar" && (
             <div className="nota-ia nota-salud">
               <HeartPulse size={15} aria-hidden="true" />
