@@ -82,11 +82,11 @@ const SECCIONES = [
   {
     titulo: "Logros",
     preguntas: [
-      ["¿Cómo se ganan los logros?", "Solos, a medida que usás la app. Cada logro tiene 5 niveles y cada nivel da un título mejor: por ejemplo, con 5 milanesas sos Bebé de la milanesa y con 250, Rey de la milanesa."],
+      ["¿Cómo se ganan los logros?", "Solos, a medida que usás la app. Cada logro tiene sus niveles (5, u 8 en los de Gym) y cada nivel da un título mejor: por ejemplo, con 5 milanesas sos Bebé de la milanesa y con 250, Rey de la milanesa."],
       ["¿Dónde veo cuánto me falta?", "En Logros, tocá cualquiera: ves la barra de avance, cuánto falta y todos sus niveles."],
       ["¿Qué es el nivel de cada uno?", "Cada nivel de cada logro suma un punto, y ese total es tu nivel general. Lo ves en Logros, en los perfiles y en Integrantes."],
       ["¿Las comidas privadas cuentan?", "No para los logros de Alimentación, porque esos los ve el grupo."],
-      ["¿Qué son los logros de Gym?", "Salen de los registros diarios: uno por los días que tildás Gym y otro por los días que tildás Creatina. Los niveles son culturistas, hasta CBUM y RONNIE COLEMAN. Activalos en Ajustes, en Registros diarios."],
+      ["¿Qué son los logros de Gym?", "Salen de los registros diarios: uno por los días que tildás Gym y otro por los días que tildás Creatina. Tienen 8 niveles: el de gym arranca en Flaco y termina en CBUM y RONNIE COLEMAN; el de creatina va de Primera cucharada a Hecho de creatina. Activalos en Ajustes, en Registros diarios."],
       ["¿Qué son los logros de Fiesta?", "Salen del modo fiesta: uno por los vasos que vas sumando y otro por las noches que salís. Los goles no dan logros."],
     ],
   },

@@ -16,7 +16,7 @@ const logro = (codigo, grupo, icono, unidad, niveles) => ({
   niveles: niveles.map(([meta, nombre]) => ({ meta, nombre })),
 });
 
-// Cada logro tiene cinco niveles: cuanto más lejos llegás, mejor es el título.
+// Cada logro tiene sus niveles (cinco, o más en los de gym): cuanto más lejos llegás, mejor es el título.
 export const LOGROS = [
   logro("comidas", "objetivos", Utensils, "comidas", [[1, "Primer plato"], [30, "Bien documentado"], [100, "Registrador"], [300, "Archivista"], [1000, "Historiador de la comida"]]),
   logro("racha", "objetivos", Flame, "días seguidos", [[7, "Semana completa"], [14, "Quincena firme"], [30, "Mes imparable"], [90, "Trimestre de hierro"], [365, "Un año sin fallar"]]),
@@ -45,9 +45,9 @@ export const LOGROS = [
   logro("vasos", "fiesta", Martini, "vasos en el modo fiesta", [[10, "Primer brindis"], [50, "Copa en mano"], [150, "Barra libre"], [400, "Dueño de la barra"], [1000, "Hígado de acero"]]),
   logro("salidas", "fiesta", PartyPopper, "noches de fiesta", [[1, "Primera salida"], [5, "Salidor"], [15, "Noctámbulo"], [40, "Rey de la noche"], [100, "Leyenda de la noche"]]),
 
-  // Gym: salen de los registros del día. Niveles con nombres de culturistas: el último es Ronnie.
-  logro("gym", "gym", Dumbbell, "días de gym", [[10, "Frank Zane"], [30, "Lee Haney"], [75, "Arnold Schwarzenegger"], [150, "CBUM"], [300, "RONNIE COLEMAN"]]),
-  logro("creatina", "gym", Pill, "días con creatina", [[7, "Franco Columbu"], [30, "Dorian Yates"], [90, "Jay Cutler"], [180, "CBUM"], [365, "RONNIE COLEMAN"]]),
+  // Gym: salen de los registros del día. Tienen más niveles para ir progresando; el gym termina en CBUM y RONNIE COLEMAN.
+  logro("gym", "gym", Dumbbell, "días de gym", [[5, "Flaco"], [15, "Powerlifter"], [30, "Jefe de las pesas"], [50, "Rata de gimnasio"], [80, "Bestia del gym"], [120, "Monstruo de hierro"], [200, "CBUM"], [300, "RONNIE COLEMAN"]]),
+  logro("creatina", "gym", Pill, "días con creatina", [[3, "Primera cucharada"], [7, "Cargando"], [15, "Bien saturado"], [30, "Músculo hidratado"], [60, "Adicto al polvito"], [100, "Químico del gym"], [200, "Monohidrato andante"], [365, "Hecho de creatina"]]),
 ];
 
 export const nivelDe = (l, cantidad) => l.niveles.filter((n) => cantidad >= n.meta).length;
