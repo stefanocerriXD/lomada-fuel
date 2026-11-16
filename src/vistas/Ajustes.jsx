@@ -73,7 +73,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const estadoSalud = useEstadoSalud();
   const SECCIONES = [
     { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
-    { id: "actualizaciones", titulo: "Actualizaciones", detalle: ACTUALIZACIONES[0]?.titulo || "Lo nuevo de la app", icono: Megaphone, nuevo: hayNovedades() },
+    ...(ACTUALIZACIONES.length ? [{ id: "actualizaciones", titulo: "Actualizaciones", detalle: ACTUALIZACIONES[0].titulo, icono: Megaphone, nuevo: hayNovedades() }] : []),
     { id: "grupos", titulo: "Grupos", detalle: misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Sumarte a otro grupo con un código", icono: Users },
     { id: "caca", titulo: "La caca 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },

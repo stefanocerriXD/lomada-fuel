@@ -153,7 +153,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
+  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, registrosLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
   // Puntito en Ajustes cuando hay actualizaciones que no viste.
   const [novedad, setNovedad] = useState(hayNovedades);
   useEffect(() => {
@@ -331,7 +331,7 @@ function Principal({ recuperando, onRecuperado }) {
   useEffect(() => {
     if (!estado.listo || !extras.disponible || !comidasLogros || entregando.current) return;
     const yaGanadas = extras.medallas.filter((m) => m.usuario_id === usuario.id).map((m) => m.codigo);
-    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, desafios: [], perfiles, salud, pesos, yaGanadas });
+    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, desafios: [], perfiles, salud, pesos, yaGanadas, registros: registrosLogros });
     if (!nuevas.length) return;
     entregando.current = true;
     supabase
@@ -352,7 +352,7 @@ function Principal({ recuperando, onRecuperado }) {
         }
         entregando.current = false;
       });
-  }, [estado.listo, extras, comidasLogros, aguaLogros, reacciones, perfiles, salud, pesos, usuario.id, cargarExtras, avisar]);
+  }, [estado.listo, extras, comidasLogros, aguaLogros, registrosLogros, reacciones, perfiles, salud, pesos, usuario.id, cargarExtras, avisar]);
 
   // Resultado de la autorización de WHOOP, que vuelve a la app con un parámetro en la dirección.
   useEffect(() => {

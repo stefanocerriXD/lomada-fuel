@@ -1,6 +1,6 @@
 import {
   Beef, Bomb, Camera, Candy, CupSoda, Droplets, Dumbbell, Flame, Leaf, Moon, Pizza, Repeat, Scale, Soup, Sparkles,
-  Sunrise, Target, Utensils, UtensilsCrossed, Wine, Crown, Martini, PartyPopper,
+  Sunrise, Target, Utensils, UtensilsCrossed, Wine, Crown, Martini, PartyPopper, Pill,
 } from "lucide-react";
 import { calcularPlan } from "./cuerpo.js";
 import { desafioTerminado, puntajes } from "./desafios.js";
@@ -44,6 +44,10 @@ export const LOGROS = [
   // Fiesta: lo que se carga en el modo fiesta. Los goles no dan logros.
   logro("vasos", "fiesta", Martini, "vasos en el modo fiesta", [[10, "Primer brindis"], [50, "Copa en mano"], [150, "Barra libre"], [400, "Dueño de la barra"], [1000, "Hígado de acero"]]),
   logro("salidas", "fiesta", PartyPopper, "noches de fiesta", [[1, "Primera salida"], [5, "Salidor"], [15, "Noctámbulo"], [40, "Rey de la noche"], [100, "Leyenda de la noche"]]),
+
+  // Gym: salen de los registros del día. Niveles con nombres de culturistas: el último es Ronnie.
+  logro("gym", "gym", Dumbbell, "días de gym", [[10, "Frank Zane"], [30, "Lee Haney"], [75, "Arnold Schwarzenegger"], [150, "CBUM"], [300, "RONNIE COLEMAN"]]),
+  logro("creatina", "gym", Pill, "días con creatina", [[7, "Franco Columbu"], [30, "Dorian Yates"], [90, "Jay Cutler"], [180, "CBUM"], [365, "RONNIE COLEMAN"]]),
 ];
 
 export const nivelDe = (l, cantidad) => l.niveles.filter((n) => cantidad >= n.meta).length;
@@ -115,7 +119,7 @@ export function mejorRacha(fechas) {
 }
 
 // Cuánto lleva la persona en cada logro.
-export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, victorias = 0 }) {
+export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, victorias = 0, registros = [] }) {
   const suyas = comidas.filter((c) => c.usuario_id === usuarioId);
   // Las noches del modo fiesta tienen sus propios logros: no cuentan como comidas.
   const fiestas = suyas.filter((c) => c.tipo === "fiesta" && !c.privada && Array.isArray(c.alimentos) && c.alimentos.length > 0);
@@ -135,6 +139,9 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
     fotogenico: 0,
     vasos: fiestas.reduce((t, c) => t + c.alimentos.length, 0),
     salidas: new Set(fiestas.map((c) => c.fecha)).size,
+    // Los registros son privados: solo se cuentan los tuyos.
+    gym: new Set(registros.filter((r) => r.codigo === "gym").map((r) => r.fecha)).size,
+    creatina: new Set(registros.filter((r) => r.codigo === "creatina").map((r) => r.fecha)).size,
   };
 
   if (salud) {
@@ -171,7 +178,7 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
 }
 
 // Devuelve lo nuevo para guardar: retos ganados ("victoria:id") y niveles alcanzados ("mate:2").
-export function medallasGanadas({ usuarioId, comidas, agua, reacciones, desafios, perfiles, salud, pesos, yaGanadas }) {
+export function medallasGanadas({ usuarioId, comidas, agua, reacciones, desafios, perfiles, salud, pesos, yaGanadas, registros = [] }) {
   const victoriasPrevias = yaGanadas.filter((c) => c.startsWith("victoria:"));
   const nuevasVictorias = desafios
     .filter((d) => {
@@ -181,7 +188,7 @@ export function medallasGanadas({ usuarioId, comidas, agua, reacciones, desafios
     })
     .map((d) => `victoria:${d.id}`);
 
-  const total = cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, victorias: victoriasPrevias.length + nuevasVictorias.length });
+  const total = cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, registros, victorias: victoriasPrevias.length + nuevasVictorias.length });
   const guardados = nivelesGuardados(yaGanadas);
   const niveles = LOGROS.flatMap((l) => {
     const alcanzado = nivelDe(l, total[l.codigo] || 0);

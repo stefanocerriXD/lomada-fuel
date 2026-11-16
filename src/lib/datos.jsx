@@ -9,6 +9,7 @@ import { castigoDe, conCalavera, marcaDeCaca } from "./multas.js";
 import { estadoDeFiesta } from "./fiestaEstado.js";
 import { marcarActividad } from "./vivo.js";
 import { ponerInsignia } from "./insignia.js";
+import { EVENTO_TILDE } from "./registros.js";
 
 const Contexto = createContext(null);
 export const useDatos = () => useContext(Contexto);
@@ -58,6 +59,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   const [mensajes, setMensajes] = useState([]);
   const [mensajesListos, setMensajesListos] = useState(false);
   const [historial, setHistorial] = useState(null);
+  const [registrosLogros, setRegistrosLogros] = useState([]);
   const firmas = useRef({});
   const perfilesRef = useRef(perfiles);
   perfilesRef.current = perfiles;
@@ -122,7 +124,25 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       traerTodo(() => supabase.from("agua").select("*").eq("usuario_id", usuario.id).order("fecha")),
     ]);
     setHistorial({ comidas: propias, agua });
+    // Gym y creatina (privados). Sin el SQL 043 queda vacío.
+    try {
+      setRegistrosLogros(await traerTodo(() => supabase.from("registros_diarios").select("fecha, codigo").eq("usuario_id", usuario.id).order("fecha")));
+    } catch {
+      setRegistrosLogros([]);
+    }
   }, [traerComidasDe, usuario.id]);
+
+  useEffect(() => {
+    const tilde = (e) => {
+      const { fecha, codigo, puso } = e.detail || {};
+      setRegistrosLogros((prev) => {
+        const sin = prev.filter((r) => !(r.fecha === fecha && r.codigo === codigo));
+        return puso ? [...sin, { fecha, codigo }] : sin;
+      });
+    };
+    window.addEventListener(EVENTO_TILDE, tilde);
+    return () => window.removeEventListener(EVENTO_TILDE, tilde);
+  }, []);
 
   const cargarMensajes = useCallback(async () => {
     const { data, error } = await supabase.from("mensajes").select("*").order("creado_en", { ascending: false }).limit(200);
@@ -580,8 +600,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   const progreso = useMemo(() => {
     if (!comidasLogros) return null;
     const victorias = extras.medallas.filter((m) => m.usuario_id === usuario.id && m.codigo.startsWith("victoria:")).length;
-    return cantidades({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, perfiles, salud: salud || null, pesos, victorias });
-  }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, salud, usuario.id]);
+    return cantidades({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, perfiles, salud: salud || null, pesos, victorias, registros: registrosLogros });
+  }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, salud, usuario.id, registrosLogros]);
 
   // La caca de cada uno se ve al lado del nombre en toda la app.
   // Cada perfil lleva su nivel general (el avatar se pone más lindo al subir) y, si le toca, la caca.
@@ -663,7 +683,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

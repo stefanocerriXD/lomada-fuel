@@ -19,7 +19,7 @@ import Visor from "../componentes/Visor.jsx";
 
 const SECCIONES = [["dias", "Días"], ["fotos", "Fotos"], ["logros", "Logros"]];
 // De otra persona no se ve su plan, su peso ni su agua: esos logros muestran solo el nivel.
-const SOLO_PROPIOS = new Set(["proteina", "agua", "peso", "reto"]);
+const SOLO_PROPIOS = new Set(["proteina", "agua", "peso", "reto", "gym", "creatina"]);
 const numero = (v) => Math.round(v).toLocaleString("es-AR");
 
 export default function Perfil({ onEditar, onEditarComida }) {

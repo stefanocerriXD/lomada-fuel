@@ -11,6 +11,8 @@ export const REGISTROS = [
 ];
 
 const EVENTO = "lomada:registros";
+// Cada tilde avisa (para los logros de gym y creatina).
+export const EVENTO_TILDE = "lomada:registro-tildado";
 const DIAS = 120;
 const claveConfig = (uid) => `lomada-registros-${uid}`;
 const leerLocal = (uid) => {
@@ -104,6 +106,7 @@ export function useRegistros(usuarioId) {
       cambiar(tenia);
       return false;
     }
+    window.dispatchEvent(new CustomEvent(EVENTO_TILDE, { detail: { fecha, codigo, puso: !tenia } }));
     return true;
   }
 
