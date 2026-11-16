@@ -27,6 +27,7 @@ import Ajustes from "./vistas/Ajustes.jsx";
 import NuevaComida from "./vistas/NuevaComida.jsx";
 import Bienvenida from "./vistas/Bienvenida.jsx";
 import Importar from "./vistas/Importar.jsx";
+import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -153,6 +154,13 @@ function Cargando() {
 
 function Principal({ recuperando, onRecuperado }) {
   const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
+  // Puntito en Ajustes cuando hay actualizaciones que no viste.
+  const [novedad, setNovedad] = useState(hayNovedades);
+  useEffect(() => {
+    const ver = () => setNovedad(hayNovedades());
+    window.addEventListener(EVENTO_ACTUALIZACIONES, ver);
+    return () => window.removeEventListener(EVENTO_ACTUALIZACIONES, ver);
+  }, []);
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
@@ -385,7 +393,7 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
         <nav aria-label="Menú principal">
           {VISTAS.map((v) => (
-            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" insignia={v.id === "grupo" ? sinLeer : 0} />
+            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && novedad} />
           ))}
         </nav>
         <button className="perfil-lateral" onClick={() => abrirPerfil(yo.id)}>
@@ -424,7 +432,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <nav className="barra-inferior" aria-label="Menú principal">
         {VISTAS.slice(0, 2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && novedad} />
         ))}
         <motion.button
           className="boton-subir"
@@ -437,7 +445,7 @@ function Principal({ recuperando, onRecuperado }) {
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
         {VISTAS.slice(2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && novedad} />
         ))}
       </nav>
 
@@ -481,12 +489,13 @@ function Principal({ recuperando, onRecuperado }) {
   );
 }
 
-function BotonVista({ datos, activa, onClick, id, insignia = 0 }) {
+function BotonVista({ datos, activa, onClick, id, insignia = 0, punto = false }) {
   const Icono = datos.icono;
   return (
     <button className={activa ? "item-menu activo" : "item-menu"} onClick={onClick} aria-current={activa ? "page" : undefined} aria-label={insignia ? `${datos.texto}, ${insignia} ${insignia === 1 ? "mensaje sin leer" : "mensajes sin leer"}` : undefined}>
       {activa && <motion.span className="item-fondo" layoutId={`fondo-${id}`} transition={resorte} />}
       {insignia > 0 && <Insignia n={insignia} />}
+      {!insignia && punto && <span className="punto-novedad" aria-hidden="true" />}
       <Icono size={21} strokeWidth={activa ? 2.4 : 2} />
       <span>{datos.texto}</span>
     </button>
