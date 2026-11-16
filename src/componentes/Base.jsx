@@ -15,27 +15,27 @@ export function vibrar(ms = 10) {
   }
 }
 
-// El marco del avatar mejora con el nivel general: uno nuevo cada 2 niveles al principio, un poco más espaciados arriba.
+// El marco del avatar mejora con el nivel general: uno nuevo cada 2 o 3 niveles al principio, más espaciados arriba.
 // [desde qué nivel, clave, nombre, emoji]
 export const MARCOS = [
   [2, "cobre", "Cobre", "🟤"],
-  [4, "bronce", "Bronce", "🥉"],
-  [6, "plata", "Plata", "🥈"],
-  [8, "oro", "Oro", "🥇"],
-  [10, "esmeralda", "Esmeralda", "💚"],
-  [12, "zafiro", "Zafiro", "💙"],
-  [14, "rubi", "Rubí", "❤️"],
-  [16, "fuego", "Fuego", "🔥"],
-  [18, "hielo", "Hielo", "❄️"],
-  [20, "rayo", "Rayo", "⚡"],
-  [23, "neon", "Neón", "💡"],
-  [26, "diamante", "Diamante", "💎"],
-  [30, "galaxia", "Galaxia", "🌌"],
-  [34, "magma", "Magma", "🌋"],
-  [38, "aurora", "Aurora", "🌈"],
-  [45, "legendario", "Legendario", "👑"],
-  [55, "mitico", "Mítico", "🐉"],
-  [70, "inmortal", "Inmortal", "☀️"],
+  [5, "bronce", "Bronce", "🥉"],
+  [7, "plata", "Plata", "🥈"],
+  [10, "oro", "Oro", "🥇"],
+  [12, "esmeralda", "Esmeralda", "💚"],
+  [15, "zafiro", "Zafiro", "💙"],
+  [17, "rubi", "Rubí", "❤️"],
+  [20, "fuego", "Fuego", "🔥"],
+  [22, "hielo", "Hielo", "❄️"],
+  [25, "rayo", "Rayo", "⚡"],
+  [28, "neon", "Neón", "💡"],
+  [31, "diamante", "Diamante", "💎"],
+  [35, "galaxia", "Galaxia", "🌌"],
+  [40, "magma", "Magma", "🌋"],
+  [44, "aurora", "Aurora", "🌈"],
+  [52, "legendario", "Legendario", "👑"],
+  [65, "mitico", "Mítico", "🐉"],
+  [80, "inmortal", "Inmortal", "☀️"],
   // El final: todos los logros al máximo.
   [NIVEL_MAXIMO, "lomada", "LOMADA LEGENDARY", "🔥"],
 ];
