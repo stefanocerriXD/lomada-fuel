@@ -4,6 +4,7 @@ import { ArrowRight, MailCheck } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { Indicador } from "../componentes/Base.jsx";
 import InstalarApp from "../componentes/InstalarApp.jsx";
+import Logo from "../componentes/Logo.jsx";
 
 const USUARIO_VALIDO = /^[a-z0-9_.]{3,20}$/;
 const LARGO_CLAVE = 8;
@@ -98,7 +99,7 @@ export default function Login() {
       </div>
 
       <motion.div className="login-tarjeta" initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}>
-        <img className="login-icono" src="/icono.svg" alt="" width="52" height="52" />
+        <Logo className="login-icono" tam={64} />
         <h1>Lomada Fuel</h1>
         <p className="login-bajada">Subí tus comidas para bajar de peso, gordito.</p>
 

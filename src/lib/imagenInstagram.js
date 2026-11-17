@@ -1,5 +1,6 @@
 // La imagen para subir a Instagram: la foto de la comida, el título, las calorías, los macros y el logo de Lomada.
 // Se dibuja en el celu (canvas), sin servicios de afuera.
+import { TENEDOR, CUCHILLO } from "../componentes/Logo.jsx";
 import { tipoInfo } from "./macros.js";
 
 export const FORMATOS = {
@@ -112,28 +113,25 @@ function circuloLomada(ctx, x, y, tam) {
   ctx.restore();
 }
 
-// El logo de la app: el plato con Lomada adentro y los cubiertos al costado (igual que /icono.svg, en 64x64).
-const TENEDOR = "M9.5 15v9a3.5 3.5 0 0 0 3.5 3.5h0a3.5 3.5 0 0 0 3.5-3.5v-9M13 15v35";
-const CUCHILLO = "M52 50V15c-3.6 1.6-5 6-5 11 0 3 1.8 5 5 5";
+// El logo de la app sin fondo: el plato con Lomada adentro y los cubiertos blancos al costado.
+// Mismas medidas que Logo.jsx (caja de 52 empezando en 4.75, 6.5).
 function logoApp(ctx, x, y, tam) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(tam / 64, tam / 64);
-  ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(0, 0, 64, 64, 16) : ctx.rect(0, 0, 64, 64);
-  ctx.fillStyle = "#C43D15";
-  ctx.fill();
-  ctx.shadowColor = "transparent";
+  ctx.scale(tam / 52, tam / 52);
+  ctx.translate(-4.75, -6.5);
   const circulo = (cy, r, color) => { ctx.beginPath(); ctx.arc(32, cy, r, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); };
-  circulo(34, 15.5, "rgba(0,0,0,0.16)");
-  circulo(33, 15.5, "#FFF3E8");
+  circulo(33, 15.5, "#fff");
+  ctx.shadowColor = "transparent";
   ctx.beginPath();
   ctx.arc(32, 33, 12.4, 0, Math.PI * 2);
   ctx.lineWidth = 0.8;
-  ctx.strokeStyle = "#E6D3C2";
+  ctx.strokeStyle = "#dcd6cf";
   ctx.stroke();
   circuloLomada(ctx, 32 - 11.4, 33 - 11.4, 22.8);
-  ctx.strokeStyle = "#FFF3E8";
+  ctx.shadowColor = "rgba(0,0,0,0.35)";
+  ctx.shadowBlur = 6;
+  ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2.6;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";

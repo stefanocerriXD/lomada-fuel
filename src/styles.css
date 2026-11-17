@@ -73,8 +73,6 @@
 }
 
 /* Lomada: los verdes y el azul del logo del barrio */
-/* En el tema Lomada, el logo de la app va con el verde del barrio. */
-:root[data-tema="lomada"] .marca img, :root[data-tema="lomada"] .cargando-icono img, :root[data-tema="lomada"] .login-icono { content: url("/icono-lomada.svg"); }
 
 :root[data-tema="lomada"] {
   color-scheme: light;
@@ -204,7 +202,8 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
   backdrop-filter: blur(14px);
 }
 .marca { display: flex; align-items: center; gap: 9px; font-family: var(--titulo); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
-.marca img { border-radius: 10px; }
+.logo-app { flex: none; display: block; overflow: visible; }
+.marca .logo-app { margin: -4px -2px -4px -6px; }
 .boton-avatar { border-radius: 50%; }
 .contenido {
   width: 100%;
@@ -1378,7 +1377,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 /* Login y estados de pantalla */
 .pantalla-centro { display: grid; place-items: center; min-height: 100dvh; padding: 16px; }
-.cargando-icono img { border-radius: 16px; }
+.cargando-icono { color: var(--tinta); }
 .error-pantalla { display: flex; flex-direction: column; gap: 10px; max-width: 420px; padding: 22px; }
 .error-pantalla h1 { font-family: var(--titulo); font-size: 1.4rem; }
 .login {
@@ -1425,7 +1424,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
   -webkit-backdrop-filter: blur(18px) saturate(130%);
   text-align: center;
 }
-.login-icono { border-radius: 14px; box-shadow: 0 6px 18px rgb(0 0 0 / 35%); }
+.login-icono { color: var(--tinta); filter: drop-shadow(0 4px 10px rgb(0 0 0 / 22%)); }
 .login-tarjeta h1 { font-family: var(--titulo); font-size: 2rem; line-height: 1.05; letter-spacing: -0.03em; }
 .login-bajada { color: var(--tinta-2); font-size: 0.95rem; }
 .login-tarjeta form { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px; text-align: left; }
@@ -2003,9 +2002,9 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .cartel-chispas { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .cartel-chispas i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / 75%); top: calc(18% + var(--i) * 15%); right: calc(14% + var(--i) * 9%); animation: cartel-chispa 2.8s ease-in-out calc(var(--i) * 0.55s) infinite; opacity: 0; }
 @keyframes cartel-chispa { 0% { opacity: 0; transform: scale(0.4) translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2) translateY(-14px); } }
-.cartel-logo { position: relative; display: grid; place-items: center; width: 50px; height: 50px; flex: none; border-radius: 14px; box-shadow: 0 6px 14px rgb(0 0 0 / 22%); }
-.cartel-logo img { position: relative; width: 50px; height: 50px; border-radius: 14px; }
-.cartel-pulso { position: absolute; inset: -4px; border-radius: 18px; border: 2px solid rgb(255 255 255 / 70%); animation: cartel-pulso 2.2s ease-out infinite; }
+.cartel-logo { position: relative; display: grid; place-items: center; width: 50px; height: 50px; flex: none; border-radius: 50%; color: #fff; }
+.cartel-logo .logo-app { position: relative; filter: drop-shadow(0 3px 6px rgb(0 0 0 / 25%)); }
+.cartel-pulso { position: absolute; inset: -4px; border-radius: 50%; border: 2px solid rgb(255 255 255 / 70%); animation: cartel-pulso 2.2s ease-out infinite; }
 @keyframes cartel-pulso { from { transform: scale(0.92); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
 .cartel-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .cartel-texto small { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
@@ -2033,7 +2032,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .historia-barras span { flex: 1; height: 3px; overflow: hidden; border-radius: 3px; background: rgb(255 255 255 / 28%); }
 .historia-barras i { display: block; height: 100%; background: #fff; transform-origin: left; }
 .historia-marca { display: flex; align-items: center; gap: 9px; margin-top: 12px; }
-.historia-marca img { border-radius: 7px; }
+.historia-marca .logo-app { color: #fff; }
 .historia-marca > span { flex: 1; display: flex; flex-direction: column; line-height: 1.15; }
 .historia-marca strong { font-size: 0.86rem; }
 .historia-marca small { font-size: 0.72rem; opacity: 0.8; }
@@ -2044,7 +2043,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 .hp { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; width: 100%; max-width: 520px; margin: 0 auto; padding: 18px 24px calc(40px + env(safe-area-inset-bottom)); }
 .hp-portada { align-items: center; text-align: center; }
-.hp-logo { width: 104px; height: 104px; border-radius: 27px; box-shadow: 0 0 0 10px rgb(255 255 255 / 12%), 0 20px 40px rgb(0 0 0 / 35%); }
+.hp-logo { display: grid; place-items: center; color: #fff; filter: drop-shadow(0 14px 24px rgb(0 0 0 / 35%)); }
 .hp-chico { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; font-weight: 600; opacity: 0.85; }
 .hp-titulo { margin: 0; font-size: clamp(2.3rem, 11vw, 3.4rem); font-weight: 900; line-height: 1.02; letter-spacing: -0.02em; }
 .hp-titulo.chico { font-size: clamp(1.6rem, 7.5vw, 2.2rem); }
@@ -2363,7 +2362,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .actualizacion p { margin-top: 3px; color: var(--tinta-2); font-size: 0.86rem; line-height: 1.4; }
 
 /* Deslizar hacia abajo para actualizar: baja el logo y el plato gira entre los cubiertos */
-.tirar-actualizar { position: fixed; top: calc(env(safe-area-inset-top) + 10px); left: 50%; z-index: 45; display: flex; align-items: center; justify-content: center; gap: 3px; width: 78px; height: 48px; border-radius: 24px; color: var(--acento); background: var(--superficie); box-shadow: 0 6px 18px rgb(0 0 0 / 18%); opacity: 0; transform: translate(-50%, -64px); pointer-events: none; }
+.tirar-actualizar { position: fixed; top: calc(env(safe-area-inset-top) + 10px); left: 50%; z-index: 45; display: flex; align-items: center; justify-content: center; gap: 3px; width: 78px; height: 48px; border-radius: 24px; color: var(--tinta); background: var(--superficie); box-shadow: 0 6px 18px rgb(0 0 0 / 18%); opacity: 0; transform: translate(-50%, -64px); pointer-events: none; }
 .tirar-actualizar img { width: 34px; height: 34px; border-radius: 50%; }
 .tirar-actualizar svg { flex: none; width: 10px; height: 30px; }
 .tirar-actualizar.listo { box-shadow: 0 0 0 3px var(--acento), 0 6px 18px rgb(0 0 0 / 18%); }

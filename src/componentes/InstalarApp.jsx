@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Download, Share, X } from "lucide-react";
+import Logo from "./Logo.jsx";
 
 const CLAVE = "lomada-instalar-cerrado";
 const ESPERA_MS = 3 * 24 * 60 * 60 * 1000; // Si lo cierran, vuelve a aparecer a los 3 días.
@@ -58,7 +59,7 @@ export default function InstalarApp() {
     <AnimatePresence>
       {visible && (
         <motion.aside className="instalar-app" role="region" aria-label="Instalar la app" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-          <img src="/icono-192.png" alt="" width="40" height="40" />
+          <Logo tam={44} />
           <div>
             <strong>Usala como app</strong>
             {pedido ? (

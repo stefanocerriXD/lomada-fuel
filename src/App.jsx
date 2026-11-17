@@ -29,6 +29,7 @@ import Bienvenida from "./vistas/Bienvenida.jsx";
 import Importar from "./vistas/Importar.jsx";
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
+import Logo from "./componentes/Logo.jsx";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -147,7 +148,7 @@ function Cargando() {
         transition={{ repeat: Infinity, duration: 1.4 }}
         aria-hidden="true"
       >
-        <img src="/icono.svg" alt="" width="64" height="64" />
+        <Logo tam={72} />
       </motion.span>
     </div>
   );
@@ -386,7 +387,7 @@ function Principal({ recuperando, onRecuperado }) {
     <div className="marco">
       <aside className="lateral">
         <div className="marca">
-          <img src="/icono.svg" alt="" width="36" height="36" />
+          <Logo tam={40} />
           <span>Lomada Fuel</span>
         </div>
         <button className="boton boton-grande" onClick={() => abrirCarga()}>
@@ -405,7 +406,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <header className="barra-superior">
         <div className="marca">
-          <img src="/icono.svg" alt="" width="30" height="30" />
+          <Logo tam={34} />
           {misGrupos.length > 1 ? <SelectorGrupo /> : <span>Lomada Fuel</span>}
         </div>
         <button className="boton-avatar" onClick={() => abrirPerfil(yo.id)} aria-label="Tu perfil">

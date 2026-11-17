@@ -18,8 +18,8 @@ self.addEventListener("push", (evento) => {
     Promise.all([
       self.registration.showNotification(datos.titulo || "Lomada Fuel", {
         body: datos.cuerpo || "",
-        icon: "/icono-192.png",
-        badge: "/icono-192.png",
+        icon: "/logo-192.png",
+        badge: "/logo-192.png",
         data: { vista: datos.vista || "chat" },
       }),
       (datos.vista || "chat") === "chat" ? sumarInsignia() : null,

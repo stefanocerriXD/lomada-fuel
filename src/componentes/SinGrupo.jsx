@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { supabase } from "../lib/supabase.js";
+import Logo from "./Logo.jsx";
 
 // Quien quedó afuera de su grupo no ve nada. Si le pasaron un código, entra a ese grupo.
 export default function SinGrupo({ onAdentro }) {
@@ -22,7 +23,7 @@ export default function SinGrupo({ onAdentro }) {
   return (
     <div className="login sin-grupo">
       <motion.div className="login-tarjeta" initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}>
-        <img className="login-icono" src="/icono.svg" alt="" width="52" height="52" />
+        <Logo className="login-icono" tam={64} />
         <h1>No estás en ningún grupo</h1>
         <p className="login-bajada">Si te pasaron el código de un grupo, escribilo para entrar.</p>
         <form onSubmit={entrar}>
