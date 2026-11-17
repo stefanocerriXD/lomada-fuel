@@ -101,6 +101,25 @@ export function clink() {
   }
 }
 
+// Un vaso de agua: una gota ("plip") que cae y una burbujita.
+export function gota() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.24);
+  nota(ctx, salida, { frecuencia: 1400, hasta: 420, desde: t, dura: 0.13 });
+  nota(ctx, salida, { frecuencia: 900, hasta: 1500, desde: t + 0.09, dura: 0.08, volumen: 0.4 });
+}
+
+// El +: un "pop" chiquito, apenas se nota.
+export function pop() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.16);
+  nota(ctx, salida, { frecuencia: 320, hasta: 760, desde: t, dura: 0.07 });
+}
+
 // Tildar un registro (creatina, gym, magnesio): un "tic" corto y suave.
 export function tic() {
   const ctx = listo();

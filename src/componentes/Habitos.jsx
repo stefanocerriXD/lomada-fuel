@@ -4,6 +4,7 @@ import { Droplets, Minus, Plus } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { vibrar } from "./Base.jsx";
 import RegistrosDiarios from "./RegistrosDiarios.jsx";
+import { gota } from "../lib/sonidos.js";
 
 const VASO_ML = 250;
 
@@ -36,7 +37,7 @@ function Agua({ fecha }) {
       <p className="habito-valor"><strong>{(ml / 1000).toLocaleString("es-AR", { maximumFractionDigits: 2 })}</strong> de {(meta / 1000).toLocaleString("es-AR", { maximumFractionDigits: 2 })} L</p>
       <div className="habito-botones">
         <button className="boton-icono" onClick={() => cambiarAgua(fecha, ml - VASO_ML)} disabled={ml === 0} aria-label="Restar un vaso"><Minus size={18} /></button>
-        <button className="boton-icono acento" onClick={() => { cambiarAgua(fecha, ml + VASO_ML); vibrar(8); }} aria-label="Sumar un vaso de 250 mililitros"><Plus size={18} /></button>
+        <button className="boton-icono acento" onClick={() => { cambiarAgua(fecha, ml + VASO_ML); vibrar(8); gota(); }} aria-label="Sumar un vaso de 250 mililitros"><Plus size={18} /></button>
       </div>
     </article>
   );

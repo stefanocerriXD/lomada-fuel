@@ -30,7 +30,7 @@ import Importar from "./vistas/Importar.jsx";
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 import Logo from "./componentes/Logo.jsx";
-import { ding, prepararSonidos } from "./lib/sonidos.js";
+import { ding, pop, prepararSonidos } from "./lib/sonidos.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "./lib/grupos.js";
 
 const VISTAS = [
@@ -410,7 +410,7 @@ function Principal({ recuperando, onRecuperado }) {
           <Logo tam={40} />
           <span>Lomada Fuel</span>
         </div>
-        <button className="boton boton-grande" onClick={() => abrirCarga()}>
+        <button className="boton boton-grande" onClick={() => { pop(); abrirCarga(); }}>
           <Plus size={20} /> Subir comida
         </button>
         <nav aria-label="Menú principal">
@@ -459,7 +459,7 @@ function Principal({ recuperando, onRecuperado }) {
         ))}
         <motion.button
           className="boton-subir"
-          onClick={() => abrirCarga()}
+          onClick={() => { pop(); abrirCarga(); }}
           whileTap={{ scale: 0.88 }}
           whileHover={{ scale: 1.06 }}
           transition={resorte}
