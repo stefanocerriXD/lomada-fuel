@@ -2314,6 +2314,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .compartir-ig .segmentos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--superficie); }
 .compartir-ig .segmentos button { padding: 8px 10px; border-radius: 11px; color: var(--tinta-2); font-weight: 600; font-size: 0.9rem; }
 .compartir-ig .segmentos button.activo { background: var(--acento); color: #fff; }
+.compartir-ig .segmentos.tres { grid-template-columns: repeat(3, 1fr); }
 .compartir-ig-vista { display: grid; place-items: center; justify-self: center; height: min(50dvh, 520px); width: auto; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 18px; overflow: hidden; background: #140d08; color: #fff; }
 .compartir-ig-vista.ig-publicacion { aspect-ratio: 4 / 5; }
 .compartir-ig-vista img { width: 100%; height: 100%; object-fit: contain; }

@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, LoaderCircle, Share2 } from "lucide-react";
-import { armarImagenDia, armarImagenInstagram, FORMATOS } from "../lib/imagenInstagram.js";
+import { armarImagenDia, armarImagenInstagram, FORMATOS, PLANTILLAS_DIA } from "../lib/imagenInstagram.js";
 import { Hoja, vibrar } from "./Base.jsx";
+
+// La plantilla del día que eligió la última vez (en este celu).
+const CLAVE_PLANTILLA = "lomada-plantilla-dia";
+const plantillaGuardada = () => {
+  try {
+    const p = localStorage.getItem(CLAVE_PLANTILLA);
+    return PLANTILLAS_DIA.some(([id]) => id === p) ? p : "grilla";
+  } catch {
+    return "grilla";
+  }
+};
 
 const puedeCompartir = (archivo) => {
   try {
@@ -16,6 +27,7 @@ const puedeCompartir = (archivo) => {
 // Con `comida` arma la de una comida; con `dia` ({ comidas, fotos, fecha, total, meta }) la del día entero.
 export default function CompartirInstagram({ abierta, onCerrar, comida, foto, dia }) {
   const [formato, setFormato] = useState("historia");
+  const [plantilla, setPlantilla] = useState(plantillaGuardada);
   const [archivo, setArchivo] = useState(null);
   const [vista, setVista] = useState(null);
   const [error, setError] = useState("");
@@ -25,11 +37,20 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto, di
     let activo = true;
     setArchivo(null);
     setError("");
-    (dia ? armarImagenDia({ ...dia, formato }) : armarImagenInstagram({ comida, foto, formato }))
+    (dia ? armarImagenDia({ ...dia, formato, plantilla }) : armarImagenInstagram({ comida, foto, formato }))
       .then((f) => activo && setArchivo(f))
       .catch(() => activo && setError("No pudimos armar la imagen. Probá de nuevo."));
     return () => { activo = false; };
-  }, [abierta, comida, foto, dia, formato]);
+  }, [abierta, comida, foto, dia, formato, plantilla]);
+
+  function elegirPlantilla(id) {
+    setPlantilla(id);
+    try {
+      localStorage.setItem(CLAVE_PLANTILLA, id);
+    } catch {
+      // Sin guardar, la próxima arranca en grilla.
+    }
+  }
 
   useEffect(() => {
     if (!archivo) return undefined;
@@ -68,6 +89,15 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto, di
             </button>
           ))}
         </div>
+        {dia && (
+          <div className="segmentos tres" role="radiogroup" aria-label="Plantilla">
+            {PLANTILLAS_DIA.map(([id, nombre]) => (
+              <button key={id} type="button" role="radio" aria-checked={plantilla === id} className={plantilla === id ? "activo" : ""} onClick={() => elegirPlantilla(id)}>
+                {nombre}
+              </button>
+            ))}
+          </div>
+        )}
         <div className={`compartir-ig-vista ig-${formato}`}>
           {archivo && vista ? <img src={vista} alt={dia ? "Imagen para Instagram con las fotos del día, las calorías y los macros" : "Imagen para Instagram con la comida, sus calorías y macros"} /> : !error && <LoaderCircle className="girando" size={28} aria-label="Armando la imagen" />}
           {error && <p className="error" role="alert">{error}</p>}
