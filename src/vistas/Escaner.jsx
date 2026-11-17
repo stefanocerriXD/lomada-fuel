@@ -20,6 +20,10 @@ export default function Escaner({ onAlimento, buscar }) {
   const [leyendo, setLeyendo] = useState(null);
   const [etiqueta, setEtiqueta] = useState(null);
   const video = useRef(null);
+  // Lo que se ve es un lienzo pintado con los cuadros de la cámara: en el iPhone el <video> adentro de la hoja
+  // a veces se pinta todo negro aunque la cámara ande.
+  const vista = useRef(null);
+  const iphone = typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
   async function consultar(valor) {
     setBuscando(true);
@@ -68,6 +72,7 @@ export default function Escaner({ onAlimento, buscar }) {
     let cancelado = false;
     let flujo = null;
     let reloj = null;
+    let cuadro = null;
     setSinImagen(false);
     (async () => {
       try {
@@ -88,17 +93,44 @@ export default function Escaner({ onAlimento, buscar }) {
         const desde = Date.now();
         let tiempo = -1;
         let quieto = Date.now();
+        let negroDesde = null;
+
+        // La vista: cada cuadro de la cámara se pinta en el lienzo, recortado para llenar el recuadro.
+        const pintar = () => {
+          if (cancelado) return;
+          const c = vista.current;
+          if (c && v.readyState >= 2 && v.videoWidth) {
+            const ancho = c.clientWidth * (window.devicePixelRatio || 1);
+            const alto = c.clientHeight * (window.devicePixelRatio || 1);
+            if (c.width !== Math.round(ancho) || c.height !== Math.round(alto)) { c.width = Math.round(ancho); c.height = Math.round(alto); }
+            const escala = Math.max(c.width / v.videoWidth, c.height / v.videoHeight);
+            const w = v.videoWidth * escala;
+            const h = v.videoHeight * escala;
+            c.getContext("2d").drawImage(v, (c.width - w) / 2, (c.height - h) / 2, w, h);
+          }
+          cuadro = requestAnimationFrame(pintar);
+        };
+        cuadro = requestAnimationFrame(pintar);
+
+        // Cada 200 ms se busca el código en un cuadro. Si el video no avanza o llega todo negro, se avisa.
         const mirar = () => {
           if (cancelado) return;
-          // Negra o congelada: el video no avanza.
           if (v.currentTime !== tiempo) { tiempo = v.currentTime; quieto = Date.now(); }
           const congelado = Date.now() - quieto > 4000;
           if (v.readyState >= 2 && v.videoWidth && !congelado) {
-            setSinImagen(false);
             const escala = Math.min(1, 960 / v.videoWidth);
             lienzo.width = Math.round(v.videoWidth * escala);
             lienzo.height = Math.round(v.videoHeight * escala);
             dibujo.drawImage(v, 0, 0, lienzo.width, lienzo.height);
+            // ¿Todo negro? (la cámara "anda" pero no manda imagen)
+            const muestra = dibujo.getImageData(0, 0, lienzo.width, lienzo.height).data;
+            let suma = 0;
+            let n = 0;
+            for (let i = 0; i < muestra.length; i += 4 * 97) { suma += muestra[i] + muestra[i + 1] + muestra[i + 2]; n += 1; }
+            const negro = suma / Math.max(1, n * 3) < 4;
+            if (!negro) negroDesde = null;
+            else if (negroDesde === null) negroDesde = Date.now();
+            setSinImagen(negroDesde !== null && Date.now() - negroDesde > 3000);
             try {
               const resultado = leer.decodeFromCanvas(lienzo);
               if (resultado?.getText()) { encontrado(resultado.getText()); return; }
@@ -112,15 +144,18 @@ export default function Escaner({ onAlimento, buscar }) {
           reloj = setTimeout(mirar, 200);
         };
         mirar();
-      } catch {
+      } catch (err) {
         if (cancelado) return;
         setCamara(false);
-        setEstado("No pudimos abrir la cámara. Sacale una foto al código o escribí el número.");
+        setEstado(err?.name === "NotAllowedError"
+          ? "La app no tiene permiso para usar la cámara. Sacale una foto al código o escribí el número."
+          : "No pudimos abrir la cámara. Sacale una foto al código o escribí el número.");
       }
     })();
     return () => {
       cancelado = true;
       clearTimeout(reloj);
+      cancelAnimationFrame(cuadro);
       flujo?.getTracks().forEach((pista) => pista.stop());
       if (video.current) video.current.srcObject = null;
     };
@@ -200,7 +235,7 @@ export default function Escaner({ onAlimento, buscar }) {
   const codigoDelProducto = faltante || null;
 
   return (
-    <motion.div className="tarjeta-interna" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+    <motion.div className="tarjeta-interna" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {etiqueta ? (
         <FormEtiqueta
           inicial={etiqueta}
@@ -217,7 +252,8 @@ export default function Escaner({ onAlimento, buscar }) {
         <>
           {camara ? (
             <div className="visor">
-              <video ref={video} muted playsInline autoPlay />
+              <video ref={video} className="visor-video" muted playsInline autoPlay aria-hidden="true" />
+              <canvas ref={vista} className="visor-lienzo" aria-label="Lo que ve la cámara" />
               <motion.i animate={{ y: [-44, 44, -44] }} transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }} />
               {sinImagen && <p className="visor-sin-imagen">La cámara no muestra imagen. Sacale una foto al código ↓</p>}
             </div>
@@ -227,9 +263,9 @@ export default function Escaner({ onAlimento, buscar }) {
               <button type="button" className="boton boton-secundario" onClick={() => setCamara(!camara)}>
                 {camara ? <><CameraOff size={17} /> Cerrar cámara</> : <><Camera size={17} /> Escanear con la cámara</>}
               </button>
-              <label className={sinImagen ? "boton boton-foto-codigo" : "boton-texto etiqueta-enlace"}>
+              <label className={sinImagen || iphone ? "boton boton-foto-codigo" : "boton-texto etiqueta-enlace"}>
                 <input type="file" accept="image/*" capture="environment" onChange={fotoCodigo} aria-label="Foto del código de barras" />
-                <Camera size={sinImagen ? 17 : 15} /> Sacale una foto al código
+                <Camera size={sinImagen || iphone ? 17 : 15} /> Sacale una foto al código
               </label>
               <form className="codigo-manual" onSubmit={enviar}>
                 <input value={codigo} onChange={(e) => setCodigo(e.target.value)} inputMode="numeric" placeholder="O escribí el número" aria-label="Número de código de barras" />
