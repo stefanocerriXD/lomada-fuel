@@ -814,6 +814,7 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 .dia-titulo { color: var(--tinta-2); font-size: 0.95rem; font-weight: 600; }
 .dia-titulo::first-letter { text-transform: uppercase; }
 .acciones-rapidas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.acciones-rapidas > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 .accion { display: flex; align-items: center; gap: 9px; min-height: 66px; padding: 10px 12px; color: var(--sobre-acento-suave); text-align: left; }
 .accion > span { min-width: 0; display: flex; flex-direction: column; }
 .accion strong { color: var(--tinta); font-size: 0.95rem; }

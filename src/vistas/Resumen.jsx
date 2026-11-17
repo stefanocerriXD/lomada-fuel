@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, BarChart3, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, UserRound, Zap } from "lucide-react";
+import { Activity, BarChart3, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, Share2, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -18,6 +18,7 @@ import TiraDias from "../componentes/TiraDias.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 import Visor from "../componentes/Visor.jsx";
+import CompartirInstagram from "../componentes/CompartirInstagram.jsx";
 import { createPortal } from "react-dom";
 import { clink } from "../lib/sonidos.js";
 
@@ -45,6 +46,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
   const [, setVasoRapido] = useState(0);
+  const [compartirDia, setCompartirDia] = useState(false);
 
   const delDia = useMemo(() => comidas.filter((c) => c.fecha === fecha), [comidas, fecha]);
   const fotosHoy = fotosDelDia(comidas, usuario.id, hoy);
@@ -69,6 +71,8 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
   const restante = yo.meta_calorias - Math.round(total.kcal);
   // El de Apple Salud cuenta en el total pero no se muestra aparte: parecería sumado dos veces.
   const resumenDia = mias.find((c) => c.tipo === "resumen" && !esDeAppleSalud(c));
+  // Para la imagen del día: las comidas que se ven (el resumen de Apple Salud solo suma en el total).
+  const diaParaCompartir = useMemo(() => ({ comidas: mias.filter((c) => !esDeAppleSalud(c)), fotos, fecha, total, meta: yo.meta_calorias }), [compartirDia]); // eslint-disable-line react-hooks/exhaustive-deps
   const racha = calcularRacha(comidas.filter((c) => c.usuario_id === usuario.id).map((c) => c.fecha));
 
   const amigos = Object.values(perfiles)
@@ -172,6 +176,12 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
           <ClipboardPaste size={22} />
           <span><strong>Importar el día</strong><small>Captura o texto</small></span>
         </motion.button>
+        {mias.some((c) => !esDeAppleSalud(c)) && (
+          <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => { vibrar(8); setCompartirDia(true); }}>
+            <Share2 size={22} />
+            <span><strong>Compartir {fecha === hoy ? "mi día" : "ese día"}</strong><small>Historia o post con tus fotos</small></span>
+          </motion.button>
+        )}
       </div>
 
       <Habitos fecha={fecha} />
@@ -186,6 +196,8 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
           ))}
         </motion.ul>
       </section>
+
+      {compartirDia && <CompartirInstagram abierta onCerrar={() => setCompartirDia(false)} dia={diaParaCompartir} />}
 
       {fecha === hoy && !nocheDeFiesta && !vasosNoche.length && !invitacionFiesta && (
         <button className="enlace-fiesta enlace-fiesta-pie" onClick={onFiesta}>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, LoaderCircle, Share2 } from "lucide-react";
-import { armarImagenInstagram, FORMATOS } from "../lib/imagenInstagram.js";
+import { armarImagenDia, armarImagenInstagram, FORMATOS } from "../lib/imagenInstagram.js";
 import { Hoja, vibrar } from "./Base.jsx";
 
 const puedeCompartir = (archivo) => {
@@ -13,7 +13,8 @@ const puedeCompartir = (archivo) => {
 };
 
 // La imagen se arma al abrir la hoja: así el botón Compartir abre el menú del celu en el mismo toque.
-export default function CompartirInstagram({ abierta, onCerrar, comida, foto }) {
+// Con `comida` arma la de una comida; con `dia` ({ comidas, fotos, fecha, total, meta }) la del día entero.
+export default function CompartirInstagram({ abierta, onCerrar, comida, foto, dia }) {
   const [formato, setFormato] = useState("historia");
   const [archivo, setArchivo] = useState(null);
   const [vista, setVista] = useState(null);
@@ -24,11 +25,11 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto }) 
     let activo = true;
     setArchivo(null);
     setError("");
-    armarImagenInstagram({ comida, foto, formato })
+    (dia ? armarImagenDia({ ...dia, formato }) : armarImagenInstagram({ comida, foto, formato }))
       .then((f) => activo && setArchivo(f))
       .catch(() => activo && setError("No pudimos armar la imagen. Probá de nuevo."));
     return () => { activo = false; };
-  }, [abierta, comida, foto, formato]);
+  }, [abierta, comida, foto, dia, formato]);
 
   useEffect(() => {
     if (!archivo) return undefined;
@@ -58,7 +59,7 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto }) 
   }
 
   return createPortal(
-    <Hoja abierta={abierta} onCerrar={onCerrar} titulo="Compartir en Instagram">
+    <Hoja abierta={abierta} onCerrar={onCerrar} titulo={dia ? "Compartir tu día" : "Compartir en Instagram"}>
       <div className="compartir-ig">
         <div className="segmentos" role="radiogroup" aria-label="Formato">
           {Object.entries(FORMATOS).map(([id, f]) => (
@@ -68,7 +69,7 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto }) 
           ))}
         </div>
         <div className={`compartir-ig-vista ig-${formato}`}>
-          {archivo && vista ? <img src={vista} alt="Imagen para Instagram con la comida, sus calorías y macros" /> : !error && <LoaderCircle className="girando" size={28} aria-label="Armando la imagen" />}
+          {archivo && vista ? <img src={vista} alt={dia ? "Imagen para Instagram con las fotos del día, las calorías y los macros" : "Imagen para Instagram con la comida, sus calorías y macros"} /> : !error && <LoaderCircle className="girando" size={28} aria-label="Armando la imagen" />}
           {error && <p className="error" role="alert">{error}</p>}
         </div>
         <button type="button" className="boton" onClick={compartir} disabled={!archivo}><Share2 size={18} /> Compartir</button>
