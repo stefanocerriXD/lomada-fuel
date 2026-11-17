@@ -1,6 +1,6 @@
 // La imagen para subir a Instagram: la foto de la comida, el título, las calorías, los macros y el logo de Lomada.
 // Se dibuja en el celu (canvas), sin servicios de afuera.
-import { TENEDOR, CUCHILLO } from "../componentes/Logo.jsx";
+import { LOGO } from "../componentes/Logo.jsx";
 import { tipoInfo } from "./macros.js";
 
 export const FORMATOS = {
@@ -87,57 +87,34 @@ const fechaLinda = (fecha) => {
   return new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short" }).format(d).replace(/[.,]/g, "");
 };
 
-// El círculo de Lomada (azul, blanco y verde), dibujado a mano para que salga igual en todos los celus.
-function circuloLomada(ctx, x, y, tam) {
-  const r = tam / 2;
-  const u = tam / 100;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
-  ctx.fillStyle = "#0165a0";
-  ctx.fillRect(x, y, tam, tam);
-  const loma = (alto, color) => {
-    ctx.beginPath();
-    ctx.moveTo(x, y + alto[0] * u);
-    ctx.bezierCurveTo(x + 25 * u, y + alto[1] * u, x + 60 * u, y + alto[2] * u, x + 100 * u, y + alto[3] * u);
-    ctx.lineTo(x + tam, y + tam);
-    ctx.lineTo(x, y + tam);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-  };
-  loma([63, 52, 47, 49], "#fff");
-  loma([69, 58, 54, 56], "#046a43");
-  ctx.restore();
-}
-
-// El logo de la app sin fondo: el plato con Lomada adentro y los cubiertos blancos al costado.
-// Mismas medidas que Logo.jsx (caja de 52 empezando en 4.75, 6.5).
+// El logo de la app ("Disco de lomada", mismas medidas que Logo.jsx), con los cubiertos blancos porque va sobre la foto.
+// Se arma en un lienzo aparte: el aro que separa los cubiertos del disco se recorta sin tocar la foto.
 function logoApp(ctx, x, y, tam) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(tam / 52, tam / 52);
-  ctx.translate(-4.75, -6.5);
-  const circulo = (cy, r, color) => { ctx.beginPath(); ctx.arc(32, cy, r, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); };
-  circulo(33, 15.5, "#fff");
-  ctx.shadowColor = "transparent";
-  ctx.beginPath();
-  ctx.arc(32, 33, 12.4, 0, Math.PI * 2);
-  ctx.lineWidth = 0.8;
-  ctx.strokeStyle = "#dcd6cf";
-  ctx.stroke();
-  circuloLomada(ctx, 32 - 11.4, 33 - 11.4, 22.8);
-  ctx.shadowColor = "rgba(0,0,0,0.35)";
-  ctx.shadowBlur = 6;
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2.6;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.stroke(new Path2D(TENEDOR));
-  ctx.stroke(new Path2D(CUCHILLO));
-  ctx.restore();
+  const lado = Math.ceil(tam);
+  const lienzo = document.createElement("canvas");
+  lienzo.width = lado;
+  lienzo.height = lado;
+  const c = lienzo.getContext("2d");
+  const [cajaX, cajaY, cajaLado] = LOGO.caja.split(" ").map(Number);
+  c.scale(lado / cajaLado, lado / cajaLado);
+  c.translate(-cajaX, -cajaY);
+  c.fillStyle = "#fff";
+  c.fill(new Path2D(LOGO.tenedorD));
+  c.fill(new Path2D(LOGO.cuchilloD));
+  c.globalCompositeOperation = "destination-out";
+  c.beginPath();
+  c.arc(LOGO.cx, LOGO.cy, LOGO.corte, 0, Math.PI * 2);
+  c.fill();
+  c.globalCompositeOperation = "source-over";
+  c.beginPath();
+  c.arc(LOGO.cx, LOGO.cy, LOGO.r, 0, Math.PI * 2);
+  c.clip();
+  c.fillRect(LOGO.cx - LOGO.r, LOGO.cy - LOGO.r, LOGO.r * 2, LOGO.r * 2);
+  c.fillStyle = LOGO.azul;
+  c.fill(new Path2D(LOGO.azulD));
+  c.fillStyle = LOGO.verde;
+  c.fill(new Path2D(LOGO.verdeD));
+  ctx.drawImage(lienzo, x, y, tam, tam);
 }
 
 export async function armarImagenInstagram({ comida, foto, formato = "historia" }) {

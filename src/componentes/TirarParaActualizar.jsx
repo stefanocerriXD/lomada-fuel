@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { vibrar } from "./Base.jsx";
+import Logo from "./Logo.jsx";
 import { clic } from "../lib/sonidos.js";
 
 const UMBRAL = 70; // Cuánto hay que bajar (ya amortiguado) para que actualice.
@@ -23,7 +24,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
       el.style.opacity = String(distancia > 4 ? Math.max(avance, 0.35) : 0);
       el.classList.toggle("girando", girando);
       el.classList.toggle("listo", !girando && avance >= 1);
-      const logo = el.querySelector("img");
+      const logo = el.querySelector(".logo-disco");
       if (logo && !girando) logo.style.transform = `rotate(${distancia * 3}deg)`;
     };
     const soltar = (animado = true) => {
@@ -95,9 +96,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
   if (!activo) return null;
   return (
     <div ref={indicador} className="tirar-actualizar" aria-hidden="true">
-      <svg viewBox="8 13 10 39"><path d="M9.5 15v9a3.5 3.5 0 0 0 3.5 3.5h0a3.5 3.5 0 0 0 3.5-3.5v-9M13 15v35" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" /></svg>
-      <img src="/plato.svg" alt="" width="34" height="34" draggable={false} />
-      <svg viewBox="45.5 13 8 39"><path d="M52 50V15c-3.6 1.6-5 6-5 11 0 3 1.8 5 5 5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <Logo tam={44} />
     </div>
   );
 }
