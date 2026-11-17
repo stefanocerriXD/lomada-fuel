@@ -149,8 +149,9 @@ export default function Login() {
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
                   </label>
                   <label>
-                    <span>Código del grupo</span>
-                    <input value={codigo} onChange={(e) => setCodigo(e.target.value)} autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck="false" required />
+                    <span>Código del grupo <small className="opcional">(opcional)</small></span>
+                    <input value={codigo} onChange={(e) => setCodigo(e.target.value)} autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck="false" />
+                    <small className="login-ayuda">Si te pasaron uno, el admin del grupo te acepta. Si no, después creás tu propio grupo.</small>
                   </label>
                 </>
               )}

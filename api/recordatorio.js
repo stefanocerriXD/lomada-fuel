@@ -23,10 +23,14 @@ export default async function handler(req, res) {
     const funcion = ["caca", "anuncio_caca"].includes(tipo) ? "destinos_caca" : tipo === "viaje" ? "destinos_viaje" : tipo === "informe" ? "destinos_informe" : tipo === "registros" ? "destinos_registros" : "destinos_programados";
     // La mejora hecha la pide la base al marcarla, con el id del pedido.
     const id = req.body?.id;
-    if (tipo === "mejora_hecha" && !/^[0-9a-f-]{36}$/i.test(String(id || ""))) return res.status(400).json({ error: "Pedido no válido" });
+    // Los pedidos para entrar a un grupo y los aceptados, también con el id del pedido.
+    const conId = ["mejora_hecha", "solicitud_grupo", "grupo_aceptado"].includes(tipo);
+    if (conId && !/^[0-9a-f-]{36}$/i.test(String(id || ""))) return res.status(400).json({ error: "Pedido no válido" });
     const resp = tipo === "mejora_hecha"
       ? await rpc("destinos_mejora_hecha", { p_clave: clave, p_tipo: tipo, p_id: id })
-      : await rpc(funcion, { p_clave: clave, p_tipo: tipo });
+      : conId
+        ? await rpc("destinos_grupo", { p_clave: clave, p_tipo: tipo, p_id: id })
+        : await rpc(funcion, { p_clave: clave, p_tipo: tipo });
     if (!resp.ok) return res.status(401).json({ error: "No autorizado" });
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });

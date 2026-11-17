@@ -141,7 +141,7 @@ const SECCIONES = [
 
 // En los grupos sin Bocha la caca es más simple, como BeReal.
 const CACA_SIN_BOCHA = {
-  titulo: "La caca 💩",
+  titulo: "La maldición de la caca 💩",
   preguntas: [
     ["¿Cuál es la regla?", "Mínimo 1 foto de comida por día. La foto del resumen del día no cuenta. Se cuenta a la medianoche."],
     ["¿Qué pasa si un día no subo ninguna?", ["Al día siguiente tenés 💩 al lado del nombre, y la ve todo el grupo.", "Ves borrosas las fotos de los demás y no podés reaccionar, como en BeReal.", "El bot cuenta en el chat quiénes no subieron."]],

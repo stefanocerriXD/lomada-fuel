@@ -2372,3 +2372,34 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 /* Ajustes: sonidos */
 .ajuste-sonidos { display: grid; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--borde); }
+
+/* Grupos: crear, pedir entrar y administrar */
+.crear-grupo { margin-bottom: 6px; }
+.crear-grupo-nota { margin: 0 0 18px; }
+.grupo-admin { flex: none; color: var(--acento); }
+.grupo-fila.esperando .grupo-icono { color: var(--tinta-2); }
+.pedidos-enviados { margin-top: 4px; }
+.boton-chico.acento { background: var(--acento); color: var(--sobre-acento); }
+.admin-grupo { display: grid; gap: 10px; margin: 6px 0 20px; padding: 14px; border-radius: 18px; border: 1px solid var(--borde); }
+.admin-grupo .lista-grupos { margin: 0; }
+.admin-grupo-titulo { display: flex; align-items: center; gap: 7px; margin: 0; }
+.admin-grupo-titulo svg { color: var(--acento); }
+.admin-grupo-codigo { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--superficie-2); }
+.admin-grupo-codigo span { display: flex; flex-direction: column; min-width: 0; }
+.admin-grupo-codigo small { color: var(--tinta-2); font-size: 0.76rem; }
+.admin-grupo-codigo code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; overflow-wrap: anywhere; user-select: all; }
+.admin-grupo-sub { margin: 4px 0 0; font-weight: 700; font-size: 0.86rem; }
+.admin-grupo .nota { margin: 0; }
+.pedido-grupo .boton-chico { flex: none; }
+.admin-grupo-integrantes summary { min-height: 40px; display: flex; align-items: center; font-weight: 700; font-size: 0.86rem; cursor: pointer; }
+.admin-grupo-integrantes .lista-grupos { margin-top: 6px; }
+.sin-grupo .lista-grupos { margin: 4px 0 14px; }
+.sin-grupo .crear-grupo { flex-direction: column; align-items: stretch; gap: 10px; margin: 0; }
+.sin-grupo .crear-grupo label { width: 100%; }
+.sin-grupo .crear-grupo .boton { width: 100%; min-height: 50px; justify-content: center; }
+.sin-grupo .crear-grupo-nota { margin: 8px 0 12px; text-align: center; }
+.sin-grupo-o { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; color: var(--tinta-3); font-size: 0.82rem; }
+.sin-grupo-o::before, .sin-grupo-o::after { content: ""; flex: 1; height: 1px; background: var(--tinta-3); opacity: 0.35; }
+.sin-grupo-aviso { margin: 0; }
+.opcional { color: var(--tinta-3); font-weight: 500; }
+.login-ayuda { color: var(--tinta-3); font-size: 0.76rem; line-height: 1.3; }

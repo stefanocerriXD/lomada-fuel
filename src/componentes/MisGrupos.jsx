@@ -1,8 +1,11 @@
-import { useState } from "react";
-import { Check, LogOut, Plus, Users } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Check, LogOut, Plus, ShieldCheck, Users } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { vibrar } from "./Base.jsx";
+import { cancelarPedido, EVENTO_PEDIDOS, gruposQueAdministro, misPedidos, pedirEntrar } from "../lib/grupos.js";
+import CrearGrupo, { PedidosEnviados } from "./CrearGrupo.jsx";
+import AdminGrupo from "./AdminGrupo.jsx";
 
 const OPCIONES = [
   { id: "todos", titulo: "En todos mis grupos", detalle: "Cada comida se ve en todos los grupos donde estás." },
@@ -10,7 +13,8 @@ const OPCIONES = [
   { id: "elegir", titulo: "Elegir en cada comida", detalle: "Al subir una comida tocás en qué grupos va." },
 ];
 
-// Ajustes → Grupos: en cuáles estás, sumarte a otro con un código, salir, y dónde se publican tus comidas.
+// Ajustes → Grupos: en cuáles estás, pedir entrar a otro con un código, crear uno, salir,
+// administrar los tuyos (aceptar a los que piden entrar) y dónde se publican tus comidas.
 export default function MisGrupos({ avisar }) {
   const { usuario, yo, grupo, misGrupos, cambiarGrupo, recargarGrupos, cargarPerfiles } = useDatos();
   const [codigo, setCodigo] = useState("");
@@ -18,17 +22,49 @@ export default function MisGrupos({ avisar }) {
   const [enviando, setEnviando] = useState(false);
   const [saliendo, setSaliendo] = useState(null);
   const publicarEn = yo.publicar_en || "todos";
+  const [admin, setAdmin] = useState([]);
+  const [pedidos, setPedidos] = useState([]);
+
+  const cargarPedidos = useCallback(async () => {
+    const [a, p] = await Promise.all([gruposQueAdministro(), misPedidos()]);
+    setAdmin(a);
+    setPedidos(p);
+  }, []);
+  useEffect(() => {
+    cargarPedidos();
+    window.addEventListener(EVENTO_PEDIDOS, cargarPedidos);
+    return () => window.removeEventListener(EVENTO_PEDIDOS, cargarPedidos);
+  }, [cargarPedidos]);
 
   async function sumarme(e) {
     e.preventDefault();
     if (!codigo.trim()) return;
     setEnviando(true);
     setError("");
-    const { data, error: err } = await supabase.rpc("unirme_a_grupo", { p_codigo: codigo.trim() });
-    setEnviando(false);
-    if (err) return setError(/codigo_invalido/.test(err.message) ? "Ese código no es de ningún grupo." : "No se pudo sumar. Probá de nuevo.");
-    vibrar(20);
-    avisar?.(`Te sumaste a ${data}`);
+    try {
+      const r = await pedirEntrar(codigo);
+      if (r.estado === "ya_estas") return setError(`Ya estás en ${r.nombre}.`);
+      vibrar(20);
+      setCodigo("");
+      if (r.estado === "adentro") {
+        avisar?.(`Te sumaste a ${r.nombre}`);
+        return await recargarGrupos();
+      }
+      avisar?.(`Le pedimos al admin de ${r.nombre} que te acepte`);
+      await cargarPedidos();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function cancelar(id) {
+    if (await cancelarPedido(id)) await cargarPedidos();
+  }
+
+  async function creado(nuevo) {
+    avisar?.(`Creaste ${nuevo.nombre}. Compartí el código para que entren.`);
     // Pasa a ver el grupo nuevo: se recarga todo.
     await recargarGrupos();
   }
@@ -58,8 +94,9 @@ export default function MisGrupos({ avisar }) {
             <span className="grupo-icono" aria-hidden="true"><Users size={18} /></span>
             <span className="grupo-nombre">
               {g.nombre}
-              {g.id === grupo.id && <small>Lo estás viendo</small>}
+              {(g.id === grupo.id || admin.includes(g.id)) && <small>{[g.id === grupo.id && "Lo estás viendo", admin.includes(g.id) && "Lo administrás"].filter(Boolean).join(" · ")}</small>}
             </span>
+            {admin.includes(g.id) && <ShieldCheck className="grupo-admin" size={16} aria-label="Lo administrás" />}
             {g.id !== grupo.id && <button className="boton-chico" onClick={() => cambiarGrupo(g.id)}>Ver</button>}
             {misGrupos.length > 1 && (
               <button className={saliendo === g.id ? "boton-chico peligro" : "boton-chico"} onClick={() => salir(g.id)} onBlur={() => setSaliendo(null)} aria-label={`Salir de ${g.nombre}`}>
@@ -70,14 +107,22 @@ export default function MisGrupos({ avisar }) {
         ))}
       </ul>
 
+      <PedidosEnviados pedidos={pedidos} onCancelar={cancelar} />
+
       <form className="sumarme-grupo" onSubmit={sumarme}>
         <label>
           <span>Sumarme a otro grupo</span>
           <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Código del grupo" autoCapitalize="none" autoCorrect="off" autoComplete="off" />
         </label>
-        <button className="boton" type="submit" disabled={enviando || !codigo.trim()}><Plus size={17} /> {enviando ? "Sumando…" : "Sumarme"}</button>
+        <button className="boton" type="submit" disabled={enviando || !codigo.trim()}><Plus size={17} /> {enviando ? "Pidiendo…" : "Pedir entrar"}</button>
       </form>
       {error && <p className="error" role="alert">{error}</p>}
+
+      <CrearGrupo onCreado={creado} />
+
+      {misGrupos.filter((g) => admin.includes(g.id)).map((g) => (
+        <AdminGrupo key={g.id} grupo={g} esVista={g.id === grupo.id} avisar={avisar} />
+      ))}
 
       <h3 className="perfil-subtitulo">Dónde se publican tus comidas</h3>
       {misGrupos.length > 1 ? (

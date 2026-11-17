@@ -31,6 +31,7 @@ import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js"
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 import Logo from "./componentes/Logo.jsx";
 import { ding, prepararSonidos } from "./lib/sonidos.js";
+import { EVENTO_PEDIDOS, pedidosPendientes } from "./lib/grupos.js";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -167,6 +168,20 @@ function Principal({ recuperando, onRecuperado }) {
     window.addEventListener(EVENTO_ACTUALIZACIONES, ver);
     return () => window.removeEventListener(EVENTO_ACTUALIZACIONES, ver);
   }, []);
+  // Y cuando alguien pide entrar a un grupo que administro.
+  const [pedidosGrupo, setPedidosGrupo] = useState(0);
+  useEffect(() => {
+    const cargar = () => pedidosPendientes().then(setPedidosGrupo);
+    const alVolver = () => document.visibilityState === "visible" && cargar();
+    cargar();
+    window.addEventListener(EVENTO_PEDIDOS, cargar);
+    document.addEventListener("visibilitychange", alVolver);
+    return () => {
+      window.removeEventListener(EVENTO_PEDIDOS, cargar);
+      document.removeEventListener("visibilitychange", alVolver);
+    };
+  }, []);
+  const puntoAjustes = novedad || pedidosGrupo > 0;
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
@@ -400,7 +415,7 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
         <nav aria-label="Menú principal">
           {VISTAS.map((v) => (
-            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && novedad} />
+            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
           ))}
         </nav>
         <button className="perfil-lateral" onClick={() => abrirPerfil(yo.id)}>
@@ -440,7 +455,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <nav className="barra-inferior" aria-label="Menú principal">
         {VISTAS.slice(0, 2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && novedad} />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
         ))}
         <motion.button
           className="boton-subir"
@@ -453,7 +468,7 @@ function Principal({ recuperando, onRecuperado }) {
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
         {VISTAS.slice(2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && novedad} />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
         ))}
       </nav>
 

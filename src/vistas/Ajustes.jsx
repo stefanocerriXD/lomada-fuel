@@ -20,6 +20,7 @@ import { AjustesRegistros } from "../componentes/RegistrosDiarios.jsx";
 import Actualizaciones from "../componentes/Actualizaciones.jsx";
 import { ACTUALIZACIONES, hayNovedades } from "../data/actualizaciones.js";
 import { ding, prenderSonidos, sonidosPrendidos } from "../lib/sonidos.js";
+import { EVENTO_PEDIDOS, pedidosPendientes } from "../lib/grupos.js";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
@@ -48,6 +49,14 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const [seccion, setSeccion] = useState(pedido?.seccion || null);
   // Llegar desde un link (por ejemplo, "Ver receta" en una comida) abre esa sección.
   useEffect(() => { if (pedido?.seccion) setSeccion(pedido.seccion); }, [pedido]);
+  // Los que esperan entrar a los grupos que administro.
+  const [pedidosGrupo, setPedidosGrupo] = useState(0);
+  useEffect(() => {
+    const cargar = () => pedidosPendientes().then(setPedidosGrupo);
+    cargar();
+    window.addEventListener(EVENTO_PEDIDOS, cargar);
+    return () => window.removeEventListener(EVENTO_PEDIDOS, cargar);
+  }, []);
 
   const cambios = nombre.trim() !== yo.nombre || color !== yo.color || meta !== yo.meta_calorias;
 
@@ -75,8 +84,8 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const SECCIONES = [
     { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
     ...(ACTUALIZACIONES.length ? [{ id: "actualizaciones", titulo: "Actualizaciones", detalle: ACTUALIZACIONES[0].titulo, icono: Megaphone, nuevo: hayNovedades() }] : []),
-    { id: "grupos", titulo: "Grupos", detalle: misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Sumarte a otro grupo con un código", icono: Users },
-    { id: "caca", titulo: "La caca 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
+    { id: "grupos", titulo: "Grupos", detalle: pedidosGrupo > 0 ? `${pedidosGrupo} ${pedidosGrupo === 1 ? "pedido" : "pedidos"} para entrar` : misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Crear un grupo o sumarte con un código", icono: Users, nuevo: pedidosGrupo > 0, pastilla: String(pedidosGrupo) },
+    { id: "caca", titulo: grupo.conBocha ? "La caca 💩" : "La maldición de la caca 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
     { id: "registros", titulo: "Registros diarios", detalle: "Creatina, gym, magnesio", icono: ListChecks },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
@@ -103,7 +112,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
           {SECCIONES.map((x) => (
             <button key={x.id} onClick={() => { setSeccion(x.id); scrollTo(0, 0); }}>
               <span className="icono-ajuste"><x.icono size={19} /></span>
-              <span><strong>{x.titulo}{x.nuevo && <span className="pastilla-nuevo">Nuevo</span>}</strong><small>{x.detalle}</small></span>
+              <span><strong>{x.titulo}{x.nuevo && <span className="pastilla-nuevo">{x.pastilla || "Nuevo"}</span>}</strong><small>{x.detalle}</small></span>
               <ChevronRight className="chevron" size={19} aria-hidden="true" />
             </button>
           ))}
