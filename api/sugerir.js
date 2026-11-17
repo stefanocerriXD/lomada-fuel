@@ -1,7 +1,7 @@
 // "¿Qué puedo comer?" con IA: escribís lo que tenés ganas (o lo que hay en la heladera) y Gemini arma opciones
 // que entren en lo que te falta del día, según la hora. La app calcula los macros con los ingredientes que devuelve.
 import { usuarioActual } from "./_auth.js";
-import { ESQUEMA_ALIMENTO, hayGemini, limpiarAlimento, preguntarGemini } from "./_gemini.js";
+import { cupoPersona, ESQUEMA_ALIMENTO, hayGemini, limpiarAlimento, preguntarGemini, textoTope } from "./_gemini.js";
 
 const ESQUEMA = {
   type: "OBJECT",
@@ -63,8 +63,14 @@ Si es tarde a la noche, nada pesado ni que lleve mucho tiempo.
 - "pasos": 2 a 4 pasos cortos.
 - Nombres en español rioplatense.`;
 
+  // Tope por persona: 25 usos de IA por día.
+  const cupo = cupoPersona({ token: (req.headers.authorization || "").replace("Bearer ", "") });
+  const antes = await cupo.mirar();
+  if (antes && !antes.permitido) return res.status(429).json({ error: textoTope(antes.tope), tope: true });
+
   const r = await preguntarGemini({ partes: [{ text: instrucciones }], esquema: ESQUEMA, temperatura: 0.7 });
   if (r.error) return res.status(r.estado).json({ error: r.error });
+  await cupo.sumar();
 
   const opciones = (Array.isArray(r.respuesta.opciones) ? r.respuesta.opciones : [])
     .map((x) => ({

@@ -1,7 +1,7 @@
 // Reconoce los alimentos de la foto de un plato, o los números de una tabla nutricional, con Gemini.
 // Devuelve cada alimento con sus gramos estimados y valores por 100 g; la app los cruza con su lista y la persona ajusta.
 import { usuarioActual } from "./_auth.js";
-import { ESQUEMA_ALIMENTO, hayGemini, limpiarAlimento, preguntarGemini } from "./_gemini.js";
+import { cupoPersona, ESQUEMA_ALIMENTO, hayGemini, limpiarAlimento, preguntarGemini, textoTope } from "./_gemini.js";
 
 const MAXIMO_BASE64 = 2_500_000;
 
@@ -82,6 +82,11 @@ export default async function handler(req, res) {
     partes = [{ inline_data: { mime_type: "image/jpeg", data: imagen } }, { text: etiqueta ? PEDIDO_ETIQUETA : PEDIDO }];
   }
 
+  // Tope por persona: 25 usos de IA por día.
+  const cupo = cupoPersona({ token: (req.headers.authorization || "").replace("Bearer ", "") });
+  const antes = await cupo.mirar();
+  if (antes && !antes.permitido) return res.status(429).json({ error: textoTope(antes.tope), tope: true });
+
   const r = await preguntarGemini({
     partes,
     esquema: etiqueta ? ESQUEMA_ETIQUETA : ESQUEMA,
@@ -93,6 +98,7 @@ export default async function handler(req, res) {
       : dictado !== null ? "No pudimos entender la comida. Probá de nuevo o buscala a mano." : "No pudimos reconocer la foto. Probá de nuevo o cargalo a mano.";
     return res.status(r.estado).json({ error });
   }
+  await cupo.sumar();
 
   if (etiqueta) {
     const e = r.respuesta;

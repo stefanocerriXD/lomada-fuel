@@ -26,6 +26,30 @@ async function una(modelo, partes, esquema, temperatura) {
   }
 }
 
+// Tope de IA por persona (SQL 050): se mira antes de preguntar y se suma solo si la IA respondió.
+// Con la sesión de la persona (token) o con la llave del Atajo (llave). Si la base no responde, no se frena a nadie.
+export function cupoPersona({ token, llave }) {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const clave = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const llamar = async (sumar) => {
+    if (!url || !clave) return null;
+    try {
+      const r = await fetch(`${url}/rest/v1/rpc/${llave ? "usar_ia_con_llave" : "usar_ia"}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", apikey: clave, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(llave ? { p_token: llave, p_sumar: sumar } : { p_sumar: sumar }),
+        signal: AbortSignal.timeout(5000),
+      });
+      return r.ok ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  };
+  return { mirar: () => llamar(false), sumar: () => llamar(true) };
+}
+
+export const textoTope = (tope) => `Llegaste a los ${tope || 25} usos de IA de hoy. Mañana se renuevan; mientras, cargalo a mano.`;
+
 // Sin cupo en todos los modelos: la base anota el día y le avisa al admin (una vez por día).
 async function avisarSinCupo() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;

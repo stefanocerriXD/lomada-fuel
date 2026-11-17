@@ -1,7 +1,7 @@
 // Recibe la captura de MyFitnessPal que saca el Atajo (toque atrás del iPhone).
 // La IA copia el texto; se guarda solo el texto (la foto no) y la app lo une con la comida de Apple Salud al tocar +.
 // Responde texto simple: el Atajo lo muestra tal cual en una notificación.
-import { hayGemini, preguntarGemini } from "./_gemini.js";
+import { cupoPersona, hayGemini, preguntarGemini, textoTope } from "./_gemini.js";
 import { leerResumen } from "../src/lib/importar.js";
 
 const MAXIMO_BASE64 = 4_200_000; // Vercel acepta hasta 4,5 MB por pedido.
@@ -57,8 +57,14 @@ export default async function handler(req, res) {
   if (valida === null) return responder(res, 502, "No pudimos conectar con Lomada Fuel. Probá de nuevo.");
   if (!valida) return responder(res, 401, "La llave del Atajo no es válida. Copiala de nuevo desde Lomada Fuel (Ajustes > Apple Salud).");
 
+  // Tope por persona: 25 usos de IA por día (cuenta igual que una foto reconocida).
+  const cupo = cupoPersona({ llave: token });
+  const antes = await cupo.mirar();
+  if (antes && !antes.permitido) return responder(res, 429, textoTope(antes.tope));
+
   const r = await preguntarGemini({ partes: [{ inline_data: { mime_type: tipoDeImagen(imagen), data: imagen } }, { text: PEDIDO }], esquema: ESQUEMA, temperatura: 0 });
   if (r.error) return responder(res, r.estado || 502, r.error);
+  await cupo.sumar();
   const texto = String(r.respuesta?.texto || "").slice(0, 12000).trim();
   if (!r.respuesta?.es_diario || !texto) return responder(res, 200, "No vimos un diario de comidas en la pantalla. Abrí la comida en MyFitnessPal y probá de nuevo.");
 

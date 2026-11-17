@@ -22,6 +22,9 @@ export default function Login() {
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+  // La cuenta espera que confirme el mail: el link llega a esta dirección.
+  const [porConfirmar, setPorConfirmar] = useState(null);
+  const [reenvio, setReenvio] = useState("");
 
   function cambiarModo(nuevo) {
     setModo(nuevo);
@@ -49,6 +52,7 @@ export default function Login() {
       if (err) throw new Error("No pudimos conectarnos. Probá de nuevo.");
       if (!mail) throw new Error("Usuario o contraseña incorrectos.");
       const { error: errSesion } = await supabase.auth.signInWithPassword({ email: mail, password: clave });
+      if (errSesion?.code === "email_not_confirmed" || /not confirmed/i.test(errSesion?.message)) return setPorConfirmar(mail);
       if (errSesion) throw new Error("No pudimos iniciar la sesión. Probá de nuevo.");
     });
 
@@ -65,11 +69,12 @@ export default function Login() {
       const { data, error: err } = await supabase.auth.signUp({
         email: email.trim(),
         password: clave,
-        options: { data: { usuario: nombre.toLowerCase(), nombre } },
+        options: { data: { usuario: nombre.toLowerCase(), nombre }, emailRedirectTo: window.location.origin },
       });
       if (/already|registered/i.test(err?.message)) throw new Error("Ese mail ya tiene una cuenta.");
       if (err) throw new Error("No pudimos crear la cuenta. Revisá los datos.");
-      if (!data.session) throw new Error("La cuenta se creó, pero falta activar el registro sin confirmación por mail.");
+      // Hay que confirmar el mail: se muestra el aviso y, al tocar el link, entra solo.
+      if (!data.session) setPorConfirmar(email.trim());
     });
 
   const recuperar = (e) =>
@@ -79,6 +84,12 @@ export default function Login() {
       if (err) throw new Error("No pudimos mandar el mail. Probá de nuevo.");
       setEnviado(true);
     });
+
+  async function reenviar() {
+    setReenvio("enviando");
+    const { error: err } = await supabase.auth.resend({ type: "signup", email: porConfirmar, options: { emailRedirectTo: window.location.origin } });
+    setReenvio(err ? (/rate|seconds|limit/i.test(err.message) ? "espera" : "error") : "listo");
+  }
 
   return (
     <div className="login">
@@ -101,7 +112,19 @@ export default function Login() {
         <h1>Lomada Fuel</h1>
         <p className="login-bajada">Subí tus comidas para bajar de peso, gordito.</p>
 
-        {modo === "recuperar" ? (
+        {porConfirmar ? (
+          <motion.div className="login-enviado" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}>
+            <MailCheck size={32} />
+            <strong>Confirmá tu mail</strong>
+            <p>Te mandamos un link a <b>{porConfirmar}</b>. Tocalo para activar la cuenta y entrás solo. Si no lo ves, fijate en spam.</p>
+            <button className="boton boton-secundario" type="button" onClick={reenviar} disabled={reenvio === "enviando" || reenvio === "listo"}>
+              {reenvio === "enviando" ? "Enviando…" : reenvio === "listo" ? "Listo, te lo mandamos de nuevo" : "Reenviar el mail"}
+            </button>
+            {reenvio === "espera" && <p className="error" role="alert">Esperá un minuto antes de pedirlo de nuevo.</p>}
+            {reenvio === "error" && <p className="error" role="alert">No se pudo reenviar. Probá en un rato.</p>}
+            <button className="boton-texto" type="button" onClick={() => { setPorConfirmar(null); setReenvio(""); cambiarModo("entrar"); }}>Ya lo confirmé: entrar</button>
+          </motion.div>
+        ) : modo === "recuperar" ? (
           enviado ? (
             <motion.div className="login-enviado" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}>
               <MailCheck size={32} />
