@@ -472,7 +472,7 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 .contenido-chat { padding-bottom: 0; }
 .contenido { overflow-x: clip; }
 .grupo, .grupo-contenido { display: flex; flex-direction: column; gap: 13px; min-width: 0; }
-.grupo-chat { gap: 8px; height: calc(var(--alto-visible, 100dvh) - 78px - env(safe-area-inset-top)); padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.grupo-chat { gap: 8px; height: calc(var(--alto-visible, 100dvh) - 78px - env(safe-area-inset-top)); padding-bottom: calc(62px + env(safe-area-inset-bottom)); }
 :root[data-teclado="si"] .grupo-chat { padding-bottom: 10px; }
 .grupo-chat .grupo-contenido { flex: 1; min-height: 0; }
 .chat { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; }
@@ -2416,3 +2416,61 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .medidor-uso.alerta .medidor-uso-barra i { background: #d99a1e; }
 .medidor-uso.critico .medidor-uso-barra i { background: var(--peligro); }
 .medidor-uso small { color: var(--tinta-2); font-size: 0.76rem; }
+
+/* Notificaciones a medida */
+.preferencias-avisos { display: grid; gap: 4px; margin-top: 18px; }
+.preferencias-avisos.apagadas .preferencia { opacity: 0.55; }
+.preferencias-avisos .nota { margin: 0 0 6px; }
+.preferencias-grupo { display: grid; margin-top: 6px; }
+.preferencias-titulo { margin: 6px 0 2px; color: var(--tinta-2); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.preferencia { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 6px 2px; border-bottom: 1px solid var(--borde); color: var(--tinta); text-align: left; font-weight: 600; font-size: 0.92rem; }
+.preferencia:last-child { border-bottom: 0; }
+.llave-aviso { position: relative; flex: none; width: 46px; height: 28px; border-radius: 999px; background: var(--superficie-2); box-shadow: inset 0 0 0 1px var(--borde); transition: background 0.2s ease; }
+.llave-aviso i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 25%); transition: transform 0.2s ease; }
+.llave-aviso.prendida { background: var(--acento); box-shadow: none; }
+.llave-aviso.prendida i { transform: translateX(18px); }
+
+/* Mejoras: desplegables */
+.desplegable-mejoras { margin-top: 14px; border-radius: 16px; background: var(--superficie-2); }
+.desplegable-mejoras summary { display: flex; flex-direction: column; justify-content: center; min-height: 52px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.desplegable-mejoras summary small { color: var(--tinta-2); font-weight: 500; font-size: 0.78rem; }
+.desplegable-mejoras .lista-mejoras { margin: 0; padding: 0 12px 12px; }
+
+/* Panel del dueño */
+.panel-dueno { display: grid; gap: 14px; }
+.panel-dueno .tarjeta { margin: 0; }
+.panel-dueno .perfil-subtitulo { margin-top: 0; }
+.dueno-sub { margin: -4px 0 10px; color: var(--tinta-2); font-size: 0.82rem; }
+.dueno-cifras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dueno-cifra { display: flex; flex-direction: column; gap: 1px; padding: 12px; border-radius: 14px; background: var(--superficie-2); min-width: 0; }
+.dueno-cifra strong { font-family: var(--titulo); font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.dueno-cifra span { font-weight: 650; font-size: 0.84rem; }
+.dueno-cifra small { color: var(--tinta-2); font-size: 0.74rem; }
+.dueno-barras-valor { min-height: 1.3em; margin: 0 0 6px; font-weight: 650; font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+.dueno-barras-zona { display: flex; align-items: flex-end; gap: 2px; height: 120px; border-bottom: 1px solid var(--borde); }
+.dueno-barras-zona button { flex: 1; display: flex; align-items: flex-end; height: 100%; min-width: 0; padding: 0; background: none; }
+.dueno-barras-zona i { display: block; width: 100%; border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--acento) 55%, var(--superficie)); }
+.dueno-barras-zona button.activa i { background: var(--acento); }
+.dueno-barras-ejes { display: flex; gap: 2px; margin-top: 4px; }
+.dueno-barras-ejes span { flex: 1; min-width: 0; overflow: visible; white-space: nowrap; color: var(--tinta-3); font-size: 0.7rem; }
+.dueno-ranking { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.dueno-ranking li { display: grid; grid-template-columns: minmax(0, 9rem) 1fr auto; align-items: center; gap: 10px; font-size: 0.88rem; }
+.dueno-ranking span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dueno-ranking i { display: block; height: 8px; border-radius: 0 4px 4px 0; background: var(--acento); }
+.dueno-ranking strong { font-variant-numeric: tabular-nums; }
+.dueno-datos { display: grid; margin: 0; padding: 0; list-style: none; }
+.dueno-datos li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--borde); font-size: 0.88rem; }
+.dueno-datos li:last-child { border-bottom: 0; }
+.dueno-datos span { color: var(--tinta-2); }
+.dueno-datos strong { text-align: right; }
+.dueno-buscar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 0 12px; border-radius: 14px; background: var(--superficie-2); color: var(--tinta-2); }
+.dueno-buscar input { flex: 1; min-width: 0; border: 0; background: transparent; box-shadow: none; padding-inline: 0; }
+.dueno-buscar input:focus { outline: none; }
+.dueno-usuarios { display: grid; margin: 0; padding: 0; list-style: none; }
+.dueno-usuarios li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+.dueno-usuarios li:last-child { border-bottom: 0; }
+.dueno-usuario { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.dueno-usuario small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--tinta-2); font-size: 0.76rem; }
+.dueno-usuario-num { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
+.dueno-usuario-num strong { font-variant-numeric: tabular-nums; }
+.dueno-usuario-num small { color: var(--tinta-2); font-size: 0.72rem; }

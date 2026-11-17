@@ -6,7 +6,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 
 export default function Mejoras({ avisar }) {
-  const { usuario, perfiles } = useDatos();
+  const { usuario, perfiles, grupo } = useDatos();
   const [lista, setLista] = useState(null);
   const [admin, setAdmin] = useState(false);
   const [texto, setTexto] = useState("");
@@ -69,9 +69,34 @@ export default function Mejoras({ avisar }) {
         </button>
       </form>
 
-      {lista.length > 0 && (
-        <>
-          <h3 className="perfil-subtitulo">Pedidos del grupo</h3>
+      {(() => {
+        // Cada grupo ve lo que se pidió en ese grupo (y lo propio). El dueño ve además lo de los otros grupos.
+        const delGrupo = lista.filter((m) => !m.grupo_id || m.grupo_id === grupo.id || m.usuario_id === usuario.id);
+        const otros = lista.filter((m) => !delGrupo.includes(m));
+        const pendientes = (l) => l.filter((m) => !m.hecha).length;
+        return (
+          <>
+            {delGrupo.length > 0 && (
+              <details className="desplegable-mejoras">
+                <summary>Mejoras del grupo <small>{delGrupo.length} · {pendientes(delGrupo)} sin hacer</small></summary>
+                <ListaMejoras lista={delGrupo} usuario={usuario} perfiles={perfiles} admin={admin} marcar={marcar} />
+              </details>
+            )}
+            {otros.length > 0 && (
+              <details className="desplegable-mejoras">
+                <summary>Mejoras de otros grupos <small>{otros.length} · {pendientes(otros)} sin hacer · solo vos</small></summary>
+                <ListaMejoras lista={otros} usuario={usuario} perfiles={perfiles} admin={admin} marcar={marcar} />
+              </details>
+            )}
+          </>
+        );
+      })()}
+    </section>
+  );
+}
+
+function ListaMejoras({ lista, usuario, perfiles, admin, marcar }) {
+  return (
           <ul className="lista-mejoras">
             {lista.map((m) => (
               <li key={m.id} className={m.hecha ? "hecha" : ""}>
@@ -88,8 +113,5 @@ export default function Mejoras({ avisar }) {
               </li>
             ))}
           </ul>
-        </>
-      )}
-    </section>
   );
 }

@@ -44,6 +44,14 @@ export default async function handler(req, res) {
       }
     }
 
+    // Cada uno elige qué avisos recibe (Ajustes > Notificaciones). Sin el SQL 048, pasan todos.
+    const elegidos = await rpc("filtrar_preferencias", { p_tipo: tipo, p_endpoints: aviso.destinos.map((d) => d.endpoint) });
+    if (elegidos.ok) {
+      const quieren = new Set(await elegidos.json());
+      aviso.destinos = aviso.destinos.filter((d) => quieren.has(d.endpoint));
+      if (!aviso.destinos.length) return res.status(200).json({ enviadas: 0 });
+    }
+
     const { enviadas, vencidas } = await enviarAvisos(aviso, process.env.APP_URL || `https://${req.headers.host}`);
     // El navegador informa con 404 o 410 que ese dispositivo ya no recibe avisos.
     if (vencidas.length) await rpc("borrar_suscripciones", { p_endpoints: vencidas });

@@ -26,6 +26,7 @@ export default function EspacioApp() {
 
   return (
     <section className="tarjeta ajuste espacio-app">
+      <h3 className="perfil-subtitulo">Espacio del plan gratis</h3>
       <Medidor titulo="Fotos" usado={uso.fotos_bytes} limite={uso.fotos_limite} detalle={`${uso.fotos_cantidad.toLocaleString("es-AR")} archivos · ${mb(porMes)} en los últimos 30 días`} />
       <Medidor titulo="Base de datos" usado={uso.base_bytes} limite={uso.base_limite} />
       <p className="nota">
