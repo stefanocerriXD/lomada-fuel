@@ -2404,3 +2404,15 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .sin-grupo-o { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; color: var(--tinta-3); font-size: 0.82rem; }
 .sin-grupo-o::before, .sin-grupo-o::after { content: ""; flex: 1; height: 1px; background: var(--tinta-3); opacity: 0.35; }
 .sin-grupo-aviso { margin: 0; }
+
+/* Ajustes: espacio de la app (solo admin) */
+.espacio-app { display: grid; gap: 14px; }
+.espacio-app .nota { margin: 0; }
+.medidor-uso { display: grid; gap: 6px; }
+.medidor-uso-cabecera { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.medidor-uso-cabecera span { color: var(--tinta-2); font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+.medidor-uso-barra { height: 10px; border-radius: 999px; background: var(--superficie-2); overflow: hidden; }
+.medidor-uso-barra i { display: block; height: 100%; border-radius: 999px; background: var(--acento); }
+.medidor-uso.alerta .medidor-uso-barra i { background: #d99a1e; }
+.medidor-uso.critico .medidor-uso-barra i { background: var(--peligro); }
+.medidor-uso small { color: var(--tinta-2); font-size: 0.76rem; }

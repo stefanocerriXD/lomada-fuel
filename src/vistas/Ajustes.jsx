@@ -7,7 +7,7 @@ import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
 import MisGrupos from "../componentes/MisGrupos.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HardDrive, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -21,6 +21,7 @@ import Actualizaciones from "../componentes/Actualizaciones.jsx";
 import { ACTUALIZACIONES, hayNovedades } from "../data/actualizaciones.js";
 import { ding, prenderSonidos, sonidosPrendidos } from "../lib/sonidos.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "../lib/grupos.js";
+import EspacioApp from "../componentes/EspacioApp.jsx";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
@@ -38,7 +39,7 @@ function textoObjetivo(salud) {
 }
 
 export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
-  const { castigo, usuario, yo, cargarPerfiles, salud, grupo, misGrupos } = useDatos();
+  const { castigo, usuario, yo, cargarPerfiles, salud, grupo, misGrupos, extras } = useDatos();
   const [nombre, setNombre] = useState(yo.nombre);
   const [color, setColor] = useState(yo.color);
   const [meta, setMeta] = useState(yo.meta_calorias);
@@ -95,6 +96,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     { id: "apariencia", titulo: "Apariencia y sonidos", detalle: "Tema y efectos de sonido", icono: Palette },
     { id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
     { id: "mejoras", titulo: "Mejoras", detalle: "Pedí cambios para la app", icono: MessageSquarePlus },
+    ...(extras.admin ? [{ id: "espacio", titulo: "Espacio de la app", detalle: "Fotos, base e IA del plan gratis", icono: HardDrive }] : []),
     { id: "cuenta", titulo: "Cuenta", detalle: "Contraseña y cerrar sesión", icono: KeyRound },
   ];
   const actual = SECCIONES.find((x) => x.id === seccion);
@@ -196,6 +198,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
       {seccion === "whoop" && <ConexionWhoop avisar={avisar} />}
       {seccion === "tutorial" && <Tutorial />}
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}
+      {seccion === "espacio" && <EspacioApp />}
       {seccion === "recetas" && <MisRecetas avisar={avisar} abrir={pedido?.receta ? pedido : null} />}
       {seccion === "caca" && <LaCaca avisar={avisar} />}
       {seccion === "registros" && <AjustesRegistros avisar={avisar} />}

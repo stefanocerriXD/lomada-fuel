@@ -26,6 +26,18 @@ async function una(modelo, partes, esquema, temperatura) {
   }
 }
 
+// Sin cupo en todos los modelos: la base anota el día y le avisa al admin (una vez por día).
+async function avisarSinCupo() {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const clave = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !clave) return;
+  try {
+    await fetch(`${url}/rest/v1/rpc/anotar_ia_sin_cupo`, { method: "POST", headers: { "content-type": "application/json", apikey: clave }, body: "{}", signal: AbortSignal.timeout(4000) });
+  } catch {
+    // Sin aviso no pasa nada.
+  }
+}
+
 // Devuelve { respuesta } o { error, estado } listo para mandar al teléfono.
 export async function preguntarGemini({ partes, esquema, temperatura = 0.2 }) {
   let sinCupo = false;
@@ -40,7 +52,10 @@ export async function preguntarGemini({ partes, esquema, temperatura = 0.2 }) {
     if (r.estado === 200) return { respuesta: r.respuesta || {} };
     // Modelo dado de baja o respuesta rota: el siguiente.
   }
-  if (sinCupo) return { estado: 429, error: "Se terminó el cupo gratis de hoy de la IA. Probá mañana." };
+  if (sinCupo) {
+    await avisarSinCupo();
+    return { estado: 429, error: "Se terminó el cupo gratis de hoy de la IA. Probá mañana." };
+  }
   return { estado: 502, error: "La IA no respondió. Probá de nuevo en un rato." };
 }
 
