@@ -92,7 +92,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
     ...(ACTUALIZACIONES.length ? [{ id: "actualizaciones", titulo: "Actualizaciones", detalle: ACTUALIZACIONES[0].titulo, icono: Megaphone, nuevo: hayNovedades() }] : []),
     { id: "grupos", titulo: "Grupos", detalle: pedidosGrupo > 0 ? `${pedidosGrupo} ${pedidosGrupo === 1 ? "pedido" : "pedidos"} para entrar` : misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Crear un grupo o sumarte con un código", icono: Users, nuevo: pedidosGrupo > 0, pastilla: String(pedidosGrupo) },
-    { id: "caca", titulo: grupo.conBocha ? "La caca 💩" : "La maldición de la caca 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
+    { id: "caca", titulo: grupo.conBocha ? "La cacona 💩" : "La maldición de la cacona 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
     { id: "registros", titulo: "Registros diarios", detalle: "Creatina, gym, magnesio", icono: ListChecks },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },

@@ -36,7 +36,7 @@ export default function CrearGrupo({ onCreado }) {
         <button className="boton" type="submit" disabled={enviando || !nombre.trim()}><Plus size={17} /> {enviando ? "Creando…" : "Crear"}</button>
       </form>
       {error && <p className="error" role="alert">{error}</p>}
-      <p className="nota crear-grupo-nota">Lo administrás vos: te pasamos un código para compartir y aceptás a cada uno que pida entrar. Viene con la maldición de la caca 💩.</p>
+      <p className="nota crear-grupo-nota">Lo administrás vos: te pasamos un código para compartir y aceptás a cada uno que pida entrar. Viene con la maldición de la cacona 💩.</p>
     </>
   );
 }

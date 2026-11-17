@@ -850,7 +850,7 @@ export default function Chat({ avisar }) {
       {castigo.evo ? (
         <div className="teclado-caca" role="status">
           <span aria-hidden="true">💩💩💩</span>
-          <strong>El Bocha Evo te tapó el teclado de caca</strong>
+          <strong>El Bocha Evo te tapó el teclado de cacona</strong>
           <small>Volvés a escribir el lunes.</small>
         </div>
       ) : (

@@ -32,7 +32,7 @@ export default function Retos() {
 
       {extras.multasActivas && (
         <section>
-          <h2 className="titulo-seccion">{grupo.conBocha ? "La maldición del Bocha" : "La maldición de la caca"}</h2>
+          <h2 className="titulo-seccion">{grupo.conBocha ? "La maldición del Bocha" : "La maldición de la cacona"}</h2>
           <Multas />
         </section>
       )}

@@ -1,13 +1,13 @@
 import { useDatos } from "../lib/datos.jsx";
 const SECCIONES = [
   {
-    titulo: "La caca 💩",
+    titulo: "La cacona 💩",
     preguntas: [
       ["¿Cuál es la regla?", "Mínimo 1 foto de comida por día. La foto del resumen del día no cuenta. Se cuenta a la medianoche."],
-      ["¿Qué pasa si un día no subo ninguna?", ["Al día siguiente tenés 💩 al lado del nombre, y la ve todo el grupo.", "Te cae la maldición del Bocha: aparece al abrir la app, se asoma por los bordes, se ríe y te mancha la pantalla de caca.", "Ves borrosas las fotos del grupo, no podés reaccionar y en el chat solo podés mandar texto.", "El bot cuenta en el chat quiénes no subieron."]],
-      ["¿Puedo limpiar la caca de la pantalla?", "Sí, y es rápido. Tocá Limpiar, abajo a la izquierda, y tocá o frotá cada mancha: con dos toques se va."],
+      ["¿Qué pasa si un día no subo ninguna?", ["Al día siguiente tenés 💩 al lado del nombre, y la ve todo el grupo.", "Te cae la maldición del Bocha: aparece al abrir la app, se asoma por los bordes, se ríe y te mancha la pantalla de cacona.", "Ves borrosas las fotos del grupo, no podés reaccionar y en el chat solo podés mandar texto.", "El bot cuenta en el chat quiénes no subieron."]],
+      ["¿Puedo limpiar la cacona de la pantalla?", "Sí, y es rápido. Tocá Limpiar, abajo a la izquierda, y tocá o frotá cada mancha: con dos toques se va."],
       ["¿Cómo me saco al Bocha?", "Subiendo tu foto del día. Se van el Bocha, las manchas y las restricciones. La 💩 al lado del nombre queda hasta el día siguiente."],
-      ["¿Qué es el Bocha Evo?", ["El domingo a la noche, el que más maldiciones juntó en la semana se come al BOCHA EVO de lunes a domingo. Si hay empate, le toca a todos los empatados.", "La app se le pone marrón, le aparecen más manchas de caca y el Bocha Evo se asoma más seguido.", "El teclado del chat queda tapado de caca: no puede mandar mensajes en toda la semana.", "Cargar comidas sigue funcionando, para no sumar más cacas."]],
+      ["¿Qué es el Bocha Evo?", ["El domingo a la noche, el que más maldiciones juntó en la semana se come al BOCHA EVO de lunes a domingo. Si hay empate, le toca a todos los empatados.", "La app se le pone marrón, le aparecen más manchas de cacona y el Bocha Evo se asoma más seguido.", "El teclado del chat queda tapado de cacona: no puede mandar mensajes en toda la semana.", "Cargar comidas sigue funcionando, para no sumar más caconas."]],
       ["¿Me avisan antes?", "Sí. A las 22 te llega una notificación si todavía no subiste ninguna foto ese día. En Resumen, arriba, ves si ya subiste la de hoy."],
       ["¿Por qué no escucho los sonidos?", "En iPhone suenan después de tocar algo en la app y no suenan con el celular en silencio. Se prenden o apagan en Ajustes > Apariencia y sonidos."],
     ],
@@ -15,7 +15,7 @@ const SECCIONES = [
   {
     titulo: "Grupos",
     preguntas: [
-      ["¿Puedo estar en más de un grupo?", ["Sí. En Ajustes → Grupos escribí el código del otro grupo y tocá Sumarme.", "Arriba aparece el nombre del grupo que estás viendo: tocalo para cambiar de grupo. Cada grupo tiene su chat, sus logros y su caca."]],
+      ["¿Puedo estar en más de un grupo?", ["Sí. En Ajustes → Grupos escribí el código del otro grupo y tocá Sumarme.", "Arriba aparece el nombre del grupo que estás viendo: tocalo para cambiar de grupo. Cada grupo tiene su chat, sus logros y su cacona."]],
       ["¿En qué grupo se publican mis comidas?", ["Lo elegís en Ajustes → Grupos:", "En todos mis grupos: cada comida se ve en todos.", "Solo en el grupo que estoy viendo: va al que tenés abierto arriba.", "Elegir en cada comida: al subirla tocás en qué grupos va, debajo de la foto."]],
       ["¿Cómo salgo de un grupo?", "En Ajustes → Grupos tocá Salir al lado del grupo y confirmá. Tus comidas dejan de verse ahí."],
     ],
@@ -141,7 +141,7 @@ const SECCIONES = [
 
 // En los grupos sin Bocha la caca es más simple, como BeReal.
 const CACA_SIN_BOCHA = {
-  titulo: "La maldición de la caca 💩",
+  titulo: "La maldición de la cacona 💩",
   preguntas: [
     ["¿Cuál es la regla?", "Mínimo 1 foto de comida por día. La foto del resumen del día no cuenta. Se cuenta a la medianoche."],
     ["¿Qué pasa si un día no subo ninguna?", ["Al día siguiente tenés 💩 al lado del nombre, y la ve todo el grupo.", "Ves borrosas las fotos de los demás y no podés reaccionar, como en BeReal.", "El bot cuenta en el chat quiénes no subieron."]],
@@ -155,7 +155,7 @@ export default function Tutorial() {
   const { grupo } = useDatos();
   const secciones = grupo.conBocha
     ? SECCIONES
-    : SECCIONES.map((s) => (s.titulo === "La caca 💩" ? CACA_SIN_BOCHA : { ...s, preguntas: s.preguntas.map((q) => (q[0] === AVISOS_SIN_BOCHA[0] ? AVISOS_SIN_BOCHA : q)) }));
+    : SECCIONES.map((s) => (s.titulo === "La cacona 💩" ? CACA_SIN_BOCHA : { ...s, preguntas: s.preguntas.map((q) => (q[0] === AVISOS_SIN_BOCHA[0] ? AVISOS_SIN_BOCHA : q)) }));
   return (
     <section className="tarjeta ajuste tutorial">
       <h2>Tutorial</h2>

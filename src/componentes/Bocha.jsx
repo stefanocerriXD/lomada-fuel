@@ -222,7 +222,7 @@ export default function Bocha() {
             <strong>{modo === "evo" ? "BOCHA EVO" : "Te cayó la maldición del Bocha"}</strong>
             <span>
               {modo === "evo"
-                ? "Fuiste el que más cacas juntó la semana pasada. Hasta el lunes: caca en la pantalla y sin chat."
+                ? "Fuiste el que más caconas juntó la semana pasada. Hasta el lunes: cacona en la pantalla y sin chat."
                 : "Ayer no subiste ninguna foto. Subí la de hoy para sacártelo de encima."}
             </span>
             <small>Tocá para seguir</small>

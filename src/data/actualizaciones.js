@@ -3,7 +3,7 @@
 // Antes de sumar una, se le consulta al dueño de la app: solo cosas funcionales o copadas.
 export const ACTUALIZACIONES = [
   { id: "notificaciones-a-medida", fecha: "2026-11-17", emoji: "🔔", titulo: "Notificaciones a medida", texto: "En Ajustes › Notificaciones elegís qué avisos te llegan: chat, reacciones, recordatorios, informe y más." },
-  { id: "grupos-propios", fecha: "2026-11-16", emoji: "👥", titulo: "Creá tu propio grupo", texto: "Cualquiera puede armar su grupo y administrarlo: compartís el código y aceptás a cada uno que pide entrar. Los grupos nuevos traen la maldición de la caca 💩." },
+  { id: "grupos-propios", fecha: "2026-11-16", emoji: "👥", titulo: "Creá tu propio grupo", texto: "Cualquiera puede armar su grupo y administrarlo: compartís el código y aceptás a cada uno que pide entrar. Los grupos nuevos traen la maldición de la cacona 💩." },
   { id: "registros-diarios", fecha: "2026-11-16", emoji: "✅", titulo: "Creatina, gym y magnesio", texto: "Tildalos cada día en el Resumen, con racha de días seguidos y un aviso a las 20 si te olvidaste." },
   { id: "instagram", fecha: "2026-11-16", emoji: "📸", titulo: "Compartí tu comida en Instagram", texto: "En tus comidas hay un botón que arma una imagen con la foto, las calorías y los macros, para historia o publicación." },
   { id: "modo-fiesta", fecha: "2026-11-14", emoji: "🍻", titulo: "Modo fiesta", texto: "Cargá los vasos de la noche con un toque, sumá a los que salieron con vos y marcá si hubo gol. Tiene sus propios logros." },
