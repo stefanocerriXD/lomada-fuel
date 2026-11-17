@@ -10,7 +10,6 @@ const USUARIO_VALIDO = /^[a-z0-9_.]{3,20}$/;
 const LARGO_CLAVE = 8;
 
 const ERRORES_REGISTRO = {
-  codigo: "Ese código del grupo no es correcto.",
   usuario_invalido: "El usuario lleva de 3 a 20 letras, números, punto o guion bajo.",
   usuario_ocupado: "Ese usuario ya existe. Probá con otro.",
 };
@@ -20,7 +19,6 @@ export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [email, setEmail] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
@@ -60,14 +58,14 @@ export default function Login() {
       if (!USUARIO_VALIDO.test(nombre.toLowerCase())) throw new Error(ERRORES_REGISTRO.usuario_invalido);
       if (clave.length < LARGO_CLAVE) throw new Error(`La contraseña lleva al menos ${LARGO_CLAVE} caracteres.`);
 
-      const { data: estado, error: errEstado } = await supabase.rpc("revisar_registro", { p_usuario: nombre, p_codigo: codigo });
+      const { data: estado, error: errEstado } = await supabase.rpc("revisar_registro", { p_usuario: nombre, p_codigo: "" });
       if (errEstado) throw new Error("No pudimos conectarnos. Probá de nuevo.");
       if (estado !== "ok") throw new Error(ERRORES_REGISTRO[estado]);
 
       const { data, error: err } = await supabase.auth.signUp({
         email: email.trim(),
         password: clave,
-        options: { data: { usuario: nombre.toLowerCase(), nombre, codigo_grupo: codigo.trim() } },
+        options: { data: { usuario: nombre.toLowerCase(), nombre } },
       });
       if (/already|registered/i.test(err?.message)) throw new Error("Ese mail ya tiene una cuenta.");
       if (err) throw new Error("No pudimos crear la cuenta. Revisá los datos.");
@@ -147,11 +145,6 @@ export default function Login() {
                   <label>
                     <span>Mail de recuperación</span>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
-                  </label>
-                  <label>
-                    <span>Código del grupo <small className="opcional">(opcional)</small></span>
-                    <input value={codigo} onChange={(e) => setCodigo(e.target.value)} autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck="false" />
-                    <small className="login-ayuda">Si te pasaron uno, el admin del grupo te acepta. Si no, después creás tu propio grupo.</small>
                   </label>
                 </>
               )}

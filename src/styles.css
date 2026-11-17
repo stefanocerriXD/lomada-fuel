@@ -2404,5 +2404,3 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .sin-grupo-o { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; color: var(--tinta-3); font-size: 0.82rem; }
 .sin-grupo-o::before, .sin-grupo-o::after { content: ""; flex: 1; height: 1px; background: var(--tinta-3); opacity: 0.35; }
 .sin-grupo-aviso { margin: 0; }
-.opcional { color: var(--tinta-3); font-weight: 500; }
-.login-ayuda { color: var(--tinta-3); font-size: 0.76rem; line-height: 1.3; }
