@@ -120,6 +120,78 @@ export function pop() {
   nota(ctx, salida, { frecuencia: 320, hasta: 760, desde: t, dura: 0.07 });
 }
 
+// Mandar un mensaje: un "fiu" de aire que sube.
+export function fiu() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.28);
+  const aire = ruido(ctx, 0.2);
+  const filtro = ctx.createBiquadFilter();
+  const vol = ctx.createGain();
+  filtro.type = "bandpass";
+  filtro.Q.value = 3;
+  filtro.frequency.setValueAtTime(700, t);
+  filtro.frequency.exponentialRampToValueAtTime(3800, t + 0.16);
+  vol.gain.setValueAtTime(0.0001, t);
+  vol.gain.exponentialRampToValueAtTime(1, t + 0.04);
+  vol.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
+  aire.connect(filtro).connect(vol).connect(salida);
+  aire.start(t);
+}
+
+// Soltar para actualizar: un "clic" seco.
+export function clic() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.2);
+  nota(ctx, salida, { frecuencia: 1900, desde: t, dura: 0.03 });
+  nota(ctx, salida, { frecuencia: 420, desde: t, dura: 0.05, volumen: 0.5 });
+}
+
+// Te aceptaron en un grupo o alguien pide entrar al tuyo: una campanita (dos golpes).
+export function campanita() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.18);
+  for (const desde of [0, 0.16]) {
+    for (const [frecuencia, volumen, dura] of [[1568, 1, 0.9], [3136, 0.35, 0.5], [4704, 0.15, 0.3]]) {
+      nota(ctx, salida, { frecuencia, desde: t + desde, dura, volumen });
+    }
+  }
+}
+
+// Subiste la foto que te salva de la caca: un suspiro de alivio (tres notas suaves para arriba).
+export function alivio() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.18);
+  [392, 523.25, 659.25].forEach((frecuencia, i) => nota(ctx, salida, { frecuencia, desde: t + i * 0.13, dura: 0.6 - i * 0.05, volumen: 0.8 }));
+}
+
+// Abrir el informe semanal: una musiquita corta.
+export function musiquita() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.15);
+  [[523.25, 0], [659.25, 0.12], [783.99, 0.24], [659.25, 0.36], [1046.5, 0.5]].forEach(([frecuencia, desde], i, todas) => {
+    nota(ctx, salida, { frecuencia, desde: t + desde, dura: i === todas.length - 1 ? 0.7 : 0.18, tipo: "triangle" });
+  });
+}
+
+// Cerrar con la cruz: un "pff" corto que baja.
+export function cerrar() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.14);
+  nota(ctx, salida, { frecuencia: 620, hasta: 260, desde: t, dura: 0.08 });
+}
+
 // Tildar un registro (creatina, gym, magnesio): un "tic" corto y suave.
 export function tic() {
   const ctx = listo();

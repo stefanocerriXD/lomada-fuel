@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { compartirCodigo, EVENTO_PEDIDOS, textoError } from "../lib/grupos.js";
 import { Avatar, vibrar } from "./Base.jsx";
+import { campanita } from "../lib/sonidos.js";
 
 // Para quien administra un grupo: el código para compartir, los pedidos para entrar y sacar a alguien.
 export default function AdminGrupo({ grupo, esVista, avisar }) {
@@ -35,6 +36,7 @@ export default function AdminGrupo({ grupo, esVista, avisar }) {
     setOcupado(null);
     if (error) return avisar?.(textoError(error));
     vibrar(aceptar ? 20 : 10);
+    if (aceptar) campanita();
     avisar?.(aceptar ? `${pedido.nombre} ya está en ${grupo.nombre}` : `Rechazaste a ${pedido.nombre}`);
     window.dispatchEvent(new Event(EVENTO_PEDIDOS));
     await cargar();

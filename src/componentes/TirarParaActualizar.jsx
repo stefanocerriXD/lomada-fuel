@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { vibrar } from "./Base.jsx";
+import { clic } from "../lib/sonidos.js";
 
 const UMBRAL = 70; // Cuánto hay que bajar (ya amortiguado) para que actualice.
 const MAXIMO = 110;
@@ -64,6 +65,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
       s.desde = null;
       if (s.distancia < UMBRAL) { s.distancia = 0; soltar(); return; }
       s.actualizando = true;
+      clic();
       if (el) el.style.transition = "transform 0.2s ease";
       pintar(UMBRAL, true);
       const desde = Date.now();

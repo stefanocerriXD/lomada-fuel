@@ -18,6 +18,7 @@ import VerReceta, { useReceta } from "../componentes/VerReceta.jsx";
 import { totalesDeReceta } from "../lib/recetasPropias.js";
 import { nombreDeCodigo } from "../lib/medallas.js";
 import ImagenZoom from "../componentes/ImagenZoom.jsx";
+import { fiu } from "../lib/sonidos.js";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
@@ -671,6 +672,7 @@ export default function Chat({ avisar }) {
     clearTimeout(reposo.current);
     avisarActividad(null);
     if (receta) mandarRecetaAlChat(null);
+    fiu();
     if (!(await mandar(receta ? { receta_id: receta.id } : {}, limpio))) {
       setTexto(limpio);
       if (receta) mandarRecetaAlChat(receta);

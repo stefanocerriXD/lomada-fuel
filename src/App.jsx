@@ -30,8 +30,10 @@ import Importar from "./vistas/Importar.jsx";
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 import Logo from "./componentes/Logo.jsx";
-import { ding, pop, prepararSonidos } from "./lib/sonidos.js";
+import { alivio, campanita, cerrar, ding, pop, prepararSonidos } from "./lib/sonidos.js";
+import { FOTOS_POR_DIA, fotosDelDia } from "./lib/multas.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "./lib/grupos.js";
+import { fechaLocal } from "./lib/fechas.js";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -72,6 +74,14 @@ export default function App() {
 
   // Los sonidos se destraban con el primer toque (el navegador no deja sonar antes).
   useEffect(() => prepararSonidos(), []);
+  // Cerrar con la cruz (cualquier botón "Cerrar…"): un "pff" corto.
+  useEffect(() => {
+    const alTocar = (e) => {
+      if (e.target.closest?.('button[aria-label^="Cerrar"]')) cerrar();
+    };
+    document.addEventListener("click", alTocar, true);
+    return () => document.removeEventListener("click", alTocar, true);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -135,6 +145,13 @@ function ConGrupo({ usuario, children }) {
     return true;
   }, [cargar]);
 
+  // Quien estaba sin grupo y entra (lo aceptaron o creó el suyo): campanita.
+  const grupoAntes = useRef(undefined);
+  useEffect(() => {
+    if (grupoAntes.current === null && grupo) campanita();
+    if (grupo !== undefined) grupoAntes.current = grupo;
+  }, [grupo]);
+
   if (grupo === undefined) return <Cargando />;
   if (grupo === null) return <SinGrupo onAdentro={cargar} />;
   return (
@@ -160,7 +177,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidasLogros, aguaLogros, registrosLogros, actualizarTodo, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
+  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidas, comidasLogros, aguaLogros, registrosLogros, actualizarTodo, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
   // Puntito en Ajustes cuando hay actualizaciones que no viste.
   const [novedad, setNovedad] = useState(hayNovedades);
   useEffect(() => {
@@ -182,6 +199,19 @@ function Principal({ recuperando, onRecuperado }) {
     };
   }, []);
   const puntoAjustes = novedad || pedidosGrupo > 0;
+  // Alguien nuevo pide entrar a un grupo mío: campanita.
+  const pedidosAntes = useRef(null);
+  useEffect(() => {
+    if (pedidosAntes.current !== null && pedidosGrupo > pedidosAntes.current) campanita();
+    pedidosAntes.current = pedidosGrupo;
+  }, [pedidosGrupo]);
+  // La foto del día que te salva de la caca: alivio (después del ding de publicar).
+  const salvadoHoy = extras.multasActivas && fotosDelDia(comidas, usuario.id, fechaLocal()) >= FOTOS_POR_DIA;
+  const salvadoAntes = useRef(null);
+  useEffect(() => {
+    if (salvadoAntes.current === false && salvadoHoy) setTimeout(alivio, 700);
+    salvadoAntes.current = salvadoHoy;
+  }, [salvadoHoy]);
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";

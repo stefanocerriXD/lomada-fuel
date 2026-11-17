@@ -9,6 +9,7 @@ import { fechaLocal, nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Hoja, Numero, vibrar } from "./Base.jsx";
 import Logo from "./Logo.jsx";
+import { musiquita } from "../lib/sonidos.js";
 
 export const EVENTO_INFORME = "lomada:informe";
 // Se puede usar directo como onClick: lo que no sea "lista" abre la presentación.
@@ -142,6 +143,7 @@ function pantallasDe(i, nombre) {
 
 function Historia({ informe: i, onCerrar, onLista }) {
   const { yo } = useDatos();
+  useEffect(() => { musiquita(); }, []);
   const pantallas = useMemo(() => pantallasDe(i, yo.nombre), [i, yo.nombre]);
   const [indice, setIndice] = useState(0);
   const [avance, setAvance] = useState(0);
