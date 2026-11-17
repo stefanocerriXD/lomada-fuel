@@ -1,13 +1,114 @@
-// Sonidos del Bocha armados con el sintetizador del navegador: no se descarga nada.
+// Los sonidos de la app, armados con el sintetizador del navegador: no se descarga nada.
 // En iPhone suenan después del primer toque en la app y no suenan con el celular en silencio.
+// Se pueden apagar en Ajustes > Apariencia (se recuerda en este celu).
 let contexto = null;
+const CLAVE = "lomada-sonidos";
+
+export function sonidosPrendidos() {
+  try {
+    return localStorage.getItem(CLAVE) !== "no";
+  } catch {
+    return true;
+  }
+}
+
+export function prenderSonidos(si) {
+  try {
+    localStorage.setItem(CLAVE, si ? "si" : "no");
+  } catch {
+    // Sin memoria en este navegador: queda como estaba.
+  }
+}
 
 function audio() {
   if (contexto) return contexto;
   const Clase = window.AudioContext || window.webkitAudioContext;
   if (!Clase) return null;
+  // "ambient": en iPhone respeta la tecla de silencio y no corta la música que esté sonando.
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = "ambient";
+  } catch {
+    // Navegador sin audioSession.
+  }
   contexto = new Clase();
   return contexto;
+}
+
+// Listo para sonar: prendido, con audio y ya destrabado por un toque.
+function listo() {
+  if (!sonidosPrendidos()) return null;
+  const ctx = audio();
+  return ctx && ctx.state === "running" ? ctx : null;
+}
+
+// Una nota con volumen que sube rápido y se apaga sola.
+function nota(ctx, salida, { frecuencia, desde, dura, tipo = "sine", volumen = 1, hasta = null }) {
+  const osc = ctx.createOscillator();
+  const vol = ctx.createGain();
+  osc.type = tipo;
+  osc.frequency.setValueAtTime(frecuencia, desde);
+  if (hasta) osc.frequency.exponentialRampToValueAtTime(hasta, desde + dura * 0.6);
+  vol.gain.setValueAtTime(0.0001, desde);
+  vol.gain.exponentialRampToValueAtTime(volumen, desde + 0.012);
+  vol.gain.exponentialRampToValueAtTime(0.0001, desde + dura);
+  osc.connect(vol).connect(salida);
+  osc.start(desde);
+  osc.stop(desde + dura + 0.05);
+}
+
+function mezcla(ctx, volumen) {
+  const salida = ctx.createGain();
+  salida.gain.value = volumen;
+  salida.connect(ctx.destination);
+  return salida;
+}
+
+// Al publicar una comida: un "ding-ding" de campanita, dos notas para arriba.
+export function ding() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.22);
+  for (const [frecuencia, desde] of [[880, 0], [1318.5, 0.11]]) {
+    nota(ctx, salida, { frecuencia, desde: t + desde, dura: 0.55 });
+    nota(ctx, salida, { frecuencia: frecuencia * 2.76, desde: t + desde, dura: 0.18, volumen: 0.18 }); // el brillo de la campana
+  }
+}
+
+// Logro o subida de nivel: una fanfarria corta (do-mi-sol-do y el acorde que queda sonando).
+export function fanfarria({ grande = false } = {}) {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, grande ? 0.2 : 0.16);
+  const notas = [523.25, 659.25, 783.99, 1046.5];
+  notas.forEach((frecuencia, i) => nota(ctx, salida, { frecuencia, desde: t + i * 0.09, dura: 0.22, tipo: "triangle" }));
+  const final = t + notas.length * 0.09;
+  for (const frecuencia of notas) nota(ctx, salida, { frecuencia, desde: final, dura: grande ? 1.4 : 0.9, tipo: "triangle", volumen: 0.5 });
+  if (grande) [1318.5, 1568, 2093].forEach((frecuencia, i) => nota(ctx, salida, { frecuencia, desde: final + 0.25 + i * 0.08, dura: 0.5, volumen: 0.3 }));
+}
+
+// Un vaso más en modo fiesta: el "clink" de dos vasos que chocan.
+export function clink() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.2);
+  // Parciales desafinados entre sí: suena a vidrio y no a nota musical.
+  for (const [frecuencia, volumen, dura] of [[2350, 1, 0.5], [3480, 0.6, 0.35], [5120, 0.35, 0.22], [6900, 0.2, 0.12]]) {
+    nota(ctx, salida, { frecuencia, desde: t, dura, volumen });
+    nota(ctx, salida, { frecuencia: frecuencia * 1.06, desde: t + 0.07, dura: dura * 0.7, volumen: volumen * 0.45 });
+  }
+}
+
+// Tildar un registro (creatina, gym, magnesio): un "tic" corto y suave.
+export function tic() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.2);
+  nota(ctx, salida, { frecuencia: 660, hasta: 1320, desde: t, dura: 0.09 });
+  nota(ctx, salida, { frecuencia: 1760, desde: t + 0.05, dura: 0.12, volumen: 0.35 });
 }
 
 // El navegador solo deja sonar después de que la persona toca algo.
@@ -31,8 +132,8 @@ function ruido(ctx, segundos) {
 
 // La caca que se estrella contra la pantalla: un golpe grave y un chapoteo húmedo que se apaga.
 export function splat(fuerza = 1) {
-  const ctx = audio();
-  if (!ctx || ctx.state !== "running") return;
+  const ctx = listo();
+  if (!ctx) return;
   const t = ctx.currentTime;
   const salida = ctx.createGain();
   salida.gain.value = 0.55 * fuerza;
@@ -65,8 +166,8 @@ export function splat(fuerza = 1) {
 
 // Una risa de villano: "jo jo jo jo" que va bajando. El Bocha Evo se ríe más grave y más largo.
 export function risa({ evo = false } = {}) {
-  const ctx = audio();
-  if (!ctx || ctx.state !== "running") return;
+  const ctx = listo();
+  if (!ctx) return;
   const t0 = ctx.currentTime;
   const salida = ctx.createGain();
   salida.gain.value = 0.32;

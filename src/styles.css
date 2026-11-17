@@ -2369,3 +2369,6 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .tirar-actualizar.girando img { animation: girar-lomada 0.8s linear infinite; }
 @keyframes girar-lomada { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .tirar-actualizar.girando img { animation-duration: 2.4s; } }
+
+/* Ajustes: sonidos */
+.ajuste-sonidos { display: grid; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--borde); }

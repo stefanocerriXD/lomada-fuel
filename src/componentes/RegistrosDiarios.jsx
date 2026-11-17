@@ -6,6 +6,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal } from "../lib/fechas.js";
 import { rachaDe, REGISTROS, useRegistros } from "../lib/registros.js";
 import { Hoja, vibrar } from "./Base.jsx";
+import { tic } from "../lib/sonidos.js";
 
 const CLAVE_NO = "lomada-registros-no";
 const dijoQueNo = () => {
@@ -62,7 +63,7 @@ export default function RegistrosDiarios({ fecha }) {
 
   async function tocar(codigo) {
     const puso = !marcas.has(`${fecha}|${codigo}`);
-    if (puso) vibrar(12);
+    if (puso) { vibrar(12); tic(); }
     const ok = await alternar(fecha, codigo);
     setError(ok ? "" : "No se pudo guardar. Probá de nuevo.");
   }

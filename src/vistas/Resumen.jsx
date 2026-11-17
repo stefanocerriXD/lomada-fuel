@@ -19,6 +19,7 @@ import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 import Visor from "../componentes/Visor.jsx";
 import { createPortal } from "react-dom";
+import { clink } from "../lib/sonidos.js";
 
 export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta, avisar }) {
   const [modo, setModo] = useState("dia");
@@ -59,6 +60,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
     const r = sumarUnVaso(usuario.id, comidas);
     if (!r) return;
     vibrar(18);
+    clink();
     setVasoRapido((n) => n + 1);
     avisar(`+1 ${r.trago.nombre} · ${r.noche.vasos.length} ${r.noche.vasos.length === 1 ? "vaso" : "vasos"}`);
     r.subida.then((ok) => (ok ? cargarComidas().catch(() => {}) : avisar("Sin señal: quedó guardado en el celu y se sube solo.")));

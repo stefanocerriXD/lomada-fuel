@@ -10,6 +10,7 @@ import { Resultados } from "../vistas/NuevaComida.jsx";
 import { avisarGrupo } from "../lib/api.js";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import { IconoGol } from "./IconosFiesta.jsx";
+import { clink } from "../lib/sonidos.js";
 
 // La noche sigue siendo la misma hasta las 6 de la mañana.
 export function fechaDeLaNoche(d = new Date()) {
@@ -221,6 +222,7 @@ function Contador({ avisar }) {
     guardar({ vasos: lista });
     escribir(CLAVE_TRAGO, { ...trago, ml });
     vibrar(18);
+    clink();
   }
 
   // ¿Hubo gol? Se puede cambiar toda la noche; tocando el mismo de nuevo se borra.

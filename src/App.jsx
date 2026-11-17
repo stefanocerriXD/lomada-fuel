@@ -30,6 +30,7 @@ import Importar from "./vistas/Importar.jsx";
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 import Logo from "./componentes/Logo.jsx";
+import { ding, prepararSonidos } from "./lib/sonidos.js";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -67,6 +68,9 @@ export default function App() {
   const [sesion, setSesion] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [recuperando, setRecuperando] = useState(false);
+
+  // Los sonidos se destraban con el primer toque (el navegador no deja sonar antes).
+  useEffect(() => prepararSonidos(), []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -272,6 +276,7 @@ function Principal({ recuperando, onRecuperado }) {
       if (nueva === true) {
         setFestejo((n) => n + 1);
         vibrar(25);
+        ding();
       }
     },
     [avisar],

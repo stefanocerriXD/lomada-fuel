@@ -9,7 +9,7 @@ const SECCIONES = [
       ["¿Cómo me saco al Bocha?", "Subiendo tu foto del día. Se van el Bocha, las manchas y las restricciones. La 💩 al lado del nombre queda hasta el día siguiente."],
       ["¿Qué es el Bocha Evo?", ["El domingo a la noche, el que más maldiciones juntó en la semana se come al BOCHA EVO de lunes a domingo. Si hay empate, le toca a todos los empatados.", "La app se le pone marrón, le aparecen más manchas de caca y el Bocha Evo se asoma más seguido.", "El teclado del chat queda tapado de caca: no puede mandar mensajes en toda la semana.", "Cargar comidas sigue funcionando, para no sumar más cacas."]],
       ["¿Me avisan antes?", "Sí. A las 22 te llega una notificación si todavía no subiste ninguna foto ese día. En Resumen, arriba, ves si ya subiste la de hoy."],
-      ["¿Por qué no escucho al Bocha?", "En iPhone los sonidos suenan después de tocar algo en la app y no suenan con el celular en silencio."],
+      ["¿Por qué no escucho los sonidos?", "En iPhone suenan después de tocar algo en la app y no suenan con el celular en silencio. Se prenden o apagan en Ajustes > Apariencia y sonidos."],
     ],
   },
   {

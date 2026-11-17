@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { animate, AnimatePresence, motion } from "motion/react";
 import { useDatos } from "../lib/datos.jsx";
 import { Avatar, datosMarco, LogoLegendario, marcoDe, resorte, vibrar } from "./Base.jsx";
+import { fanfarria } from "../lib/sonidos.js";
 
 const leer = (clave) => {
   try {
@@ -38,6 +39,7 @@ export default function SubidaNivel({ ocupado }) {
     const ahora = marcoDe(yo.nivel);
     setFestejo({ desde: visto, hasta: yo.nivel, marco: ahora !== antes ? datosMarco(ahora) : null, legendario: ahora === "lomada" && antes !== "lomada" });
     vibrar([20, 60, 30]);
+    fanfarria({ grande: ahora !== antes });
   }, [extras.disponible, yo.nivel, ocupado, festejo, clave]);
 
   useEffect(() => {

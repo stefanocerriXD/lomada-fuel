@@ -7,7 +7,7 @@ import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
 import MisGrupos from "../componentes/MisGrupos.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -19,6 +19,7 @@ import { Avatar } from "../componentes/Base.jsx";
 import { AjustesRegistros } from "../componentes/RegistrosDiarios.jsx";
 import Actualizaciones from "../componentes/Actualizaciones.jsx";
 import { ACTUALIZACIONES, hayNovedades } from "../data/actualizaciones.js";
+import { ding, prenderSonidos, sonidosPrendidos } from "../lib/sonidos.js";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
@@ -82,7 +83,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
     { id: "salud", titulo: "Apple Salud", detalle: estadoSalud?.ultimo ? textoEstadoSalud(estadoSalud) : "Traer calorías y macros", icono: HeartPulse },
     { id: "whoop", titulo: "WHOOP", detalle: "Recuperación, sueño y esfuerzo", icono: Watch },
-    { id: "apariencia", titulo: "Apariencia", detalle: "Lomada, claro u oscuro", icono: Palette },
+    { id: "apariencia", titulo: "Apariencia y sonidos", detalle: "Tema y efectos de sonido", icono: Palette },
     { id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
     { id: "mejoras", titulo: "Mejoras", detalle: "Pedí cambios para la app", icono: MessageSquarePlus },
     { id: "cuenta", titulo: "Cuenta", detalle: "Contraseña y cerrar sesión", icono: KeyRound },
@@ -202,6 +203,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
               </button>
             ))}
           </div>
+          <Sonidos />
         </section>
       )}
 
@@ -381,3 +383,21 @@ function Contrasena({ avisar }) {
   );
 }
 
+// Efectos de sonido: al publicar, al ganar un logro, al sumar un vaso y al tildar un registro.
+function Sonidos() {
+  const [prendidos, setPrendidos] = useState(sonidosPrendidos);
+  function elegir(si) {
+    prenderSonidos(si);
+    setPrendidos(si);
+    if (si) setTimeout(ding, 60);
+  }
+  return (
+    <div className="ajuste-sonidos">
+      <p className="ajuste-texto"><strong>Sonidos</strong><br />Al publicar, al ganar logros, al sumar un vaso y al tildar registros. Con el celu en silencio no suenan.</p>
+      <div className="opciones-tema" role="radiogroup" aria-label="Sonidos">
+        <button role="radio" aria-checked={prendidos} className={prendidos ? "activo" : ""} onClick={() => elegir(true)}><Volume2 size={18} /> Con sonido</button>
+        <button role="radio" aria-checked={!prendidos} className={!prendidos ? "activo" : ""} onClick={() => elegir(false)}><VolumeX size={18} /> Sin sonido</button>
+      </div>
+    </div>
+  );
+}

@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { LOGROS, nombreDeCodigo } from "../lib/medallas.js";
+import { fanfarria } from "../lib/sonidos.js";
 
 // Festejo de pantalla completa que no frena nada: se va solo y deja tocar lo de atrás.
 export default function NuevoLogro({ codigo, onTerminar }) {
   useEffect(() => {
     if (!codigo) return;
+    fanfarria();
     const reloj = setTimeout(onTerminar, 2600);
     return () => clearTimeout(reloj);
   }, [codigo, onTerminar]);
