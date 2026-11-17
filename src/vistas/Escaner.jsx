@@ -6,6 +6,7 @@ import { ia, reconocerFoto } from "../lib/api.js";
 import { leerTexto } from "../lib/ocr.js";
 import { aPor100, leerEtiqueta } from "../lib/etiqueta.js";
 import { buscarProductoPropio, guardarProducto } from "../lib/productosPropios.js";
+import { vibrar } from "../componentes/Base.jsx";
 
 // 1) Escanear el código: primero lo que ya cargó el grupo, después la base de productos.
 // 2) Si no está, una foto de la tabla nutricional completa los valores sola.
@@ -37,43 +38,128 @@ export default function Escaner({ onAlimento, buscar }) {
     }
   }
 
+  // El lector se carga recién acá: pesa bastante y la mayoría de las veces no se usa.
+  const lector = useRef(null);
+  async function crearLector() {
+    if (!lector.current) {
+      lector.current = Promise.all([import("@zxing/browser"), import("@zxing/library")]).then(([{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }]) => {
+        const pistas = new Map([
+          [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E]],
+          [DecodeHintType.TRY_HARDER, true],
+        ]);
+        return new BrowserMultiFormatReader(pistas);
+      });
+    }
+    return lector.current;
+  }
+
+  function encontrado(leido) {
+    vibrar(14);
+    setCamara(false);
+    setCodigo(leido);
+    consultar(leido);
+  }
+
+  // La cámara la abrimos nosotros y le damos play a mano: en el iPhone (sobre todo con la app instalada)
+  // si no, el video puede quedar negro. Cada 200 ms se mira un cuadro buscando el código.
+  const [sinImagen, setSinImagen] = useState(false);
   useEffect(() => {
-    if (!camara) return;
-    let controles;
+    if (!camara) return undefined;
     let cancelado = false;
+    let flujo = null;
+    let reloj = null;
+    setSinImagen(false);
     (async () => {
       try {
-        // Se carga recién acá: pesa bastante y la mayoría de las veces no se usa.
-        const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([
-          import("@zxing/browser"),
-          import("@zxing/library"),
-        ]);
-        const pistas = new Map([[DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E]]]);
-        const lector = new BrowserMultiFormatReader(pistas);
-        if (cancelado) return;
-        controles = await lector.decodeFromConstraints(
-          { video: { facingMode: { ideal: "environment" } } },
-          video.current,
-          (resultado, _error, control) => {
-            if (!resultado) return;
-            control.stop();
-            setCamara(false);
-            const leido = resultado.getText();
-            setCodigo(leido);
-            consultar(leido);
-          },
-        );
-        if (cancelado) controles.stop();
+        const lectorListo = crearLector();
+        flujo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+        const leer = await lectorListo;
+        const v = video.current;
+        if (cancelado || !v) return;
+        v.setAttribute("playsinline", "");
+        v.setAttribute("webkit-playsinline", "");
+        v.setAttribute("autoplay", "");
+        v.muted = true;
+        v.srcObject = flujo;
+        // Sin await: si la cámara no manda imagen, play() queda colgado para siempre.
+        v.play().catch(() => {});
+        const lienzo = document.createElement("canvas");
+        const dibujo = lienzo.getContext("2d", { willReadFrequently: true });
+        const desde = Date.now();
+        let tiempo = -1;
+        let quieto = Date.now();
+        const mirar = () => {
+          if (cancelado) return;
+          // Negra o congelada: el video no avanza.
+          if (v.currentTime !== tiempo) { tiempo = v.currentTime; quieto = Date.now(); }
+          const congelado = Date.now() - quieto > 4000;
+          if (v.readyState >= 2 && v.videoWidth && !congelado) {
+            setSinImagen(false);
+            const escala = Math.min(1, 960 / v.videoWidth);
+            lienzo.width = Math.round(v.videoWidth * escala);
+            lienzo.height = Math.round(v.videoHeight * escala);
+            dibujo.drawImage(v, 0, 0, lienzo.width, lienzo.height);
+            try {
+              const resultado = leer.decodeFromCanvas(lienzo);
+              if (resultado?.getText()) { encontrado(resultado.getText()); return; }
+            } catch {
+              // En este cuadro no hay código: se sigue mirando.
+            }
+          } else {
+            if (v.paused) v.play().catch(() => {});
+            if (Date.now() - desde > 4000) setSinImagen(true);
+          }
+          reloj = setTimeout(mirar, 200);
+        };
+        mirar();
       } catch {
+        if (cancelado) return;
         setCamara(false);
-        setEstado("No pudimos abrir la cámara. Escribí el número del código.");
+        setEstado("No pudimos abrir la cámara. Sacale una foto al código o escribí el número.");
       }
     })();
     return () => {
       cancelado = true;
-      controles?.stop();
+      clearTimeout(reloj);
+      flujo?.getTracks().forEach((pista) => pista.stop());
+      if (video.current) video.current.srcObject = null;
     };
   }, [camara]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Plan B: una foto del código con la cámara del celu (siempre anda, aunque el video no).
+  async function fotoCodigo(e) {
+    const archivo = e.target.files[0];
+    e.target.value = "";
+    if (!archivo) return;
+    setCamara(false);
+    setEstado("");
+    setBuscando(true);
+    const url = URL.createObjectURL(archivo);
+    try {
+      const leer = await crearLector();
+      const img = await new Promise((listo, fallo) => { const i = new Image(); i.onload = () => listo(i); i.onerror = fallo; i.src = url; });
+      const lienzo = document.createElement("canvas");
+      const dibujo = lienzo.getContext("2d", { willReadFrequently: true });
+      // Se prueba a dos tamaños: las fotos del iPhone son enormes y el código puede quedar chico.
+      let leido = "";
+      for (const maximo of [1600, 900]) {
+        const escala = Math.min(1, maximo / Math.max(img.naturalWidth, img.naturalHeight));
+        lienzo.width = Math.round(img.naturalWidth * escala);
+        lienzo.height = Math.round(img.naturalHeight * escala);
+        dibujo.drawImage(img, 0, 0, lienzo.width, lienzo.height);
+        try { leido = leer.decodeFromCanvas(lienzo)?.getText() || ""; } catch { leido = ""; }
+        if (leido) break;
+      }
+      setBuscando(false);
+      if (leido) encontrado(leido);
+      else setEstado("No pudimos leer el código en la foto. Probá más cerca, derecho y con luz, o escribí el número.");
+    } catch {
+      setBuscando(false);
+      setEstado("No pudimos abrir la foto. Probá de nuevo o escribí el número.");
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
 
   function enviar(e) {
     e.preventDefault();
@@ -131,8 +217,9 @@ export default function Escaner({ onAlimento, buscar }) {
         <>
           {camara ? (
             <div className="visor">
-              <video ref={video} muted playsInline />
+              <video ref={video} muted playsInline autoPlay />
               <motion.i animate={{ y: [-44, 44, -44] }} transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }} />
+              {sinImagen && <p className="visor-sin-imagen">La cámara no muestra imagen. Sacale una foto al código ↓</p>}
             </div>
           ) : null}
           {!leyendo && (
@@ -140,6 +227,10 @@ export default function Escaner({ onAlimento, buscar }) {
               <button type="button" className="boton boton-secundario" onClick={() => setCamara(!camara)}>
                 {camara ? <><CameraOff size={17} /> Cerrar cámara</> : <><Camera size={17} /> Escanear con la cámara</>}
               </button>
+              <label className={sinImagen ? "boton boton-foto-codigo" : "boton-texto etiqueta-enlace"}>
+                <input type="file" accept="image/*" capture="environment" onChange={fotoCodigo} aria-label="Foto del código de barras" />
+                <Camera size={sinImagen ? 17 : 15} /> Sacale una foto al código
+              </label>
               <form className="codigo-manual" onSubmit={enviar}>
                 <input value={codigo} onChange={(e) => setCodigo(e.target.value)} inputMode="numeric" placeholder="O escribí el número" aria-label="Número de código de barras" />
                 <button className="boton" type="submit" disabled={buscando || !codigo.trim()}>{buscando ? "Buscando…" : "Buscar"}</button>

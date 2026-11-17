@@ -537,6 +537,9 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 .tarjeta-interna { display: flex; flex-direction: column; gap: 10px; padding: 12px; overflow: hidden; background: var(--superficie); border-radius: 16px; }
 .visor { position: relative; display: grid; place-items: center; overflow: hidden; height: 180px; border-radius: 13px; background: #000; }
 .visor video { width: 100%; height: 100%; object-fit: cover; }
+.visor-sin-imagen { position: absolute; inset: auto 12px 12px; margin: 0; color: #fff; font-size: 0.84rem; font-weight: 600; text-align: center; }
+.boton-foto-codigo { position: relative; overflow: hidden; }
+.boton-foto-codigo input { position: absolute; inset: 0; opacity: 0; }
 .visor i { position: absolute; left: 12%; right: 12%; height: 2px; background: #ff8257; box-shadow: 0 0 10px #ff8257; }
 .codigo-manual { display: flex; gap: 8px; }
 .codigo-manual input { min-width: 0; }
