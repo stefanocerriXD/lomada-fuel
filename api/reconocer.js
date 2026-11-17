@@ -94,7 +94,7 @@ export default async function handler(req, res) {
   });
   if (r.error) {
     const error = r.estado === 429
-      ? "Se terminó el cupo gratis de hoy de la IA. Cargalo a mano o probá mañana."
+      ? r.error
       : dictado !== null ? "No pudimos entender la comida. Probá de nuevo o buscala a mano." : "No pudimos reconocer la foto. Probá de nuevo o cargalo a mano.";
     return res.status(r.estado).json({ error });
   }

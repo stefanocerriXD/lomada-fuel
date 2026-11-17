@@ -2,12 +2,47 @@
 // La clave vive solo acá (GEMINI_API_KEY en Vercel): nunca llega al teléfono.
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 // Google da de baja modelos: si uno no está, se prueba el siguiente. Cada modelo tiene su propio cupo diario.
-const MODELOS = [process.env.GEMINI_MODELO, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-lite-latest"].filter(Boolean);
+// Al final va Gemma (también gratis, con mucho más cupo por día; no tiene modo JSON, así que se le pide en el texto).
+const MODELOS = [process.env.GEMINI_MODELO, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemma-3-27b-it"].filter(Boolean);
 
 export const hayGemini = () => Boolean(process.env.GEMINI_API_KEY);
 
+// Google contesta 429 tanto si se pasó el límite por minuto (se libera solo en segundos) como el del día.
+// Se lee el detalle para saber cuál fue y no avisar "se terminó el cupo" por un pico de pedidos.
+async function tipoDeLimite(resp) {
+  try {
+    const datos = await resp.json();
+    const ids = (datos?.error?.details || []).flatMap((d) => (d.violations || []).map((v) => String(v.quotaId || "")));
+    if (ids.some((id) => /PerDay/i.test(id))) return "dia";
+    if (ids.some((id) => /PerMinute/i.test(id))) return "minuto";
+  } catch {
+    // Sin detalle: se toma como del día, para no perder el aviso.
+  }
+  return "dia";
+}
+
+// Saca el JSON de una respuesta en texto (Gemma a veces lo envuelve en ```json).
+function leerJson(texto) {
+  const limpio = texto.replace(/```(?:json)?/gi, "").trim();
+  try {
+    return JSON.parse(limpio);
+  } catch {
+    const i = limpio.indexOf("{");
+    const f = limpio.lastIndexOf("}");
+    if (i >= 0 && f > i) return JSON.parse(limpio.slice(i, f + 1));
+    throw new Error("sin_json");
+  }
+}
+
 async function una(modelo, partes, esquema, temperatura) {
-  const config = { responseMimeType: "application/json", responseSchema: esquema, temperature: temperatura, maxOutputTokens: 4096 };
+  const gemma = modelo.startsWith("gemma");
+  const config = { temperature: temperatura, maxOutputTokens: 4096 };
+  if (gemma) {
+    partes = [...partes, { text: `Respondé SOLO con un objeto JSON válido, sin texto antes ni después, que siga este esquema: ${JSON.stringify(esquema)}` }];
+  } else {
+    config.responseMimeType = "application/json";
+    config.responseSchema = esquema;
+  }
   // En los 2.5 se apaga el razonamiento: responde más rápido y alcanza para esto.
   if (modelo.includes("2.5")) config.thinkingConfig = { thinkingBudget: 0 };
   const resp = await fetch(`${API}/${modelo}:generateContent`, {
@@ -16,11 +51,12 @@ async function una(modelo, partes, esquema, temperatura) {
     body: JSON.stringify({ contents: [{ role: "user", parts: partes }], generationConfig: config }),
     signal: AbortSignal.timeout(25000),
   });
+  if (resp.status === 429) return { estado: 429, limite: await tipoDeLimite(resp) };
   if (!resp.ok) return { estado: resp.status };
   const datos = await resp.json();
   const texto = (datos.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
   try {
-    return { estado: 200, respuesta: JSON.parse(texto) };
+    return { estado: 200, respuesta: leerJson(texto) };
   } catch {
     return { estado: 502 };
   }
@@ -65,6 +101,7 @@ async function avisarSinCupo() {
 // Devuelve { respuesta } o { error, estado } listo para mandar al teléfono.
 export async function preguntarGemini({ partes, esquema, temperatura = 0.2 }) {
   let sinCupo = false;
+  let porMinuto = false;
   for (const modelo of MODELOS) {
     let r;
     try {
@@ -72,13 +109,19 @@ export async function preguntarGemini({ partes, esquema, temperatura = 0.2 }) {
     } catch {
       continue; // Tardó demasiado: se prueba con otro.
     }
-    if (r.estado === 429) { sinCupo = true; continue; }
+    if (r.estado === 429) {
+      if (r.limite === "minuto") porMinuto = true;
+      else sinCupo = true;
+      continue;
+    }
     if (r.estado === 200) return { respuesta: r.respuesta || {} };
     // Modelo dado de baja o respuesta rota: el siguiente.
   }
+  // Si algún modelo solo estaba saturado por el minuto, todavía queda cupo: no se avisa.
+  if (porMinuto) return { estado: 429, error: "La IA está con muchos pedidos juntos. Probá de nuevo en un minuto." };
   if (sinCupo) {
     await avisarSinCupo();
-    return { estado: 429, error: "Se terminó el cupo gratis de hoy de la IA. Probá mañana." };
+    return { estado: 429, error: "Se terminó el cupo gratis de hoy de la IA. Cargalo a mano o probá mañana." };
   }
   return { estado: 502, error: "La IA no respondió. Probá de nuevo en un rato." };
 }
