@@ -6,18 +6,75 @@ import { leerResumen } from "../src/lib/importar.js";
 
 const MAXIMO_BASE64 = 4_200_000; // Vercel acepta hasta 4,5 MB por pedido.
 
+// La IA devuelve cada alimento por separado (nombre, marca, porción, gramos, calorías):
+// así el peso nunca se confunde con las calorías y un nombre largo partido en dos renglones queda en uno solo.
 const PEDIDO = `Es una captura de pantalla del diario de MyFitnessPal (u otra app de calorías), en español o inglés.
-Copiá TODO el texto que se ve, renglón por renglón y en el mismo orden de arriba hacia abajo:
-- Los nombres de las comidas (Desayuno, Almuerzo, Cena, Aperitivos/Snacks…) con sus calorías si aparecen.
-- Cada alimento en su renglón y, en el renglón siguiente, lo que tenga debajo (marca, porción, gramos) y sus calorías.
-- Los números tal cual, con sus unidades (g, ml, kcal, cal). No calcules, no resumas, no traduzcas, no agregues nada.
-- Si la captura no es de un diario de comidas, es_diario=false y texto vacío.`;
+Devolvé las comidas que se ven y, de cada una, sus alimentos en el mismo orden de arriba hacia abajo:
+- comida: Desayuno, Almuerzo, Merienda, Cena o Colación (Aperitivos, Snacks y Tentempiés son Colación). Si no se ve el título, "Sin título".
+- kcal de la comida: el número que acompaña al título, si se ve.
+- De cada alimento: nombre completo (si ocupa dos renglones, unilos en uno; si está cortado con "…", copialo así), marca (lo que va antes de la coma en el renglón de abajo, ej. "Genérico"), porción tal cual (ej. "1 porción (150 g)"), gramos (solo el número que va junto a g o ml; si no hay, null) y kcal (el número de calorías del alimento, el que suele ir a la derecha).
+- Cada alimento UNA sola vez. No calcules, no inventes, no traduzcas.
+- Si la captura no es de un diario de comidas, es_diario=false y comidas vacía.`;
 
 const ESQUEMA = {
   type: "OBJECT",
-  properties: { es_diario: { type: "BOOLEAN" }, texto: { type: "STRING" } },
-  required: ["es_diario", "texto"],
+  properties: {
+    es_diario: { type: "BOOLEAN" },
+    comidas: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          comida: { type: "STRING", enum: ["Desayuno", "Almuerzo", "Merienda", "Cena", "Colación", "Sin título"] },
+          kcal: { type: "NUMBER", nullable: true },
+          alimentos: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                nombre: { type: "STRING" },
+                marca: { type: "STRING", nullable: true },
+                porcion: { type: "STRING", nullable: true },
+                gramos: { type: "NUMBER", nullable: true },
+                kcal: { type: "NUMBER" },
+              },
+              required: ["nombre", "kcal"],
+            },
+          },
+        },
+        required: ["comida", "alimentos"],
+      },
+    },
+  },
+  required: ["es_diario", "comidas"],
 };
+
+// Se guarda como texto (lo que la app ya sabe leer): título, nombre y abajo "Marca, porción, kcal".
+const limpio = (t) => String(t ?? "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+const numero = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.round(Number(v) * 10) / 10 : null);
+const MARCA_SEGURA = /^\p{L}[\p{L}\d.&'’]*(?:\s[\p{L}\d.&'’]+){0,4}$/u;
+export function textoDeCaptura(comidas) {
+  const lineas = [];
+  for (const comida of comidas || []) {
+    const alimentos = (comida.alimentos || []).filter((a) => limpio(a.nombre) && numero(a.kcal));
+    if (!alimentos.length) continue;
+    if (comida.comida && comida.comida !== "Sin título") lineas.push(numero(comida.kcal) ? `${comida.comida} ${Math.round(comida.kcal)} kcal` : comida.comida);
+    for (const a of alimentos) {
+      const nombre = limpio(a.nombre).replace(/[()[\]]/g, " ").replace(/\s+/g, " ");
+      const gramos = numero(a.gramos);
+      let porcion = limpio(a.porcion);
+      if (gramos && !/\d\s*(g|gr|gramos?|ml)\b/i.test(porcion)) porcion = porcion ? `${porcion} (${gramos} g)` : `${gramos} g`;
+      const marca = limpio(a.marca).replace(/[-–—,()·•+/]+/g, " ").replace(/\s+/g, " ").trim();
+      const datos = [porcion, `${Math.round(a.kcal)} kcal`].filter(Boolean).join(", ");
+      if (marca && !/^gen[eé]rico$/i.test(marca) && MARCA_SEGURA.test(marca)) {
+        lineas.push(nombre, `${marca}, ${datos}`);
+      } else {
+        lineas.push(nombre, datos);
+      }
+    }
+  }
+  return lineas.join("\n");
+}
 
 const TIPOS = { desayuno: "Desayuno", almuerzo: "Almuerzo", merienda: "Merienda", cena: "Cena", colacion: "Colación", resumen: "Comida" };
 
@@ -65,7 +122,7 @@ export default async function handler(req, res) {
   const r = await preguntarGemini({ partes: [{ inline_data: { mime_type: tipoDeImagen(imagen), data: imagen } }, { text: PEDIDO }], esquema: ESQUEMA, temperatura: 0 });
   if (r.error) return responder(res, r.estado || 502, r.error);
   await cupo.sumar();
-  const texto = String(r.respuesta?.texto || "").slice(0, 12000).trim();
+  const texto = textoDeCaptura(r.respuesta?.comidas).slice(0, 12000).trim();
   if (!r.respuesta?.es_diario || !texto) return responder(res, 200, "No vimos un diario de comidas en la pantalla. Abrí la comida en MyFitnessPal y probá de nuevo.");
 
   const filas = leerResumen(texto).filter((f) => f.alimentos?.length);

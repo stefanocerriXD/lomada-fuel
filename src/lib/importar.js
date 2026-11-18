@@ -19,6 +19,15 @@ const COMIDAS = [
   ["colacion", /^\W*(colaci[oó]n(es)?|snacks?|tentempi[eé]s?|aperitivos?|refrigerios?)\b/i],
 ];
 
+// "Almuerzo 640 kcal" es el título de la comida; "Snacks de arroz" o "Comida china" son alimentos.
+const PALABRAS_DE_TITULO = /^(k?cal|calor[ií]as?|calories|kcal|editar|edit|agregar|a[nñ]adir|add|total|g|[pcgf])$/i;
+export function tipoDeTitulo(linea) {
+  const hallado = COMIDAS.find(([, re]) => re.test(linea));
+  if (!hallado) return null;
+  const resto = linea.replace(hallado[1], " ").match(/\p{L}+/gu) || [];
+  return resto.every((p) => PALABRAS_DE_TITULO.test(p)) ? hallado[0] : null;
+}
+
 // Líneas que hablan de metas o de lo que queda, no de lo comido.
 const IGNORAR = /restantes?|remaining|left\b|faltan?|objetivo|\bmeta\b|\bgoal\b|quemad|burned|exercise|ejercicio/i;
 
@@ -165,6 +174,7 @@ const UNIDADES = "gramos?|grs?|g|ml|mi|oz|tazas?|cups?|unidad(?:es)?|units?|cuch
 const MEDIDA = new RegExp(`(\\d+(?:[.,]\\d+)?|\\d+/\\d+)\\s*(${UNIDADES})(?![\\p{L}])`, "iu");
 const KCAL = /(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*k?cal(?:or[ií]as?)?(?![\p{L}])/iu;
 const NUMERO_SUELTO = /\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?(?!\s*%)/g;
+const ES_PESO = /^(g|gr|grs|gramos?|ml|mi|oz)$/i;
 
 // Lo que aparece en cualquier pantalla y no es un alimento.
 const NO_ES_ALIMENTO = /^\W*(total(es)?|resumen|summary|daily|hoy|today|ayer|yesterday|ma[nñ]ana|agregar|a[nñ]adir|add|buscar|search|diario|diary|fecha|date|consumidas|ingeridas|consumed|eaten|comidas|meals|nutrici[oó]n|nutrition|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/i;
@@ -194,15 +204,18 @@ function datosDeLinea(linea) {
       resto = hallado.resto;
     }
   }
-  const medida = resto.match(MEDIDA);
-  if (medida) {
-    d.medida = `${medida[1]} ${medida[2].toLowerCase().replace(/^mi$/, "ml")}`;
-    const cantidad = medida[1].includes("/") ? Number(medida[1].split("/")[0]) / Number(medida[1].split("/")[1]) : leerNumero(medida[1]);
-    const unidad = medida[2].toLowerCase();
-    if (/^(g|gr|grs|gramos?|ml|mi)$/.test(unidad)) d.gramos = cantidad;
-    else if (unidad === "oz") d.gramos = Math.round(cantidad * 28.35);
-    else d.cantidad = cantidad;
-    resto = resto.replace(medida[0], " ");
+  // MyFitnessPal muestra "1 porción (150 g)": la porción es la medida y el peso sale del paréntesis.
+  // Todas las medidas salen de la línea, así el peso nunca se confunde con las calorías.
+  const medidas = [...resto.matchAll(new RegExp(MEDIDA.source, "giu"))];
+  if (medidas.length) {
+    const texto = (m) => `${m[1]} ${m[2].toLowerCase().replace(/^mi$/, "ml")}`;
+    const cantidadDe = (m) => (m[1].includes("/") ? Number(m[1].split("/")[0]) / Number(m[1].split("/")[1]) : leerNumero(m[1]));
+    const [primera] = medidas;
+    const peso = medidas.find((m) => ES_PESO.test(m[2]));
+    d.medida = peso && peso !== primera ? `${texto(primera)} (${texto(peso)})` : texto(primera);
+    if (!ES_PESO.test(primera[2])) d.cantidad = cantidadDe(primera);
+    if (peso) d.gramos = /^oz$/i.test(peso[2]) ? Math.round(cantidadDe(peso) * 28.35) : cantidadDe(peso);
+    for (const m of medidas) resto = resto.replace(m[0], " ");
   }
 
   // Las tablas traen los números sin unidad: "Avena 40 g 150 5 27 3".
@@ -223,8 +236,11 @@ function ordenarColumnas([kcal, a, b, c]) {
   return { kcal, ...opciones.reduce((mejor, o) => (error(o) < error(mejor) ? o : mejor)) };
 }
 
+// "Proteínas 20 g" o "Grasa saturada 3 g" son datos; "Proteína en polvo" es un alimento.
+const PALABRAS_DE_DATO = /^(totale?s?|saturadas?|trans|mono|poli|monoinsaturadas?|poliinsaturadas?|insaturadas?|dietarias?|dietary|alimentarias?|a[nñ]adidos?|added|total|de|en|y|mg|g|kcal|cal)$/i;
+const esDato = (linea, nombre) => ES_DATO.test(linea) && nombre.split(/\s+/).slice(1).every((p) => !p || PALABRAS_DE_DATO.test(p));
 const esNombre = (linea, nombre) =>
-  /^\W{0,3}\p{L}/u.test(linea) && nombre.replace(/[^\p{L}]/gu, "").length >= 3 && !NO_ES_ALIMENTO.test(linea) && !ES_DATO.test(linea) && !IGNORAR.test(linea);
+  /^\W{0,3}\p{L}/u.test(linea) && nombre.replace(/[^\p{L}]/gu, "").length >= 3 && !NO_ES_ALIMENTO.test(linea) && !esDato(linea, nombre) && !IGNORAR.test(linea);
 
 // Un alimento de la lista que se llama así (no alcanza con que la palabra aparezca entre sus términos de búsqueda).
 const sinTildes = (t) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -233,7 +249,7 @@ const esAlimentoConocido = (t) => buscarTipicos(t).some((a) => sinTildes(a.nombr
 // Una o dos palabras sin números que no son un alimento de la lista: "Festa", "La Serenísima".
 const esMarcaSuelta = (linea) => {
   const t = linea.trim();
-  return /^\p{Lu}[\p{L}'’.&-]*(\s\p{L}[\p{L}'’.&-]*)?$/u.test(t) && t.length <= 24 && !esAlimentoConocido(t) && !COMIDAS.some(([, re]) => re.test(t));
+  return /^\p{Lu}[\p{L}'’.&-]*(\s\p{L}[\p{L}'’.&-]*)?$/u.test(t) && t.length <= 24 && !esAlimentoConocido(t) && !tipoDeTitulo(t);
 };
 
 const conDatos = (a) => a.kcal !== undefined || a.p !== undefined || a.c !== undefined || a.g !== undefined || a.gramos !== undefined || a.cantidad !== undefined;
@@ -272,7 +288,7 @@ function completarAlimento(a) {
   };
 }
 
-export function leerAlimentos(lineas) {
+export function leerAlimentos(lineas, totalDelTitulo) {
   const hallados = [];
   let actual = null;
   let agregadas = 0;
@@ -281,7 +297,7 @@ export function leerAlimentos(lineas) {
     // Los macros sueltos sin un alimento abierto son los del encabezado de la comida.
     const deLaComida = !actual && SOLO_MACROS.test(linea);
     if (deLaComida && !macrosDeLaComida) macrosDeLaComida = leerMacrosSueltos(linea);
-    if (COMIDAS.some(([, re]) => re.test(linea)) || NO_ES_ALIMENTO.test(linea) || IGNORAR.test(linea) || deLaComida) {
+    if (tipoDeTitulo(linea) || NO_ES_ALIMENTO.test(linea) || IGNORAR.test(linea) || deLaComida) {
       actual = null;
       continue;
     }
@@ -300,6 +316,12 @@ export function leerAlimentos(lineas) {
       actual.marca = actual.marca ? `${actual.marca} ${linea.trim()}` : linea.trim();
       continue;
     }
+    // Un nombre largo que siguió en el renglón de abajo (empieza en minúscula): es el mismo alimento.
+    if (actual && !conDatos(actual) && /^\p{Ll}/u.test(linea) && esNombre(linea, d.nombre)) {
+      actual.nombre = `${actual.nombre.replace(/\s*(\.{3}|…)$/, "")} ${d.nombre}`;
+      for (const k of ["kcal", "p", "c", "g", "medida", "gramos", "cantidad"]) if (d[k] !== undefined) actual[k] = d[k];
+      continue;
+    }
     if (esNombre(linea, d.nombre)) {
       actual = { ...d };
       hallados.push(actual);
@@ -314,24 +336,66 @@ export function leerAlimentos(lineas) {
   }
   // Algunas capturas muestran cada alimento dos veces (en la lista y en el detalle): se deja uno.
   // Si un alimento trae sus números en la captura, se descarta la copia que la app tuvo que estimar.
-  const nombreDe = (a) => a.nombre.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\d]+/gu, " ").trim();
+  const limpiar = (t) => t.replace(/(\.{3}|…)/g, " ").replace(/[^\p{L}\d]+/gu, " ").trim();
+  const nombreDe = (a) => {
+    const t = a.nombre.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+    const m = t.match(/^(.*?)\s*\(([^()]*)\)$/);
+    return m ? `${limpiar(m[1])} (${limpiar(m[2])})` : limpiar(t);
+  };
+  // Con nombres largos la app corta uno ("Mix de verduras salte…") y muestra el otro entero: es el mismo si empieza igual.
+  // La marca va al final entre paréntesis ("Mix de verduras salte… (Genérico)"): se compara aparte.
+  const mismoNombre = (a, b) => {
+    if (a === b) return true;
+    const partes = (n) => {
+      const m = n.match(/^(.*?)\s*\(([^()]*)\)$/);
+      return m ? [m[1], m[2]] : [n, ""];
+    };
+    const [[nombreA, marcaA], [nombreB, marcaB]] = [partes(a), partes(b)];
+    const [corto, largo] = nombreA.length <= nombreB.length ? [nombreA, nombreB] : [nombreB, nombreA];
+    return marcaA === marcaB && corto.length >= 12 && largo.startsWith(corto);
+  };
   const completos = hallados
     .filter(conDatos)
     .map((a) => ({ alimento: completarAlimento(a), propias: a.kcal !== undefined }))
     .filter(({ alimento }) => alimento.kcal > 0);
-  const conCaloriasPropias = new Set(completos.filter((x) => x.propias).map((x) => nombreDe(x.alimento)));
-  const vistos = new Set();
-  const unicos = completos
-    .filter(({ alimento, propias }) => {
-      const nombre = nombreDe(alimento);
-      if (!propias && conCaloriasPropias.has(nombre)) return false;
-      const firma = `${nombre}|${alimento.kcal}`;
-      if (vistos.has(firma)) return false;
-      vistos.add(firma);
-      return true;
-    })
-    .map(({ alimento }) => alimento);
-  return ajustarEstimados(sinFilaDeTotal(unicos), macrosDeLaComida);
+  const conCaloriasPropias = completos.filter((x) => x.propias).map((x) => nombreDe(x.alimento));
+  const unicos = [];
+  for (const { alimento, propias } of completos) {
+    const nombre = nombreDe(alimento);
+    if (!propias && conCaloriasPropias.some((n) => mismoNombre(n, nombre))) continue;
+    const previo = unicos.find((u) => Math.abs(u.kcal - alimento.kcal) <= 1 && mismoNombre(nombreDe(u), nombre));
+    if (previo) {
+      // Queda el nombre entero y el peso, venga de la copia que venga.
+      if (nombreDe(alimento).length > nombreDe(previo).length) previo.nombre = alimento.nombre;
+      if (previo.gramos === undefined && alimento.gramos !== undefined) previo.gramos = alimento.gramos;
+      if (previo.medida === undefined && alimento.medida !== undefined) previo.medida = alimento.medida;
+      continue;
+    }
+    unicos.push(alimento);
+  }
+  return ajustarEstimados(cuadrarPesoYCalorias(sinFilaDeTotal(unicos), totalDelTitulo), macrosDeLaComida);
+}
+
+// Peso y calorías cruzados: nada tiene más de 9 kcal por gramo, así que "Aceite 90 g 10 kcal" estaba al revés.
+// Con el total de la comida (el número del título) también se detecta el alimento que quedó cruzado.
+export function cuadrarPesoYCalorias(lista, totalDelTitulo) {
+  const cruzar = (a) => {
+    // Los macros leídos ya eran de las calorías de verdad; los estimados salieron de las calorías y se recalculan.
+    const f = a.estimado && a.kcal > 0 ? a.gramos / a.kcal : 1;
+    const macro = (v) => Math.round(v * f * 10) / 10;
+    return { ...a, gramos: a.kcal, kcal: Math.round(a.gramos), p: macro(a.p), c: macro(a.c), g: macro(a.g), ...(a.medida ? { medida: a.medida.replace(/\d+(?:[.,]\d+)?(?=\s*(g|ml)\b)/i, String(a.kcal)) } : {}) };
+  };
+  const puedeCruzarse = (a) => a.gramos > 0 && a.kcal > 0 && a.gramos !== a.kcal;
+  let r = lista.map((a) => (puedeCruzarse(a) && a.kcal > a.gramos * 9.2 && a.kcal >= 20 ? cruzar(a) : a));
+  const suma = (l) => l.reduce((t, a) => t + a.kcal, 0);
+  if (totalDelTitulo >= 20) {
+    const cerca = (l) => Math.abs(suma(l) - totalDelTitulo) <= Math.max(5, totalDelTitulo * 0.02);
+    if (!cerca(r)) {
+      const i = r.findIndex((a, j) => puedeCruzarse(a) && cerca(r.map((b, k) => (k === j ? cruzar(b) : b))));
+      if (i >= 0) r = r.map((b, k) => (k === i ? cruzar(b) : b));
+    }
+  }
+  return r;
 }
 
 function leerMacrosSueltos(linea) {
@@ -418,10 +482,10 @@ export function leerResumen(texto) {
   const secciones = [];
   let actual = { tipo: null, lineas: [] };
   for (const linea of lineas) {
-    const comida = COMIDAS.find(([, re]) => re.test(linea));
+    const comida = tipoDeTitulo(linea);
     if (comida) {
       secciones.push(actual);
-      actual = { tipo: comida[0], lineas: [linea] };
+      actual = { tipo: comida, lineas: [linea] };
     } else {
       if (actual.tipo && /^\W*(total|resumen|summary|daily)/i.test(linea)) {
         secciones.push(actual);
@@ -436,11 +500,9 @@ export function leerResumen(texto) {
   for (const s of secciones.filter((x) => x.tipo)) {
     const v = leerMacros(s.lineas);
     // "Almuerzo 640" sin etiqueta: el número del título son las calorías.
-    if (!v.kcal) {
-      const delTitulo = numerosDe(s.lineas[0])[0]?.valor;
-      if (delTitulo >= 20) v.kcal = delTitulo;
-    }
-    const alimentos = leerAlimentos(s.lineas.slice(1));
+    const delTitulo = numerosDe(s.lineas[0])[0]?.valor;
+    if (!v.kcal && delTitulo >= 20) v.kcal = delTitulo;
+    const alimentos = leerAlimentos(s.lineas.slice(1), delTitulo);
     if (porComida.has(s.tipo)) continue;
     if (alimentos.length) porComida.set(s.tipo, sumarAlimentos(alimentos));
     else if (tieneDatos(v)) porComida.set(s.tipo, completar(v));
