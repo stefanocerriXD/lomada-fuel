@@ -24,6 +24,7 @@ import { ding, prenderSonidos, sonidosPrendidos } from "../lib/sonidos.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "../lib/grupos.js";
 import PanelDueno from "../componentes/PanelDueno.jsx";
 import PreferenciasAvisos from "../componentes/PreferenciasAvisos.jsx";
+import BorrarCuenta from "../componentes/BorrarCuenta.jsx";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
@@ -153,7 +154,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     { id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
     { id: "mejoras", titulo: "Mejoras", detalle: "Pedí cambios para la app", icono: MessageSquarePlus },
     ...(esDueno ? [{ id: "dueno", titulo: "Panel del dueño", detalle: "Solo vos: usuarios, números y espacio", icono: Crown }] : []),
-    { id: "cuenta", titulo: "Cuenta", detalle: "Contraseña y cerrar sesión", icono: KeyRound },
+    { id: "cuenta", titulo: "Cuenta", detalle: "Contraseña, cerrar sesión y borrar cuenta", icono: KeyRound },
   ];
   const actual = SECCIONES.find((x) => x.id === seccion);
 
@@ -292,6 +293,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
               Los productos vienen de Open Food Facts, una base colaborativa; los alimentos genéricos, de USDA FoodData Central. Las comidas típicas son valores aproximados. Revisá siempre el envase si necesitás precisión.
             </p>
           </section>
+          <BorrarCuenta usuarioId={usuario.id} />
         </>
       )}
     </div>

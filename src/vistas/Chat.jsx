@@ -46,7 +46,7 @@ const colorDeNombre = (perfiles, id) => `var(--nombre-${(Object.keys(perfiles).s
 
 const listaDeNombres = (nombres) => (nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}` : nombres[0]);
 
-// "Nacho está escribiendo…" o "Juli está publicando su comida…", en vivo.
+// "Nahuel está escribiendo…" o "Juan está publicando su comida…", en vivo.
 export function EnVivo({ que }) {
   const { presentes, perfiles } = useDatos();
   const nombres = Object.entries(presentes).filter(([, e]) => e[que]).map(([id]) => perfiles[id]?.nombre).filter(Boolean);

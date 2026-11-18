@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import { chromium } from "playwright-core";
+const b = await chromium.launch({ channel: "chrome", headless: true });
+const errores = [];
+const fecha = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+await ctx.route(/\/api\//, (r) => r.fulfill({ json: { disponible: false, conectado: false, resultados: [] } }));
+await ctx.addInitScript((r) => { localStorage.setItem("comidas-bienvenida", "vista"); window.__registrosConfig = { usuario_id: "u1", activos: ["creatina", "gym"], aviso: true }; window.__registrosDiarios = r; },
+  [...Array.from({ length: 12 }, (_, i) => ({ usuario_id: "u1", fecha: fecha(i + 1), codigo: "gym" })), ...Array.from({ length: 6 }, (_, i) => ({ usuario_id: "u1", fecha: fecha(i + 1), codigo: "creatina" }))]);
+const p = await ctx.newPage();
+p.on("pageerror", (e) => errores.push(e.message));
+await p.goto("http://localhost:5199"); await p.waitForTimeout(2500);
+// Tildar la creatina de hoy: 7 días → Franco Columbu
+const t = p.locator(".registros-dia"); await t.scrollIntoViewIfNeeded();
+await t.getByRole("button", { name: /Tomé la creatina/ }).click(); await p.waitForTimeout(2500);
+const nuevo = await p.locator(".nuevo-logro, [class*=logro-nuevo]").allInnerTexts().catch(() => []);
+console.log("cartel:", nuevo.join(" | ").replace(/\n/g, " "));
+await p.waitForTimeout(6000);
+const ganadas = await p.evaluate(() => window.__db.medallas.filter((m) => m.usuario_id === "u1" && /^(gym|creatina):/.test(m.codigo)).map((m) => m.codigo).sort());
+console.log("guardadas:", ganadas);
+assert.deepEqual(ganadas, ["creatina:1", "creatina:2", "gym:1"], "se entregan los logros de gym y creatina");
+await p.getByRole("button", { name: "Logros", exact: true }).locator("visible=true").first().click(); await p.waitForTimeout(900);
+const g = p.locator(".grupo-medallas", { hasText: /^Gym/i }).last();
+await g.scrollIntoViewIfNeeded();
+const txt = await g.innerText();
+console.log(txt.replace(/\n/g, " | "));
+assert.match(txt, /Flaco/); assert.match(txt, /12 de 15 días de gym/);
+assert.match(txt, /Cargando/); assert.match(txt, /7 de 15 días con creatina/);
+await g.screenshot({ path: "capturas/logros-gym.png" });
+await g.getByText("Flaco").click(); await p.waitForTimeout(600);
+const detalle = await p.locator("[role=dialog]").last().innerText();
+assert.match(detalle, /CBUM/); assert.match(detalle, /RONNIE COLEMAN/);
+await p.locator("[role=dialog]").last().screenshot({ path: "capturas/logro-gym-detalle.png" });
+assert.deepEqual(errores, []);
+await b.close();
+console.log("logros gym ok");

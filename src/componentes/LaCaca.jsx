@@ -3,6 +3,7 @@ import { ImageUp } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { vibrar } from "./Base.jsx";
+import { comprimirImagen } from "../lib/imagen.js";
 
 const IMAGENES = [
   ["bocha", "dia", "Bocha", "Le aparece al que ayer no subió fotos."],
@@ -17,9 +18,16 @@ export default function LaCaca({ avisar }) {
   async function subir(clave, archivo) {
     if (!archivo) return;
     setSubiendo(clave);
-    const extension = archivo.type === "image/webp" ? "webp" : archivo.type === "image/png" ? "png" : "jpg";
+    // Se achica antes de subirla (los GIF quedan como están para no perder el movimiento; los PNG, con su transparencia).
+    let imagen = archivo;
+    if (archivo.type !== "image/gif") {
+      const transparente = archivo.type === "image/png" || archivo.type === "image/webp";
+      const chica = await comprimirImagen(archivo, 1024, 0.85, transparente ? "image/webp" : "image/jpeg").catch(() => null);
+      if (chica && chica.size < archivo.size) imagen = chica;
+    }
+    const extension = { "image/webp": "webp", "image/png": "png", "image/gif": "gif" }[imagen.type] || "jpg";
     const ruta = `${usuario.id}/bocha/${clave}-${Date.now()}.${extension}`;
-    const { error } = await supabase.storage.from("fotos").upload(ruta, archivo, { contentType: archivo.type || "image/png" });
+    const { error } = await supabase.storage.from("fotos").upload(ruta, imagen, { contentType: imagen.type || "image/png" });
     const { error: errGuardar } = error ? { error } : await supabase.rpc("guardar_imagen_bocha", { p_clave: clave, p_ruta: ruta });
     setSubiendo(null);
     if (error || errGuardar) return avisar("No se pudo subir la imagen");

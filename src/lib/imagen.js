@@ -1,5 +1,6 @@
 // Reduce la foto en el navegador antes de subirla: menos peso para Supabase.
-export function comprimirImagen(archivo, maxLado = 1280, calidad = 0.82) {
+// Con formato "image/webp" se mantiene la transparencia (Safari, que no sabe hacer WebP, la devuelve en PNG).
+export function comprimirImagen(archivo, maxLado = 1280, calidad = 0.82, formato = "image/jpeg") {
   return new Promise((resolver, rechazar) => {
     const img = new Image();
     const url = URL.createObjectURL(archivo);
@@ -12,7 +13,7 @@ export function comprimirImagen(archivo, maxLado = 1280, calidad = 0.82) {
       URL.revokeObjectURL(url);
       canvas.toBlob(
         (blob) => (blob ? resolver(blob) : rechazar(new Error("No se pudo comprimir la foto"))),
-        "image/jpeg",
+        formato,
         calidad,
       );
     };

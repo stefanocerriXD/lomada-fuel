@@ -147,6 +147,10 @@ input[type="range"] { width: 100%; height: 40px; margin: 0; accent-color: var(--
 .boton:active:not(:disabled) { transform: scale(0.97); }
 .boton:disabled { opacity: 0.6; }
 .boton.boton-secundario { background: var(--superficie-2); color: var(--tinta); }
+.boton.boton-peligro { background: var(--peligro); color: #fff; }
+.borrar-cuenta form { display: grid; gap: 12px; }
+.borrar-cuenta label { display: grid; gap: 6px; }
+.borrar-cuenta-acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .boton-grande { width: 100%; min-height: 52px; font-size: 1.05rem; }
 .boton-icono {
   display: grid;

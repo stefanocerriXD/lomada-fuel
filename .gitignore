@@ -3,3 +3,9 @@ dist
 .env
 .env.local
 .vercel
+pruebas/app/capturas
+pruebas/app/.cache-vite
+pruebas/app/archivos/foto-original.jpg
+pruebas/app/archivos/bocha.webp
+pruebas/app/archivos/bocha-evo.webp
+.env.backup
