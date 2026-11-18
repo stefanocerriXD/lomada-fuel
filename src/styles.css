@@ -2509,3 +2509,20 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .combo-alimentos li small { color: var(--tinta-2); white-space: nowrap; }
 .dia.futuro:not(.activo) { opacity: 0.6; }
 .comida-planeada { display: flex; align-items: center; gap: 6px; }
+
+/* Registros propios y recordatorios */
+.registro-opcion-fila { display: flex; align-items: center; gap: 6px; }
+.registro-opcion-fila .registro-opcion { flex: 1; min-width: 0; }
+.registro-nuevo { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--borde); }
+.registro-nuevo-titulo { color: var(--tinta-2); font-size: 0.86rem; font-weight: 600; }
+.registro-nuevo .segmentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--superficie); }
+.registro-nuevo .segmentos button { padding: 8px 6px; border-radius: 11px; color: var(--tinta-2); font-weight: 600; font-size: 0.86rem; }
+.registro-nuevo .segmentos button.activo { background: var(--acento); color: var(--sobre-acento); }
+.recordatorios { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--borde); }
+.recordatorios-titulo { display: flex; align-items: center; gap: 8px; }
+.recordatorio { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
+.recordatorio.apagado > :not(.recordatorio-fila) { opacity: 0.5; }
+.recordatorio-fila { display: flex; align-items: center; gap: 8px; }
+.recordatorio-fila input[type="time"] { flex: 1; min-height: 46px; font-size: 1.3rem; font-weight: 700; }
+.recordatorio-llave { display: grid; place-items: center; padding: 6px; }
+.dias-semana.chicos button { min-height: 36px; font-size: 0.8rem; }

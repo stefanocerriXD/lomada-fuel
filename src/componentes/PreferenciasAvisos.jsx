@@ -20,7 +20,7 @@ const SECCIONES = [
     opciones: [
       ["recordatorio", "Cargar las comidas (21 h)"],
       ["caca", "La foto del día (22 h)"],
-      ["registros", "Creatina, gym y magnesio (20 h)"],
+      ["registros", "Tus recordatorios y registros diarios"],
     ],
   },
   {
