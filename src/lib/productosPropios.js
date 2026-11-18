@@ -1,5 +1,8 @@
 // Productos que no estaban en la base y alguien cargó leyendo la etiqueta.
 // Quedan guardados en el celu y viajan dentro de las comidas (con su código), así el grupo también los encuentra al escanear.
+// Además (SQL 054) todo producto que alguien usa queda en el catálogo compartido de TODA la app.
+import { supabase } from "./supabase.js";
+
 const CLAVE = "lomada-productos";
 
 function leer() {
@@ -31,4 +34,51 @@ export function buscarProductoPropio(codigo, comidas = []) {
     }
   }
   return null;
+}
+
+// ---------- Catálogo compartido de la app (SQL 054) ----------
+const CAMPOS = "id, codigo, nombre, marca, por100, porcion, fuente, veces, usuarios";
+const numero = (v) => Number(v) || 0;
+const aAlimento = (r) => ({
+  id: `app-${r.id}`,
+  nombre: r.nombre,
+  marca: r.marca || "",
+  fuente: "app",
+  por100: { kcal: numero(r.por100?.kcal), p: numero(r.por100?.p), c: numero(r.por100?.c), g: numero(r.por100?.g) },
+  porcion: r.porcion || null,
+  ...(r.codigo ? { codigo: r.codigo } : {}),
+  usuarios: r.usuarios || 1,
+  veces: r.veces || 1,
+});
+
+export async function buscarEnCatalogo(codigo) {
+  try {
+    const { data, error } = await supabase.from("productos").select(CAMPOS).eq("codigo", codigo).maybeSingle();
+    return !error && data ? aAlimento(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function buscarCatalogo(texto) {
+  try {
+    const { data, error } = await supabase.rpc("buscar_productos", { p_texto: texto });
+    return error ? [] : (data || []).map(aAlimento);
+  } catch {
+    return [];
+  }
+}
+
+// Cada producto de marca que alguien carga suma al catálogo (o cuenta un uso). Si falla, no pasa nada.
+const FUENTES_DE_TIENDA = new Set(["argentina", "mundo", "etiqueta", "app"]);
+export function sumarAlCatalogo(alimento) {
+  if (!alimento?.por100 || !FUENTES_DE_TIENDA.has(alimento.fuente)) return;
+  const id = String(alimento.id || "");
+  const codigo = alimento.codigo || (id.startsWith("off-") ? id.slice(4) : null);
+  const valido = codigo && /^\d{6,14}$/.test(codigo) ? codigo : null;
+  if (!valido && !alimento.marca) return;
+  const fuente = alimento.fuente === "etiqueta" ? "etiqueta" : alimento.fuente === "app" ? "usuario" : "off";
+  supabase
+    .rpc("guardar_producto", { p_codigo: valido, p_nombre: alimento.nombre, p_marca: alimento.marca || "", p_por100: alimento.por100, p_porcion: alimento.porcion || null, p_fuente: fuente })
+    .then(() => {}, () => {});
 }

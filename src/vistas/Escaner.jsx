@@ -5,7 +5,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { ia, reconocerFoto } from "../lib/api.js";
 import { leerTexto } from "../lib/ocr.js";
 import { aPor100, leerEtiqueta } from "../lib/etiqueta.js";
-import { buscarProductoPropio, guardarProducto } from "../lib/productosPropios.js";
+import { buscarEnCatalogo, buscarProductoPropio, guardarProducto } from "../lib/productosPropios.js";
 import { vibrar } from "../componentes/Base.jsx";
 
 // 1) Escanear el código: primero lo que ya cargó el grupo, después la base de productos.
@@ -32,7 +32,7 @@ export default function Escaner({ onAlimento, buscar }) {
     setEtiqueta(null);
     try {
       const propio = buscarProductoPropio(valor, [...(comidasLogros || []), ...comidas]);
-      const alimento = propio || (await buscar(valor));
+      const alimento = propio || (await buscarEnCatalogo(valor)) || (await buscar(valor));
       if (alimento) onAlimento(alimento);
       else setFaltante(valor);
     } catch (err) {

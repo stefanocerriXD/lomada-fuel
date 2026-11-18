@@ -10,6 +10,7 @@ import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
 import { alimentosDelGrupo, alimentosUsados, buscarEnHistorial, claveAlimento, combosDe, haceTanto, vecesPorAlimento } from "../lib/historial.js";
 import { buscarRecetas, recetaComoAlimento } from "../lib/recetasPropias.js";
+import { buscarCatalogo, sumarAlCatalogo } from "../lib/productosPropios.js";
 import { fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
@@ -185,6 +186,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   useEffect(() => () => { if (vistaFoto?.startsWith("blob:") && vistaFoto !== fotos[original?.foto_path]) URL.revokeObjectURL(vistaFoto); }, [vistaFoto]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function agregar(alimento) {
+    sumarAlCatalogo(alimento);
     // Lo que viene sin valores por 100 g (importado o a mano) se repite tal cual.
     // En modo postre, lo que se suma queda marcado como postre de esa comida.
     setItems((prev) => [...prev, { ...(alimento.por100 ? prepararItem(alimento) : alimento), id: crypto.randomUUID(), ...(carga.postre ? { postre: true } : {}) }]);
@@ -981,11 +983,14 @@ function FilaResultado({ alimento, onElegir, uso }) {
         <span className="resultado-datos">
           <strong>{alimento.nombre}</strong>
           <span>{alimento.marca ? `${alimento.marca} · ` : ""}{medida} · {kcal} kcal</span>
-          {(alimento.verificado || uso) && (
+          {(alimento.verificado || uso || alimento.usuarios >= 2) && (
             <span className="resultado-usos">
               {alimento.verificado && <span className="verificado"><BadgeCheck size={13} aria-hidden="true" /> Verificado</span>}
-              {alimento.verificado && uso ? " · " : ""}
-              {uso ? `Lo cargaste ${uso.veces === 1 ? "1 vez" : `${uso.veces} veces`}` : ""}
+              {[
+                alimento.verificado ? "" : null,
+                uso ? `Lo cargaste ${uso.veces === 1 ? "1 vez" : `${uso.veces} veces`}` : null,
+                alimento.usuarios >= 2 ? `${alimento.usuarios} personas lo usan` : null,
+              ].filter((x) => x !== null).join(" · ")}
             </span>
           )}
         </span>
@@ -1013,14 +1018,16 @@ export function Resultados({ texto, onElegir, propios }) {
   }, [grupo, texto, tuyos]);
   const usados = useMemo(() => vecesPorAlimento(propios), [propios]);
   const usoDe = (a) => usados.get(claveAlimento(a)) || (a.marca ? null : usados.get(claveAlimento({ nombre: a.nombre })));
-  const locales = useMemo(() => buscarTipicos(texto), [texto]);
+  // De la lista propia (comidas caseras), pocas: lo que más se busca son marcas.
+  const locales = useMemo(() => buscarTipicos(texto).slice(0, 5), [texto]);
   const [productos, setProductos] = useState([]);
+  const [catalogo, setCatalogo] = useState([]);
   const [buscando, setBuscando] = useState(false);
   const [pedidos, setPedidos] = useState(false);
   const [falla, setFalla] = useState(false);
   const limpio = texto.trim();
-  // Los productos de supermercado se buscan solos cuando la lista propia trae poco; si no, con el botón.
-  const automatico = locales.length < 3 && recetas.length === 0 && limpio.length >= 2;
+  // Las marcas se buscan solas desde 3 letras (o 2 si la lista propia no trae nada).
+  const automatico = limpio.length >= 3 || (locales.length === 0 && recetas.length === 0 && limpio.length >= 2);
   const conMarcas = pedidos || automatico;
 
   useEffect(() => {
@@ -1028,6 +1035,20 @@ export function Resultados({ texto, onElegir, propios }) {
     setFalla(false);
     setPedidos(false);
   }, [limpio]);
+
+  // El catálogo de la app (lo que cargó cualquiera): rápido, primero.
+  useEffect(() => {
+    if (limpio.length < 2) return setCatalogo([]);
+    let activo = true;
+    const espera = setTimeout(async () => {
+      const r = await buscarCatalogo(limpio);
+      if (activo) setCatalogo(r);
+    }, 200);
+    return () => { activo = false; clearTimeout(espera); };
+  }, [limpio]);
+  const claveProducto = (a) => (a.codigo || (String(a.id).startsWith("off-") ? String(a.id).slice(4) : "")) || `${a.nombre}|${a.marca}`.toLowerCase();
+  const enCatalogo = new Set(catalogo.map(claveProducto));
+  const marcas = [...catalogo, ...productos.filter((a) => !enCatalogo.has(claveProducto(a)))].slice(0, 20);
 
   useEffect(() => {
     if (!conMarcas || limpio.length < 2) return setBuscando(false);
@@ -1085,7 +1106,7 @@ export function Resultados({ texto, onElegir, propios }) {
         </ul>
       )}
 
-      {locales.length > 0 && !pedidos && limpio.length >= 2 && (
+      {locales.length > 0 && !conMarcas && limpio.length >= 2 && (
         <button className="boton boton-secundario" onClick={() => setPedidos(true)}>Buscar en productos de supermercado</button>
       )}
 
@@ -1096,14 +1117,17 @@ export function Resultados({ texto, onElegir, propios }) {
         </p>
       )}
 
-      {productos.length > 0 && (
-        <ul className="resultados">
-          {productos.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} uso={usoDe(a)} />)}
-        </ul>
+      {marcas.length > 0 && (
+        <>
+          <h3 className="titulo-lista">Productos y marcas</h3>
+          <ul className="resultados">
+            {marcas.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} uso={usoDe(a)} />)}
+          </ul>
+        </>
       )}
 
       {falla && <p className="nota">No pudimos buscar productos. Probá de nuevo.</p>}
-      {conMarcas && !buscando && !falla && !productos.length && locales.length === 0 && limpio.length >= 2 && (
+      {conMarcas && !buscando && !falla && !marcas.length && locales.length === 0 && limpio.length >= 2 && (
         <p className="nota">Sin resultados. Probá con otra palabra o cargalo a mano.</p>
       )}
     </div>
