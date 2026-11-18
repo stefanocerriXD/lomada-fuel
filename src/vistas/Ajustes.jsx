@@ -5,9 +5,10 @@ import LaCaca from "../componentes/LaCaca.jsx";
 import Tutorial from "../componentes/Tutorial.jsx";
 import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
 import MisGrupos from "../componentes/MisGrupos.jsx";
+import MiMotivacion from "../componentes/MiMotivacion.jsx";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, Palette, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, Palette, Plane, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -142,6 +143,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     { id: "grupos", titulo: "Grupos", detalle: pedidosGrupo > 0 ? `${pedidosGrupo} ${pedidosGrupo === 1 ? "pedido" : "pedidos"} para entrar` : misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Crear un grupo o sumarte con un código", icono: Users, nuevo: pedidosGrupo > 0, pastilla: String(pedidosGrupo) },
     { id: "caca", titulo: grupo.conBocha ? "La cacona 💩" : "La maldición de la cacona 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
     { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
+    { id: "motivacion", titulo: "Viaje y Match Day", detalle: "Tu cuenta regresiva y tu día de partido", icono: Plane },
     { id: "registros", titulo: "Registros diarios", detalle: "Creatina, gym, magnesio", icono: ListChecks },
     { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
     { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
@@ -257,6 +259,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
       {seccion === "recetas" && <MisRecetas avisar={avisar} abrir={pedido?.receta ? pedido : null} />}
       {seccion === "caca" && <LaCaca avisar={avisar} />}
       {seccion === "registros" && <AjustesRegistros avisar={avisar} />}
+      {seccion === "motivacion" && <MiMotivacion avisar={avisar} />}
       {seccion === "actualizaciones" && <Actualizaciones />}
       {seccion === "grupos" && <MisGrupos avisar={avisar} />}
 

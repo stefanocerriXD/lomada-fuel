@@ -3,3 +3,6 @@ export const EVENTO_IR = "lomada:ir";
 export function irARecetas(recetaId) {
   window.dispatchEvent(new CustomEvent(EVENTO_IR, { detail: { vista: "ajustes", seccion: "recetas", receta: recetaId } }));
 }
+export function irAAjustes(seccion) {
+  window.dispatchEvent(new CustomEvent(EVENTO_IR, { detail: { vista: "ajustes", seccion } }));
+}

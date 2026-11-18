@@ -1,27 +1,46 @@
 import { motion } from "motion/react";
-import { Plane } from "lucide-react";
+import { ChevronRight, Pencil, Plane } from "lucide-react";
 import { aFecha, fechaLocal } from "../lib/fechas.js";
 import { useDatos } from "../lib/datos.jsx";
+import { useMotivacion } from "../lib/motivacion.js";
+import { irAAjustes } from "../lib/navegar.js";
 
-// El viaje del grupo: cuenta regresiva y los cuadraditos que hay que tener para la playa.
-const VIAJE = { destino: "Floripa", fecha: "2026-12-26", desde: "2026-10-01" };
+// El viaje de cada uno (Ajustes > Viaje y Match Day): cuenta regresiva y los cuadraditos para la playa.
+// Si la base todavía no tiene la tabla (SQL 052), la Lomada sigue viendo Floripa como antes.
+const VIAJE_LOMADA = { destino: "Floripa", fecha: "2026-12-26", desde: "2026-10-01" };
 const CUADRADITOS = 6;
 const DIA_MS = 24 * 60 * 60 * 1000;
 const diasEntre = (a, b) => Math.round((aFecha(b) - aFecha(a)) / DIA_MS);
 
 function textoFalta(dias) {
-  if (dias === 1) return "Mañana nos vamos";
+  if (dias === 1) return "Mañana te vas";
   if (dias <= 7) return "Ya está, última semana";
   if (dias <= 21) return "Falta re poco";
   return "Falta poco";
 }
 
+const fechaLarga = (f) => new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long" }).format(new Date(`${f}T12:00:00`));
+
 export default function Viaje({ hoy = fechaLocal() }) {
-  const { grupo } = useDatos();
+  const { usuario, grupo } = useDatos();
+  const { datos, sinTabla } = useMotivacion(usuario.id);
+  if (datos === undefined) return null;
+  const propio = datos?.viaje_destino && datos?.viaje_fecha
+    ? { destino: datos.viaje_destino, fecha: datos.viaje_fecha, desde: datos.viaje_desde || datos.viaje_fecha }
+    : null;
+  const VIAJE = sinTabla ? (grupo.conBocha ? VIAJE_LOMADA : null) : propio;
+  if (!VIAJE) {
+    return sinTabla ? null : (
+      <button type="button" className="viaje-invitar" onClick={() => irAAjustes("motivacion")}>
+        <Plane size={20} aria-hidden="true" />
+        <span>¿Tenés un viaje?<small>Poné una cuenta regresiva para motivarte</small></span>
+        <ChevronRight size={18} aria-hidden="true" style={{ marginLeft: "auto" }} />
+      </button>
+    );
+  }
   const faltan = diasEntre(hoy, VIAJE.fecha);
   // Durante el viaje sigue el cartel; una semana después desaparece.
-  // El viaje es de la Lomada; los otros grupos no lo ven.
-  if (faltan < -7 || !grupo.conBocha) return null;
+  if (faltan < -7) return null;
   const total = Math.max(1, diasEntre(VIAJE.desde, VIAJE.fecha));
   const avance = Math.min(Math.max((total - faltan) / total, 0), 1);
   const llenos = faltan <= 0 ? CUADRADITOS : Math.min(CUADRADITOS - 1, Math.floor(avance * CUADRADITOS));
@@ -31,7 +50,10 @@ export default function Viaje({ hoy = fechaLocal() }) {
   return (
     <motion.section className="tarjeta viaje" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} aria-label={`Viaje a ${VIAJE.destino}`}>
       <div className="viaje-cabecera">
-        <p className="viaje-sobretitulo"><Plane size={15} aria-hidden="true" /> Viaje a {VIAJE.destino} · 26 de diciembre</p>
+        <p className="viaje-sobretitulo"><Plane size={15} aria-hidden="true" /> Viaje a {VIAJE.destino} · {fechaLarga(VIAJE.fecha)}</p>
+        {!sinTabla && (
+          <button type="button" className="viaje-editar" onClick={() => irAAjustes("motivacion")} aria-label="Cambiar el viaje"><Pencil size={16} /></button>
+        )}
         {faltan > 0 ? (
           <>
             <p className="viaje-cuenta"><strong>{faltan}</strong> {faltan === 1 ? "día" : "días"}</p>

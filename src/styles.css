@@ -2479,3 +2479,18 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 /* Meta recalculada (Ajustes > Tu cuerpo y objetivo) */
 .meta-recalculada { display: grid; gap: 10px; padding: 12px 0; border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); }
 .meta-recalculada-botones { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+
+/* Ajustes > Viaje y Match Day */
+.mi-motivacion-titulo { display: flex; align-items: center; gap: 8px; }
+.mi-motivacion-botones { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.mi-motivacion select { width: 100%; }
+.chips-deporte { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.chips-deporte button { padding: 7px 12px; border-radius: 999px; background: var(--superficie); color: var(--tinta); font-weight: 600; font-size: 0.86rem; }
+.chips-deporte button.activo, .dias-semana button.activo { background: var(--acento); color: var(--sobre-acento); }
+.dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.dias-semana button { min-height: 44px; border-radius: 12px; background: var(--superficie); color: var(--tinta); font-weight: 650; font-size: 0.82rem; }
+.mi-motivacion-ejemplo { margin: 0; }
+.viaje-editar { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: inherit; opacity: 0.75; }
+.viaje-invitar { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 0; color: var(--tinta-2); font-weight: 600; text-align: left; }
+.viaje-invitar small { display: block; font-weight: 500; font-size: 0.8rem; }
+.viaje { position: relative; }

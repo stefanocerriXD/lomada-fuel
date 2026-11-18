@@ -28,7 +28,7 @@ const SECCIONES = [
     opciones: [
       ["semana", "Podios del lunes"],
       ["informe", "Informe semanal (domingo)"],
-      ["lomada", "Match Day y viaje", "bocha"],
+      ["lomada", "Tu viaje y tu Match Day"],
       ["grupos", "Pedidos para entrar a tus grupos"],
       ["mejoras", "Mejoras (cuando hacen la tuya)"],
     ],
