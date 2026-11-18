@@ -17,9 +17,14 @@ export function ultimosDias(n) {
   return Array.from({ length: n }, (_, i) => haceDias(n - 1 - i));
 }
 
+export function proximosDias(n) {
+  return Array.from({ length: n }, (_, i) => haceDias(-(i + 1)));
+}
+
 export function nombreDia(texto) {
   if (texto === fechaLocal()) return "Hoy";
   if (texto === haceDias(1)) return "Ayer";
+  if (texto === haceDias(-1)) return "Mañana";
   return aFecha(texto).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 }
 

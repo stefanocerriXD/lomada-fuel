@@ -46,6 +46,46 @@ export function combosDe(comidas, usuarioId, tipo, tope = 5) {
   return combos;
 }
 
+// Lo que cargaron los demás del grupo (solo comidas que el grupo puede ver), para encontrarlo al buscar.
+export function alimentosDelGrupo(comidas, usuarioId) {
+  const vistos = new Map();
+  const ajenas = comidas.filter((c) => c.usuario_id !== usuarioId).sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1));
+  for (const c of ajenas) {
+    for (const a of c.alimentos || []) {
+      if (!a.nombre || a.fuente === "foto" || GENERICOS.test(a.nombre)) continue;
+      const clave = normal(a.nombre);
+      const previo = vistos.get(clave);
+      if (previo) {
+        previo.veces += 1;
+        previo.personas.add(c.usuario_id);
+      } else vistos.set(clave, { alimento: limpio(a), veces: 1, ultima: c.creado_en, personas: new Set([c.usuario_id]) });
+    }
+  }
+  return [...vistos.values()];
+}
+
+// Para marcar en los resultados del buscador los productos que ya cargaste (por nombre y marca).
+export const claveAlimento = (a) => `${normal(a.nombre)}|${normal(a.marca)}`;
+export function vecesPorAlimento(lista) {
+  const mapa = new Map();
+  for (const { alimento, veces, ultima } of lista) {
+    mapa.set(claveAlimento(alimento), { veces, ultima });
+    if (!mapa.has(`${normal(alimento.nombre)}|`)) mapa.set(`${normal(alimento.nombre)}|`, { veces, ultima });
+  }
+  return mapa;
+}
+
+// "hoy", "ayer", "hace 5 días", "hace 3 semanas".
+export function haceTanto(iso) {
+  if (!iso) return "";
+  const dias = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  if (dias <= 0) return "hoy";
+  if (dias === 1) return "ayer";
+  if (dias < 14) return `hace ${dias} días`;
+  if (dias < 60) return `hace ${Math.round(dias / 7)} semanas`;
+  return `hace ${Math.round(dias / 30)} meses`;
+}
+
 export function buscarEnHistorial(lista, texto) {
   const partes = normal(texto).split(/\s+/).filter((p) => p.length > 1);
   if (!partes.length) return [];

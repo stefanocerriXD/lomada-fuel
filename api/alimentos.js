@@ -4,7 +4,7 @@
 import { usuarioLogueado } from "./_auth.js";
 
 const AGENTE = "LomadaFuel/1.0 (app personal entre amigos)";
-const CAMPOS = "code,product_name,brands,nutriments,countries_tags,serving_quantity";
+const CAMPOS = "code,product_name,brands,nutriments,countries_tags,serving_quantity,completeness,states_tags,unique_scans_n";
 const TIEMPO_MAXIMO = 7000;
 
 const ES_EN = {
@@ -27,6 +27,21 @@ const ES_EN = {
 const RELLENO = new Set(["de", "del", "con", "sin", "al", "a", "la", "el", "y", "en"]);
 
 const sinAcentos = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// Algunos productos vienen con las tildes rotas ("SerenÃ­sima" o "Seren�­sima").
+function arreglarTexto(t) {
+  let r = String(t || "");
+  if (/Ã./.test(r)) {
+    try {
+      const bytes = Uint8Array.from([...r].map((c) => c.charCodeAt(0) & 0xff));
+      const arreglado = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      if (arreglado) r = arreglado;
+    } catch {
+      // Si no se puede, queda como vino.
+    }
+  }
+  return r.replace(/\uFFFD\u00AD/g, "í").replace(/\u00AD/g, "").replace(/\s+/g, " ").trim();
+}
 
 function numero(v) {
   const n = Number(v);
@@ -52,19 +67,25 @@ function desdeOFF(prod) {
   const kj = numero(n.energy_100g);
   const kcal = numero(n["energy-kcal_100g"]) ?? (kj != null ? kj / 4.184 : null);
   const por100 = validar(kcal, numero(n.proteins_100g), numero(n.carbohydrates_100g), numero(n.fat_100g));
-  const marca = [].concat(prod.brands || []).join(",").split(",")[0].trim();
+  const marca = arreglarTexto([].concat(prod.brands || []).join(",").split(",")[0]);
   // Algunos productos están cargados sin nombre pero con marca y valores completos.
-  const nombre = (typeof prod.product_name === "string" && prod.product_name.trim()) || marca;
+  const nombre = (typeof prod.product_name === "string" && arreglarTexto(prod.product_name)) || marca;
   if (!por100 || !nombre) return null;
   if (SE_TOMA_SIN_CALORIAS.test(sinAcentos(nombre))) return null;
   const paises = [].concat(prod.countries_tags || []).join(" ");
   const argentino = paises.includes("argentina") || String(prod.code || "").startsWith("779");
   const porcion = numero(prod.serving_quantity);
+  // Verificado: revisado por la comunidad de Open Food Facts, o con la tabla nutricional y las fotos confirmadas.
+  const estados = [].concat(prod.states_tags || []);
+  const verificado = estados.includes("en:checked") || (estados.includes("en:nutrition-facts-completed") && estados.includes("en:photos-validated"));
   return {
     id: `off-${prod.code}`,
     nombre,
     marca,
     fuente: argentino ? "argentina" : "mundo",
+    verificado,
+    calidad: Math.min(numero(prod.completeness) ?? 0, 1),
+    escaneos: numero(prod.unique_scans_n) ?? 0,
     por100,
     porcion: porcion && porcion > 0 && porcion < 2000 ? { nombre: "1 porción", g: porcion } : null,
   };
@@ -77,8 +98,10 @@ async function pedirJSON(url) {
 }
 
 async function buscarOFF(q, filtro) {
-  const consulta = filtro ? `${q} AND ${filtro}` : q;
-  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(consulta)}&page_size=40&langs=es,en&fields=${CAMPOS}`;
+  // El filtro va ADELANTE: "leche serenisima AND countries_tags:..." no traía nada (con más de una palabra
+  // el AND se aplicaba mal); "countries_tags:... leche serenisima" trae todo lo de Argentina.
+  const consulta = filtro ? `${filtro} ${q}` : q;
+  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(consulta)}&page_size=${filtro ? 60 : 30}&langs=es,en&fields=${CAMPOS}`;
   const datos = await pedirJSON(url);
   return (datos.hits || []).map(desdeOFF).filter(Boolean);
 }
@@ -97,13 +120,34 @@ async function buscarUSDA(q) {
       const valor = (nombre, unidad) =>
         (f.foodNutrients || []).find((x) => x.nutrientName?.startsWith(nombre) && (!unidad || x.unitName === unidad))?.value ?? null;
       const por100 = validar(valor("Energy", "KCAL"), valor("Protein"), valor("Carbohydrate"), valor("Total lipid"));
-      return por100 ? { id: `usda-${f.fdcId}`, nombre: f.description, marca: "", fuente: "usda", por100, porcion: null } : null;
+      return por100 ? { id: `usda-${f.fdcId}`, nombre: f.description, marca: "", fuente: "usda", verificado: true, calidad: 1, escaneos: 0, por100, porcion: null } : null;
     })
     .filter(Boolean);
 }
 
-// Los productos con todo en cero suelen ser cargas incompletas: se muestran al final de su grupo.
-const primeroConDatos = (lista) => [...lista].sort((a, b) => Number(b.por100.kcal > 0) - Number(a.por100.kcal > 0));
+// Qué tan bien coincide cada producto con lo que se buscó, y qué tan confiable es.
+// Primero los que tienen TODAS las palabras (en el nombre o en la marca), después verificados,
+// datos completos, los más escaneados y los de Argentina. Los que tienen todo en cero, al final.
+const singular = (p) => (p.length > 3 ? p.replace(/e?s$/, "") : p);
+function partesDe(q) {
+  return sinAcentos(q).split(/[^a-z0-9ñ]+/).filter((p) => p && !RELLENO.has(p)).map(singular);
+}
+function puntaje(a, partes) {
+  if (!partes.length) return 0;
+  const nombre = sinAcentos(a.nombre);
+  const palabras = `${nombre} ${sinAcentos(a.marca || "")}`.split(/[^a-z0-9ñ]+/).filter(Boolean);
+  const coinciden = partes.filter((p) => palabras.some((w) => w.startsWith(p))).length;
+  let total = (coinciden / partes.length) * 50;
+  if (coinciden === partes.length) total += 25;
+  if (nombre.startsWith(partes[0])) total += 16;
+  if (a.verificado) total += 12;
+  total += (a.calidad || 0) * 10;
+  total += Math.min(Math.log10((a.escaneos || 0) + 1) * 4, 12);
+  if (a.fuente === "argentina") total += 12;
+  else if (a.fuente === "usda") total += 5;
+  if (!a.por100.kcal) total -= 30;
+  return total;
+}
 
 function sinRepetidos(listas) {
   const vistos = new Set();
@@ -144,7 +188,9 @@ export default async function handler(req, res) {
     buscarUSDA(limpio),
   ]);
   const ok = (r) => (r.status === "fulfilled" ? r.value : []);
-  const resultados = sinRepetidos([primeroConDatos(ok(ar)).slice(0, 18), ok(usda).slice(0, 6), primeroConDatos(ok(mundo)).slice(0, 8)]);
+  const partes = partesDe(limpio);
+  const ordenar = (lista) => lista.map((a) => ({ ...a, puntaje: Math.round(puntaje(a, partes)) })).sort((a, b) => b.puntaje - a.puntaje);
+  const resultados = ordenar(sinRepetidos([ordenar(ok(ar)).slice(0, 30), ok(usda).slice(0, 6), ordenar(ok(mundo)).slice(0, 10)])).slice(0, 30);
   return res.status(200).json({
     resultados,
     parcial: [ar, mundo, usda].some((r) => r.status === "rejected"),

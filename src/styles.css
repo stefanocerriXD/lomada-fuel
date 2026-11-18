@@ -2494,3 +2494,18 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .viaje-invitar { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 0; color: var(--tinta-2); font-weight: 600; text-align: left; }
 .viaje-invitar small { display: block; font-weight: 500; font-size: 0.8rem; }
 .viaje { position: relative; }
+
+/* Buscador: verificados, veces cargado y comidas anteriores desplegables */
+.resultado-usos { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--acento); font-size: 0.74rem; font-weight: 650; }
+.resultado-usos .verificado { display: inline-flex; align-items: center; gap: 3px; }
+.resultado-marca { color: var(--tinta-2); font-weight: 500; }
+.combo-fila { display: flex; align-items: stretch; }
+.combo-fila .combo-usar { flex: 1; min-width: 0; }
+.combo-ver { display: grid; place-items: center; width: 44px; flex: 0 0 44px; color: var(--tinta-2); }
+.combo-ver svg { transition: transform 0.2s; }
+.combo-ver.abierto svg { transform: rotate(180deg); }
+.combo-alimentos { display: grid; gap: 6px; margin: 0 16px 12px; padding: 2px 0 2px 12px; overflow: hidden; list-style: none; border-left: 2px solid var(--borde); }
+.combo-alimentos li { display: flex; justify-content: space-between; gap: 10px; font-size: 0.86rem; }
+.combo-alimentos li small { color: var(--tinta-2); white-space: nowrap; }
+.dia.futuro:not(.activo) { opacity: 0.6; }
+.comida-planeada { display: flex; align-items: center; gap: 6px; }
