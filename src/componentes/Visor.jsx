@@ -64,7 +64,7 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
   }
 
   return createPortal(
-    <motion.div className="visor-foto" role="dialog" aria-modal="true" aria-label={`Foto: ${titulo}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <motion.div className={agrandada ? "visor-foto agrandada" : "visor-foto"} role="dialog" aria-modal="true" aria-label={`Foto: ${titulo}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <header className="visor-cabecera">
         <button className="visor-autor" onClick={verPerfil} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}>
           <Avatar perfil={perfil} tam={38} />
@@ -77,6 +77,8 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
       </header>
 
       <div className={oculta ? "visor-imagen oculta" : tapada ? "visor-imagen tapada" : "visor-imagen"}>
+        {/* La misma foto, desenfocada, llena la pantalla: sin franjas negras y sin recortar la foto. */}
+        {!oculta && !tapada && fotos[ruta] && <div key={ruta} className="visor-fondo" style={{ backgroundImage: `url("${fotos[ruta]}")` }} aria-hidden="true" />}
         {esPostre && <span className="visor-postre">🍮 Postre{comida.postre_nombre ? ` · ${comida.postre_nombre}` : ""}</span>}
         {(oculta || tapada) && <span className="foto-castigo-texto">{oculta ? "💀 Dos semanas sin subir fotos. Subí la tuya para volver a verlas." : "Subí tu foto de hoy para ver las del grupo"}</span>}
         <AnimatePresence mode="popLayout" initial={false}>
@@ -96,6 +98,8 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
         {!agrandada && indice < lista.length - 1 && <button className="visor-flecha derecha" onClick={() => mover(1)} aria-label="Foto siguiente"><ChevronRight size={24} /></button>}
       </div>
 
+      {/* Los datos van encima de la foto, sobre un degradé. */}
+      <div className="visor-abajo">
       {rutas.length > 1 && (
         <div className="visor-miniaturas" role="group" aria-label="Fotos de esta comida">
           {rutas.map((r, n) => (
@@ -130,6 +134,7 @@ export default function Visor({ lista, inicio = 0, inicioFoto = 0, onCerrar }) {
           </button>
         )}
       </footer>
+      </div>
     </motion.div>,
     document.body,
   );

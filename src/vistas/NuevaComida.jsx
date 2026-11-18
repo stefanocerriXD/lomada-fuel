@@ -597,12 +597,12 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
                 <label className="tarjeta accion accion-foto">
                   <input type="file" accept="image/*" onChange={(e) => elegirFoto(e, true)} aria-label="Foto del plato para reconocer los alimentos" />
                   <Sparkles size={22} />
-                  <span><strong>Sacale una foto al plato</strong><small>La IA reconoce los alimentos y vos ajustás las cantidades</small></span>
+                  <span><strong>Foto del plato</strong><small>La IA lo reconoce</small></span>
                 </label>
               )}
               <button className={panel === "importar" ? "tarjeta accion activa" : "tarjeta accion"} onClick={() => alternarPanel("importar")} aria-pressed={panel === "importar"}>
                 <ClipboardPaste size={22} />
-                <span><strong>Importar {tipoInfo(tipo).texto.toLowerCase()}</strong><small>Captura o texto</small></span>
+                <span><strong>Importar</strong><small>Captura o texto</small></span>
               </button>
               {onFiesta && (
                 <button className="enlace-fiesta" onClick={onFiesta}>

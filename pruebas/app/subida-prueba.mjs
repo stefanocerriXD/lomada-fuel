@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
+import { NIVEL_MAXIMO } from "../../src/lib/medallas.js";
 const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
 async function abrir(nivelVisto) {
@@ -27,13 +28,13 @@ assert.equal(await p.locator(".subida-nivel").count(), 0);
 assert.ok(await p.evaluate(() => localStorage.getItem("lomada-nivel-u1")));
 await ctx.close();
 
-// Sube de 10 a 13: número que sube y marco nuevo (Oro).
+// Sube de 10 a 13: número que sube y marco nuevo (Esmeralda, desde el nivel 12).
 ({ ctx, p } = await abrir(10));
 await llevarA(p, 13);
 await p.locator(".subida-nivel").waitFor({ timeout: 6000 });
 await p.waitForTimeout(1600);
 assert.match(await p.locator(".subida-numero").innerText(), /Nivel 13/);
-assert.match(await p.locator(".subida-marco").innerText(), /Oro/);
+assert.match(await p.locator(".subida-marco").innerText(), /Esmeralda/);
 await p.screenshot({ path: "capturas/subida-nivel.png" });
 await p.locator(".subida-nivel").click();
 await p.waitForTimeout(600);
@@ -43,13 +44,13 @@ await p.getByRole("button", { name: "Logros", exact: true }).locator("visible=tr
 await p.waitForTimeout(900);
 // Cerrado: una sola línea, sin la lista.
 assert.equal(await p.locator(".camino-paso").count(), 0);
-assert.match(await p.locator(".camino-cabecera").innerText(), /Camino de niveles[\s\S]*4 de 19 marcos · Esmeralda en 2 niveles/);
+assert.match(await p.locator(".camino-cabecera").innerText(), /Camino de niveles[\s\S]*5 de 19 marcos · Zafiro en 2 niveles/);
 await p.locator(".camino").screenshot({ path: "capturas/camino-plegado.png" });
 await p.locator(".camino-cabecera").click();
 await p.waitForTimeout(500);
 assert.equal(await p.locator(".camino-paso.actual").count(), 1);
-assert.match(await p.locator(".camino-paso.actual").innerText(), /Oro/);
-assert.match(await p.locator(".camino-paso.proximo").innerText(), /Esmeralda[\s\S]*te faltan 2/);
+assert.match(await p.locator(".camino-paso.actual").innerText(), /Esmeralda/);
+assert.match(await p.locator(".camino-paso.proximo").innerText(), /Zafiro[\s\S]*te faltan 2/);
 assert.match(await p.locator(".camino-paso.final").innerText(), /LOMADA LEGENDARY/);
 await p.locator(".camino").screenshot({ path: "capturas/camino-cerrado.png" });
 await p.getByRole("button", { name: /Ver los 19 niveles/ }).click();
@@ -59,7 +60,7 @@ await ctx.close();
 
 // El final: LOMADA LEGENDARY
 ({ ctx, p } = await abrir(90));
-await llevarA(p, 105);
+await llevarA(p, NIVEL_MAXIMO);
 await p.locator(".subida-nivel.legendaria").waitFor({ timeout: 6000 });
 await p.waitForTimeout(1500);
 assert.equal(await p.locator(".subida-nivel .titulo-legendario").innerText(), "LOMADA LEGENDARY");

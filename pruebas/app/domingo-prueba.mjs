@@ -36,8 +36,8 @@ assert.ok(colores.length >= 2, "cada persona con su color");
 const nombres = await p.locator(".burbuja .autor").evaluateAll((e) => Object.fromEntries(e.map((x) => [x.textContent, getComputedStyle(x).color])));
 console.log("por persona:", nombres);
 assert.equal(new Set(Object.values(nombres)).size, Object.keys(nombres).length, "nadie comparte color");
-const logo = await p.locator(".barra-superior .marca img").evaluate((i) => getComputedStyle(i).content);
-assert.ok(logo.includes("lomada.svg"), "tema Lomada con el escudo de la Lomada");
+// El logo ahora es el disco dibujado (Logo.jsx), en todos los temas.
+assert.equal(await p.locator(".barra-superior .marca svg.logo-app").count(), 1, "la marca lleva el logo");
 await p.screenshot({ path: "capturas/d-chat.png" });
 await ctx.close();
 // Lunes: no aparece

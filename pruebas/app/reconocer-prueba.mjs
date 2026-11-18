@@ -36,10 +36,10 @@ const plato = {
   },
 };
 
-// 1) Desde la tarjeta "Sacale una foto al plato".
+// 1) Desde el botón "Foto del plato".
 let { ctx, p, pedidos } = await abrir(plato);
 const tarjeta = p.locator(".accion-foto");
-assert.match(await tarjeta.innerText(), /Sacale una foto al plato/);
+assert.match(await tarjeta.innerText(), /Foto del plato/);
 await p.screenshot({ path: "capturas/ia-tarjeta.png" });
 await tarjeta.locator("input").setInputFiles(FOTO);
 await p.locator(".reconociendo").waitFor();

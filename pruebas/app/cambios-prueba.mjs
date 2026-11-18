@@ -110,7 +110,10 @@ await p.getByRole("button", { name: /Crear otra llave|Crear mi llave/ }).click()
 await p.waitForTimeout(400);
 assert.equal(await p.evaluate(() => navigator.clipboard.readText()), "a".repeat(48), "la llave se copia sola");
 assert.equal(await p.getByRole("radio", { name: /Usar el valor mayor/ }).isChecked(), true, "por defecto, el mayor");
-await p.getByRole("radio", { name: /Usar solo lo de Apple Salud/ }).check();
+// La opción se guarda en la base: se toca y se espera a que quede marcada (con check() a veces se adelantaba).
+const soloSalud = p.getByRole("radio", { name: /Usar solo lo de Apple Salud/ });
+await soloSalud.click();
+for (let i = 0; i < 30 && !(await soloSalud.isChecked()); i += 1) await p.waitForTimeout(100);
 await p.waitForTimeout(400);
 const guardado = await p.evaluate(() => window.__llamadas.filter((l) => l.tabla === "perfiles" && l.op === "update").pop()?.fila);
 assert.deepEqual(guardado, { modo_total: "salud" });

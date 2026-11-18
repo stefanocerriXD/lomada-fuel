@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { borrarFotosGuardadas } from "./lib/fotosGuardadas.js";
 import { EVENTO_IR } from "./lib/navegar.js";
-import InformeSemanal from "./componentes/InformeSemanal.jsx";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { CalendarDays, Plus, Settings, Trophy, Users } from "lucide-react";
 import { supabase } from "./lib/supabase.js";
@@ -16,17 +15,19 @@ import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import InstalarApp from "./componentes/InstalarApp.jsx";
 import Bocha from "./componentes/Bocha.jsx";
-import Fiesta from "./componentes/Fiesta.jsx";
 import HojaFestejo from "./componentes/MarcaFiesta.jsx";
 import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Grupo from "./vistas/Grupo.jsx";
-import Perfil from "./vistas/Perfil.jsx";
-import Retos from "./vistas/Retos.jsx";
-import Ajustes from "./vistas/Ajustes.jsx";
-import NuevaComida from "./vistas/NuevaComida.jsx";
-import Bienvenida from "./vistas/Bienvenida.jsx";
-import Importar from "./vistas/Importar.jsx";
+// Lo que no se ve al abrir la app se baja aparte, después: el primer arranque es más liviano.
+const Perfil = lazy(() => import("./vistas/Perfil.jsx"));
+const Retos = lazy(() => import("./vistas/Retos.jsx"));
+const Ajustes = lazy(() => import("./vistas/Ajustes.jsx"));
+const NuevaComida = lazy(() => import("./vistas/NuevaComida.jsx"));
+const Bienvenida = lazy(() => import("./vistas/Bienvenida.jsx"));
+const Importar = lazy(() => import("./vistas/Importar.jsx"));
+const Fiesta = lazy(() => import("./componentes/Fiesta.jsx"));
+const InformeSemanal = lazy(() => import("./componentes/InformeSemanal.jsx"));
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 import Logo from "./componentes/Logo.jsx";
@@ -477,8 +478,10 @@ function Principal({ recuperando, onRecuperado }) {
           >
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} onFiesta={() => setFiesta(true)} avisar={avisar} />}
             {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} sentido={sentido} />}
-            {vista === "retos" && <Retos />}
-            {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} pedido={pedidoAjustes} />}
+            <Suspense fallback={<Esqueleto />}>
+              {vista === "retos" && <Retos />}
+              {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} pedido={pedidoAjustes} />}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -502,6 +505,7 @@ function Principal({ recuperando, onRecuperado }) {
         ))}
       </nav>
 
+      <Suspense fallback={null}>
       <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} onPostre={(comida, extra) => setCarga({ comida, postre: true, extra })} avisar={avisar} />
       <Fiesta abierta={fiesta} onCerrar={() => setFiesta(false)} avisar={avisar} />
@@ -525,6 +529,7 @@ function Principal({ recuperando, onRecuperado }) {
           avisar("¡Plan listo!");
         }}
       />
+      </Suspense>
       <Hoja abierta={recuperando} onCerrar={onRecuperado} titulo="Creá tu nueva contraseña">
         <FormularioContrasena
           onListo={() => {

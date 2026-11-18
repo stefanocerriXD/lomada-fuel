@@ -7,6 +7,8 @@ const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
 const avisos = [];
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, permissions: ["clipboard-read", "clipboard-write"] });
+// Los festejos de logros tapan los botones: en esta prueba no hacen falta.
+await ctx.addInitScript(() => document.addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ".nuevo-logro, .subida-nivel { display: none !important; }"; document.head.append(s); }));
 await ctx.route(/\/api\/notificar/, (r) => { avisos.push(r.request().postDataJSON()); r.fulfill({ json: { enviadas: 1 } }); });
 await ctx.route(/\/api\/(whoop|alimentos)/, (r) => r.fulfill({ json: { disponible: false, conectado: false, resultados: [] } }));
 await ctx.route(/supabase\.co/, (r) => { errores.push(`salida real: ${r.request().url()}`); r.abort(); });
@@ -39,7 +41,8 @@ assert.deepEqual(r, { mensaje_id: "m5", usuario_id: "u1", emoji: "🔥" });
 // Responder deslizando hacia la derecha
 await p.getByRole("dialog", { name: "Opciones" }).waitFor({ state: "detached" }).catch(() => {});
 await p.waitForTimeout(300);
-await p.evaluate(() => document.querySelector(".chat-respondiendo")?.remove());
+// Se cierra la respuesta anterior con su botón (borrarla del HTML a mano confundía a la app).
+if (await p.getByRole("button", { name: "Cancelar respuesta" }).count()) await p.getByRole("button", { name: "Cancelar respuesta" }).click();
 const fila = p.locator(".chat-fila", { hasText: "Así me gusta" }).locator(".burbuja");
 const caja2 = await fila.boundingBox();
 await p.mouse.move(caja2.x + 20, caja2.y + caja2.height / 2);

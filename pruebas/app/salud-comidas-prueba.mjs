@@ -3,8 +3,16 @@ import { chromium } from "playwright-core";
 const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, timezoneId: "America/Argentina/Buenos_Aires" });
+// Los festejos de logros tapan los botones: en esta prueba no hacen falta.
+await ctx.addInitScript(() => document.addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ".nuevo-logro, .subida-nivel { display: none !important; }"; document.head.append(s); }));
 await ctx.route(/\/api\//, (r) => r.fulfill({ json: { disponible: false, conectado: false, resultados: [] } }));
-await ctx.addInitScript(() => { localStorage.setItem("comidas-bienvenida", "vista"); });
+await ctx.addInitScript(() => {
+  localStorage.setItem("comidas-bienvenida", "vista");
+  // 10:30: ninguna comida de Salud es de esta hora, así no se carga sola (eso lo prueba salud-auto) y aparecen los botones.
+  const Real = Date; const meta = new Real(); meta.setHours(10, 30, 0, 0); const d = meta.getTime() - Real.now();
+  class C extends Real { constructor(...a) { super(...(a.length ? a : [Real.now() + d])); } static now() { return Real.now() + d; } }
+  window.Date = C;
+});
 const p = await ctx.newPage();
 p.on("pageerror", (e) => errores.push(e.message));
 await p.goto("http://localhost:5199");

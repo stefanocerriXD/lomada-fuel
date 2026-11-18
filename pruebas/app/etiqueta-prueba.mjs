@@ -93,7 +93,7 @@ await ctx.close();
 
 // 3) Sin código: desde el enlace, foto que no se puede leer → carga a mano con la foto de respaldo.
 ({ ctx, p } = await abrir({ json: { esEtiqueta: false, base: "porcion", porcionG: null, valores: { kcal: 0, p: 0, c: 0, g: 0 } } }));
-await p.locator(".etiqueta-enlace input").setInputFiles("archivos/foto-original.jpg");
+await p.getByLabel("Foto de la tabla nutricional").setInputFiles("archivos/foto-original.jpg");
 await p.locator(".form-etiqueta").waitFor({ timeout: 120000 });
 assert.match(await p.locator(".form-etiqueta .nota").innerText(), /No pudimos leer la tabla/);
 await p.getByRole("radio", { name: "Por porción" }).click();

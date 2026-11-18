@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, MailCheck } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
-import { Indicador } from "../componentes/Base.jsx";
+import { Hoja, Indicador } from "../componentes/Base.jsx";
+import PrivacidadTerminos from "../componentes/PrivacidadTerminos.jsx";
 import InstalarApp from "../componentes/InstalarApp.jsx";
 import Logo from "../componentes/Logo.jsx";
 
@@ -22,6 +23,7 @@ export default function Login() {
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+  const [legal, setLegal] = useState(false);
   // La cuenta espera que confirme el mail: el link llega a esta dirección.
   const [porConfirmar, setPorConfirmar] = useState(null);
   const [reenvio, setReenvio] = useState("");
@@ -181,7 +183,13 @@ export default function Login() {
             </form>
           </>
         )}
+        <p className="login-legal">
+          Al usar Lomada Fuel aceptás los <button type="button" className="boton-texto" onClick={() => setLegal(true)}>términos y la política de privacidad</button>.
+        </p>
       </motion.div>
+      <Hoja abierta={legal} onCerrar={() => setLegal(false)} titulo="Privacidad y términos">
+        <PrivacidadTerminos />
+      </Hoja>
     </div>
   );
 }

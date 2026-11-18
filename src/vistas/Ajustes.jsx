@@ -6,9 +6,9 @@ import Tutorial from "../componentes/Tutorial.jsx";
 import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
 import MisGrupos from "../componentes/MisGrupos.jsx";
 import MiMotivacion from "../componentes/MiMotivacion.jsx";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, Palette, Plane, RefreshCw, Skull, Sprout, Sun, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, Download, FileText, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, MoonStar, Palette, Plane, RefreshCw, Skull, Sprout, Sun, SunMedium, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -22,9 +22,11 @@ import Actualizaciones from "../componentes/Actualizaciones.jsx";
 import { ACTUALIZACIONES, hayNovedades } from "../data/actualizaciones.js";
 import { ding, prenderSonidos, sonidosPrendidos } from "../lib/sonidos.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "../lib/grupos.js";
-import PanelDueno from "../componentes/PanelDueno.jsx";
+const PanelDueno = lazy(() => import("../componentes/PanelDueno.jsx"));
 import PreferenciasAvisos from "../componentes/PreferenciasAvisos.jsx";
 import BorrarCuenta from "../componentes/BorrarCuenta.jsx";
+import PrivacidadTerminos from "../componentes/PrivacidadTerminos.jsx";
+import { descargarMisDatos } from "../lib/misDatos.js";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
@@ -32,6 +34,8 @@ const TEMAS = [
   { id: "auto", texto: "Automático", icono: Monitor },
   { id: "claro", texto: "Claro", icono: Sun },
   { id: "oscuro", texto: "Oscuro", icono: Moon },
+  { id: "negro", texto: "Full black", icono: MoonStar },
+  { id: "blanco", texto: "Full white", icono: SunMedium },
 ];
 
 function textoObjetivo(salud) {
@@ -138,23 +142,25 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   }
 
   const estadoSalud = useEstadoSalud();
+  // Agrupadas para que se encuentre todo rápido; el orden de los grupos es el del menú.
   const SECCIONES = [
-    { id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
-    ...(ACTUALIZACIONES.length ? [{ id: "actualizaciones", titulo: "Actualizaciones", detalle: ACTUALIZACIONES[0].titulo, icono: Megaphone, nuevo: hayNovedades() }] : []),
-    { id: "grupos", titulo: "Grupos", detalle: pedidosGrupo > 0 ? `${pedidosGrupo} ${pedidosGrupo === 1 ? "pedido" : "pedidos"} para entrar` : misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Crear un grupo o sumarte con un código", icono: Users, nuevo: pedidosGrupo > 0, pastilla: String(pedidosGrupo) },
-    { id: "caca", titulo: grupo.conBocha ? "La cacona 💩" : "La maldición de la cacona 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
-    { id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
-    { id: "motivacion", titulo: "Viaje y Match Day", detalle: "Tu cuenta regresiva y tu día de partido", icono: Plane },
-    { id: "registros", titulo: "Registros diarios", detalle: "Creatina, gym, magnesio", icono: ListChecks },
-    { id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
-    { id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
-    { id: "salud", titulo: "Apple Salud", detalle: estadoSalud?.ultimo ? textoEstadoSalud(estadoSalud) : "Traer calorías y macros", icono: HeartPulse },
-    { id: "whoop", titulo: "WHOOP", detalle: "Recuperación, sueño y esfuerzo", icono: Watch },
-    { id: "apariencia", titulo: "Apariencia y sonidos", detalle: "Tema y efectos de sonido", icono: Palette },
-    { id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
-    { id: "mejoras", titulo: "Mejoras", detalle: "Pedí cambios para la app", icono: MessageSquarePlus },
-    ...(esDueno ? [{ id: "dueno", titulo: "Panel del dueño", detalle: "Solo vos: usuarios, números y espacio", icono: Crown }] : []),
-    { id: "cuenta", titulo: "Cuenta", detalle: "Contraseña, cerrar sesión y borrar cuenta", icono: KeyRound },
+    { grupo: "Vos", id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
+    { grupo: "Vos", id: "registros", titulo: "Registros diarios", detalle: "Creatina, gym, tus actividades y recordatorios", icono: ListChecks },
+    { grupo: "Vos", id: "motivacion", titulo: "Viaje y Match Day", detalle: "Tu cuenta regresiva y tu día de partido", icono: Plane },
+    { grupo: "Vos", id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
+    { grupo: "Tu grupo", id: "grupos", titulo: "Grupos", detalle: pedidosGrupo > 0 ? `${pedidosGrupo} ${pedidosGrupo === 1 ? "pedido" : "pedidos"} para entrar` : misGrupos.length > 1 ? misGrupos.map((g) => g.nombre).join(" · ") : "Crear un grupo o sumarte con un código", icono: Users, nuevo: pedidosGrupo > 0, pastilla: String(pedidosGrupo) },
+    { grupo: "Tu grupo", id: "caca", titulo: grupo.conBocha ? "La cacona 💩" : "La maldición de la cacona 💩", detalle: grupo.conBocha ? "La regla de las fotos y el Bocha" : "La regla de la foto del día", icono: Skull },
+    { grupo: "Tu grupo", id: "privacidad", titulo: "Privacidad", detalle: "Qué ve el grupo", icono: Lock },
+    { grupo: "Avisos y novedades", id: "notificaciones", titulo: "Notificaciones", detalle: "Avisos en el celular", icono: Bell },
+    ...(ACTUALIZACIONES.length ? [{ grupo: "Avisos y novedades", id: "actualizaciones", titulo: "Actualizaciones", detalle: ACTUALIZACIONES[0].titulo, icono: Megaphone, nuevo: hayNovedades() }] : []),
+    { grupo: "Conexiones", id: "salud", titulo: "Apple Salud", detalle: estadoSalud?.ultimo ? textoEstadoSalud(estadoSalud) : "Traer calorías y macros", icono: HeartPulse },
+    { grupo: "Conexiones", id: "whoop", titulo: "WHOOP", detalle: "Recuperación, sueño y esfuerzo", icono: Watch },
+    { grupo: "La app", id: "apariencia", titulo: "Apariencia y sonidos", detalle: "Tema y efectos de sonido", icono: Palette },
+    { grupo: "La app", id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
+    { grupo: "La app", id: "mejoras", titulo: "Mejoras", detalle: "Pedí cambios para la app", icono: MessageSquarePlus },
+    { grupo: "Cuenta", id: "cuenta", titulo: "Cuenta", detalle: "Contraseña, tus datos, cerrar sesión y borrar cuenta", icono: KeyRound },
+    { grupo: "Cuenta", id: "legal", titulo: "Privacidad y términos", detalle: "Qué datos guardamos y para qué", icono: FileText },
+    ...(esDueno ? [{ grupo: "Solo vos", id: "dueno", titulo: "Panel del dueño", detalle: "Usuarios, números y espacio", icono: Crown }] : []),
   ];
   const actual = SECCIONES.find((x) => x.id === seccion);
 
@@ -168,12 +174,17 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
           </div>
         </header>
         <nav className="menu-ajustes" aria-label="Secciones de ajustes">
-          {SECCIONES.map((x) => (
-            <button key={x.id} onClick={() => { setSeccion(x.id); scrollTo(0, 0); }}>
-              <span className="icono-ajuste"><x.icono size={19} /></span>
-              <span><strong>{x.titulo}{x.nuevo && <span className="pastilla-nuevo">{x.pastilla || "Nuevo"}</span>}</strong><small>{x.detalle}</small></span>
-              <ChevronRight className="chevron" size={19} aria-hidden="true" />
-            </button>
+          {[...new Set(SECCIONES.map((x) => x.grupo))].map((nombre) => (
+            <section key={nombre} className="menu-ajustes-grupo" aria-label={nombre}>
+              <h2>{nombre}</h2>
+              {SECCIONES.filter((x) => x.grupo === nombre).map((x) => (
+                <button key={x.id} onClick={() => { setSeccion(x.id); scrollTo(0, 0); }}>
+                  <span className="icono-ajuste"><x.icono size={19} /></span>
+                  <span><strong>{x.titulo}{x.nuevo && <span className="pastilla-nuevo">{x.pastilla || "Nuevo"}</span>}</strong><small>{x.detalle}</small></span>
+                  <ChevronRight className="chevron" size={19} aria-hidden="true" />
+                </button>
+              ))}
+            </section>
           ))}
         </nav>
       </>
@@ -256,12 +267,13 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
       {seccion === "whoop" && <ConexionWhoop avisar={avisar} />}
       {seccion === "tutorial" && <Tutorial />}
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}
-      {seccion === "dueno" && esDueno && <PanelDueno />}
+      {seccion === "dueno" && esDueno && <Suspense fallback={null}><PanelDueno /></Suspense>}
       {seccion === "recetas" && <MisRecetas avisar={avisar} abrir={pedido?.receta ? pedido : null} />}
       {seccion === "caca" && <LaCaca avisar={avisar} />}
       {seccion === "registros" && <AjustesRegistros avisar={avisar} />}
       {seccion === "motivacion" && <MiMotivacion avisar={avisar} />}
       {seccion === "actualizaciones" && <Actualizaciones />}
+      {seccion === "legal" && <section className="tarjeta ajuste"><PrivacidadTerminos /></section>}
       {seccion === "grupos" && <MisGrupos avisar={avisar} />}
 
       {seccion === "apariencia" && (
@@ -269,7 +281,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
           {castigo.evo && <p className="castigo-nota">El Bocha Evo te pintó la app de marrón. Volvés a elegir el lunes.</p>}
           <div className="opciones-tema" role="radiogroup" aria-label="Tema" aria-disabled={castigo.evo}>
             {TEMAS.map((t) => (
-              <button key={t.id} role="radio" aria-checked={tema === t.id} className={tema === t.id ? "activo" : ""} onClick={() => cambiarTema(t.id)} disabled={castigo.evo}>
+              <button key={t.id} role="radio" aria-checked={tema === t.id} className={`tema-${t.id}${tema === t.id ? " activo" : ""}`} onClick={() => cambiarTema(t.id)} disabled={castigo.evo}>
                 <t.icono size={18} /> {t.texto}
               </button>
             ))}
@@ -283,6 +295,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
           <section className="tarjeta ajuste">
             <p className="ajuste-texto">Usuario: <strong>{yo.usuario || yo.nombre}</strong><br />Mail de recuperación: {usuario.email}</p>
             <Contrasena avisar={avisar} />
+            <MisDatos usuario={usuario} avisar={avisar} />
             <button className="boton boton-secundario" onClick={() => supabase.auth.signOut()}>
               <LogOut size={17} /> Cerrar sesión
             </button>
@@ -435,6 +448,28 @@ function Notificaciones({ avisar }) {
         </>
       )}
     </section>
+  );
+}
+
+// Una copia de todo lo tuyo en un archivo.
+function MisDatos({ usuario, avisar }) {
+  const [bajando, setBajando] = useState(false);
+  async function bajar() {
+    setBajando(true);
+    try {
+      const datos = await descargarMisDatos(usuario);
+      const filas = Object.values(datos.tablas).reduce((t, l) => t + l.length, 0);
+      avisar(`Listo: ${filas.toLocaleString("es-AR")} registros`);
+    } catch {
+      avisar("No pudimos armar el archivo. Probá de nuevo.");
+    } finally {
+      setBajando(false);
+    }
+  }
+  return (
+    <button className="boton boton-secundario" onClick={bajar} disabled={bajando}>
+      <Download size={17} /> {bajando ? "Juntando tus datos…" : "Descargar mis datos"}
+    </button>
   );
 }
 

@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
 
 const URL_APP = "http://localhost:5199";
@@ -46,7 +47,8 @@ const crear = p.getByRole("button", { name: "Crear cuenta" }).last();
 await p.getByLabel("Usuario").fill("no vale");
 await p.getByLabel("Contraseña").fill("clave-segura-1");
 await p.getByLabel("Mail de recuperación").fill("nuevo@prueba.test");
-await p.getByLabel("Código del grupo").fill("mal");
+// El código del grupo ya no se pide al registrarse: se suma después desde la app.
+assert.equal(await p.getByLabel("Código del grupo").count(), 0);
 await crear.click(); await p.waitForTimeout(300);
 console.log("usuario inválido:", await error(p));
 await p.getByLabel("Usuario").fill("Tobi_9");
@@ -54,9 +56,6 @@ await p.getByLabel("Contraseña").fill("corta");
 await crear.click(); await p.waitForTimeout(300);
 console.log("clave corta:", await error(p));
 await p.getByLabel("Contraseña").fill("clave-segura-1");
-await crear.click(); await p.waitForTimeout(300);
-console.log("código malo:", await error(p));
-await p.getByLabel("Código del grupo").fill("grupo");
 await p.getByLabel("Usuario").fill("ocupado");
 await crear.click(); await p.waitForTimeout(300);
 console.log("ocupado:", await error(p));
@@ -89,6 +88,9 @@ console.log("clave cambiada:", JSON.stringify(await p.evaluate(() => Object.keys
 
 await p.getByRole("button", { name: "Ajustes", exact: true }).locator("visible=true").first().click();
 await p.waitForTimeout(500);
+// Ajustes es un menú: el mail está en la sección Cuenta.
+await p.getByRole("button", { name: /^Cuenta/ }).click();
+await p.waitForTimeout(400);
 console.log("cuenta:", (await p.locator(".ajuste", { hasText: "Mail de recuperación" }).first().innerText()).replace(/\n+/g, " | "));
 await ctx.close();
 

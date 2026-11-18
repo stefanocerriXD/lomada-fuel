@@ -22,6 +22,8 @@ for (const [n, html] of ejemplos) {
 await capturador.close();
 
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, colorScheme: "light" });
+// Los festejos de logros tapan los botones: en esta prueba no hacen falta.
+await ctx.addInitScript(() => document.addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ".nuevo-logro, .subida-nivel { display: none !important; }"; document.head.append(s); }));
 await ctx.route(/\/api\//, (r) => r.fulfill({ json: { disponible: false, conectado: false, resultados: [] } }));
 await ctx.route(/supabase\.co/, (r) => { errores.push(`salida real: ${r.request().url()}`); r.abort(); });
 await ctx.addInitScript(() => { window.__plan = true; localStorage.setItem("comidas-bienvenida", "vista"); });
@@ -60,10 +62,14 @@ await p.waitForTimeout(400);
 console.log("pegado:", JSON.stringify(await filas()));
 await p.getByRole("button", { name: "Guardar", exact: true }).click();
 await p.waitForTimeout(900);
+// Después de importar ofrece sumar las fotos de cada comida (función nueva): se saltea.
+if (await p.getByRole("button", { name: "Ahora no" }).count()) { await p.getByRole("button", { name: "Ahora no" }).click(); await p.waitForTimeout(500); }
 const guardado = await p.evaluate(() => window.__llamadas.filter((l) => l.tabla === "comidas" && l.op === "insert").pop()?.fila);
 console.log("guardó:", JSON.stringify({ tipo: guardado?.tipo, kcal: guardado?.calorias, p: guardado?.proteinas, fecha: guardado?.fecha }));
 console.log("anillo:", (await p.locator(".anillo-centro").innerText()).replace(/\n/g, " "), "| tarjeta:", (await p.locator(".resumen-importado").innerText()).replace(/\n/g, " "));
-await p.getByRole("button", { name: "Chat", exact: true }).locator("visible=true").first().click();
+// El chat ahora está dentro de Grupo.
+await p.getByRole("button", { name: "Grupo", exact: true }).locator("visible=true").first().click();
+await p.getByRole("tab", { name: "Chat" }).click();
 await p.waitForTimeout(500);
 console.log("no aparece en el chat:", (await p.locator(".comida", { hasText: "Resumen importado" }).count()) === 0);
 
@@ -77,6 +83,8 @@ await p.getByRole("button", { name: "Leer texto" }).click();
 await p.waitForTimeout(300);
 await p.getByRole("button", { name: "Guardar", exact: true }).click();
 await p.waitForTimeout(900);
+// Después de importar ofrece sumar las fotos de cada comida (función nueva): se saltea.
+if (await p.getByRole("button", { name: "Ahora no" }).count()) { await p.getByRole("button", { name: "Ahora no" }).click(); await p.waitForTimeout(500); }
 console.log("reimportado:", (await p.locator(".resumen-importado").count()), "tarjeta |", (await p.locator(".resumen-importado").innerText()).replace(/\n/g, " "));
 
 // Carga simple
@@ -111,11 +119,16 @@ await p.getByLabel("Calorías").fill("100");
 await p.getByRole("button", { name: "Agregar", exact: true }).click();
 await p.waitForTimeout(300);
 await p.getByRole("button", { name: "Publicar comida" }).click();
+await p.waitForTimeout(600);
+// Sin foto, la app pide confirmar.
+if (await p.getByRole("button", { name: /Publicar igual/ }).count()) await p.getByRole("button", { name: /Publicar igual/ }).click();
 await p.waitForTimeout(1000);
 console.log("publicó:", JSON.stringify(await p.evaluate(() => { const f = window.__llamadas.filter((l) => l.tabla === "comidas" && l.op === "insert").pop()?.fila; return { desc: f?.descripcion, kcal: f?.calorias, medidas: f?.alimentos?.map((a) => `${a.cantidad} ${a.unidad?.nombre}`) }; })));
 
 // Chat único
-await p.getByRole("button", { name: "Chat", exact: true }).locator("visible=true").first().click();
+// El chat ahora está dentro de Grupo.
+await p.getByRole("button", { name: "Grupo", exact: true }).locator("visible=true").first().click();
+await p.getByRole("tab", { name: "Chat" }).click();
 await p.waitForTimeout(900);
 await p.screenshot({ path: "capturas/s-chat.png" });
 console.log("en el chat:", await p.locator(".chat-comida").count(), "comidas,", await p.locator(".burbuja").count(), "mensajes | sin Muro:", (await p.getByRole("button", { name: "Muro" }).count()) === 0);
@@ -123,12 +136,17 @@ console.log("en el chat:", await p.locator(".chat-comida").count(), "comidas,", 
 // Apple Salud
 await p.getByRole("button", { name: "Ajustes", exact: true }).locator("visible=true").first().click();
 await p.waitForTimeout(500);
-const conectar = p.getByRole("button", { name: "Conectar Apple Salud" });
+// Ajustes es un menú: Apple Salud tiene su sección, y el botón ahora crea la llave.
+await p.locator(".menu-ajustes button", { hasText: "Apple Salud" }).click();
+await p.waitForTimeout(500);
+const conectar = p.getByRole("button", { name: /Crear mi llave|Crear otra llave/ });
 await conectar.scrollIntoViewIfNeeded();
 await conectar.click();
 await p.waitForTimeout(400);
-console.log("llave visible:", await p.locator(".dato-copiable code").first().innerText().then((t) => t.length), "| dirección:", await p.locator(".dato-copiable code").nth(1).innerText());
-await p.locator(".pasos-atajo").scrollIntoViewIfNeeded();
+// La dirección ya no se copia a mano (va dentro del Atajo): solo se muestra la llave.
+const llave = await p.locator(".dato-copiable code").first().innerText();
+console.log("llave visible:", llave.length);
+if (!(llave.length > 10)) throw new Error("no se ve la llave");
 await p.screenshot({ path: "capturas/s-salud.png" });
 await b.close();
 console.log("errores:", errores);

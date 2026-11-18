@@ -14,6 +14,8 @@ await p.getByRole("button", { name: "Tu perfil" }).waitFor();
 
 // Un deslizamiento real con el dedo
 async function deslizar(xi, xf, y = 500, yf = y) {
+  // Los festejos (logro nuevo, subida de nivel) tapan la pantalla unos segundos: se espera a que se vayan.
+  await p.locator(".subida-nivel, .nuevo-logro").first().waitFor({ state: "hidden", timeout: 9000 }).catch(() => {});
   await p.evaluate(([a, c, d, e]) => {
     const el = document.elementFromPoint(a, d);
     const t = (x, y2) => new Touch({ identifier: 1, target: el, clientX: x, clientY: y2 });

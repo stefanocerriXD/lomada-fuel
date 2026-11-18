@@ -33,7 +33,7 @@ export default function Logo({ tam = 36, className = "" }) {
           <circle cx={cx} cy={cy} r={corte} fill="#000" />
         </mask>
       </defs>
-      <g mask={`url(#aro-${id})`} fill="currentColor">
+      <g mask={`url(#aro-${id})`} fill="var(--logo-cubiertos, currentColor)">
         <path d={LOGO.tenedorD} />
         <path d={LOGO.cuchilloD} />
       </g>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronRight, Users } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
@@ -6,8 +6,10 @@ import { fechaLocal } from "../lib/fechas.js";
 import { sumarComidas } from "../lib/macros.js";
 import { nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
 import { Indicador, Avatar, Hoja, Insignia, vibrar } from "../componentes/Base.jsx";
-import Chat, { EnVivo } from "./Chat.jsx";
-import Imagenes from "./Imagenes.jsx";
+import { EnVivo } from "../componentes/EnVivo.jsx";
+// El chat y las imágenes se bajan cuando se abren.
+const Chat = lazy(() => import("./Chat.jsx"));
+const Imagenes = lazy(() => import("./Imagenes.jsx"));
 
 const SECCIONES = [["chat", "Chat"], ["imagenes", "Imágenes"]];
 
@@ -71,7 +73,7 @@ export default function Grupo({ seccion, onSeccion, onCargar, avisar, sentido })
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
       >
-        {seccion === "chat" ? <Chat avisar={avisar} /> : <Imagenes onCargar={onCargar} avisar={avisar} />}
+        <Suspense fallback={null}>{seccion === "chat" ? <Chat avisar={avisar} /> : <Imagenes onCargar={onCargar} avisar={avisar} />}</Suspense>
       </motion.div>
       <Integrantes abierta={viendo} onCerrar={() => setViendo(false)} />
     </div>

@@ -15,12 +15,9 @@ const app = path.join(aqui, "app");
 const filtro = process.argv[2] || "";
 const PUERTO = 5199;
 
-// Pruebas que quedaron viejas: la app cambió después y hay que actualizarlas (18/11/2026).
+// Pruebas que quedaron viejas: la app cambió después y hay que actualizarlas (por ahora, ninguna).
 // Se corren igual y se muestran, pero no hacen fallar la corrida. Al arreglar una, sacarla de acá.
-const VIEJAS = new Set([
-  "chat2-prueba.mjs", "clave-prueba.mjs", "deslizar-prueba.mjs", "domingo-prueba.mjs", "etiqueta-prueba.mjs",
-  "ocr-prueba.mjs", "salud-comidas-prueba.mjs", "social-prueba.mjs", "subida-prueba.mjs",
-]);
+const VIEJAS = new Set([]);
 
 function correr(archivo, cwd) {
   return new Promise((listo) => {
@@ -102,7 +99,12 @@ if (filtro !== "sql") {
       const vieja = VIEJAS.has(f) && !r.ok;
       resultados.push([f, { ...r, vieja }]);
       console.log(`  ${r.ok ? "ok   " : vieja ? "vieja" : "FALLÓ"} ${f} (${r.segundos} s)${r.ok && VIEJAS.has(f) ? "  <- ya anda: sacala de VIEJAS" : ""}`);
-      if (!r.ok && !vieja) console.log(r.salida.split("\n").filter((l) => !/^\s+at /.test(l)).slice(-15).map((l) => `        ${l}`).join("\n"));
+      if (!r.ok && !vieja) {
+        // Primero el mensaje del error (lo que importa), después el final de la salida.
+        const lineas = r.salida.split("\n").filter((l) => !/^\s+at /.test(l) && !/^\s*'?\s+- /.test(l));
+        const clave = lineas.filter((l) => /Error|actual:|expected:|\.mjs:\d+/.test(l)).slice(0, 6);
+        console.log([...clave, "...", ...lineas.slice(-6)].map((l) => `        ${l.trim()}`).join("\n"));
+      }
     }
   } finally {
     vite.kill();

@@ -2,6 +2,8 @@
 // Los arreglos chicos y las correcciones no van acá. Lo más nuevo, arriba.
 // Antes de sumar una, se le consulta al dueño de la app: solo cosas funcionales o copadas.
 export const ACTUALIZACIONES = [
+  { id: "actividades-y-recordatorios", fecha: "2026-11-18", emoji: "⏰", titulo: "Tus actividades y recordatorios", texto: "En Ajustes › Registros diarios sumás fútbol, running, pádel o la actividad que escribas, y armás hasta 10 recordatorios a la hora que quieras, con sus días y su mensaje." },
+  { id: "viaje-y-matchday", fecha: "2026-11-18", emoji: "✈️", titulo: "Tu viaje y tu Match Day", texto: "Cada uno arma su cuenta regresiva a su viaje y su día de partido en Ajustes › Viaje y Match Day. Los avisos llegan según lo tuyo." },
   { id: "compartir-dia", fecha: "2026-11-17", emoji: "🗓️", titulo: "Compartí tu día entero", texto: "En el Resumen, «Compartir mi día» arma una historia o publicación con todas las fotos del día, el total y los macros. Elegís entre tres plantillas: grilla, collage o ticket." },
   { id: "notificaciones-a-medida", fecha: "2026-11-17", emoji: "🔔", titulo: "Notificaciones a medida", texto: "En Ajustes › Notificaciones elegís qué avisos te llegan: chat, reacciones, recordatorios, informe y más." },
   { id: "grupos-propios", fecha: "2026-11-16", emoji: "👥", titulo: "Creá tu propio grupo", texto: "Cualquiera puede armar su grupo y administrarlo: compartís el código y aceptás a cada uno que pide entrar. Los grupos nuevos traen la maldición de la cacona 💩." },
