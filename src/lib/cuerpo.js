@@ -7,13 +7,33 @@ const MINIMO_KCAL = 1200;
 const RECORTE_MAXIMO = 0.25; // Hasta 25% del gasto diario.
 const MARGEN_OBJETIVO_KG = 0.5;
 
-export const NIVELES_ACTIVIDAD = [
-  { hasta: 0, factor: 1.2, texto: "Sedentario" },
-  { hasta: 2, factor: 1.375, texto: "Actividad liviana" },
-  { hasta: 4, factor: 1.55, texto: "Actividad moderada" },
-  { hasta: 6, factor: 1.725, texto: "Muy activo" },
-  { hasta: 7, factor: 1.9, texto: "Extremadamente activo" },
+// Cómo se calcula el gasto del día: el metabolismo en reposo por un factor que sale de DOS cosas.
+// 1) El día a día (trabajo, facultad): es lo que más pesa.
+// 2) Los días de entreno: cada uno suma un poco (una hora de gym o fútbol quema unas 300-500 kcal, repartidas en la semana).
+// Antes se usaba solo la cantidad de días con los factores clásicos (5 días = x1,725), que inflan el gasto
+// de quien trabaja sentado y entrena: daba 400-600 kcal de más por día.
+export const DIA_A_DIA = [
+  { id: "sentado", factor: 1.2, texto: "Sentado casi todo el día", detalle: "Oficina, facultad, auto" },
+  { id: "movido", factor: 1.35, texto: "Me muevo bastante", detalle: "Camino mucho o estoy de pie" },
+  { id: "fisico", factor: 1.5, texto: "Trabajo físico", detalle: "Obra, reparto, cargar cosas" },
 ];
+const POR_DIA_DE_ENTRENO = 0.045;
+export const diaADia = (id) => DIA_A_DIA.find((x) => x.id === id) || DIA_A_DIA[0];
+export function factorActividad(datos) {
+  const dias = Math.min(Math.max(Number(datos.dias_actividad) || 0, 0), 7);
+  return diaADia(datos.dia_a_dia).factor + dias * POR_DIA_DE_ENTRENO;
+}
+
+export const NIVELES_ACTIVIDAD = [
+  { hasta: 0, texto: "Sin entrenar" },
+  { hasta: 2, texto: "Entreno liviano" },
+  { hasta: 4, texto: "Entreno moderado" },
+  { hasta: 6, texto: "Entreno fuerte" },
+  { hasta: 7, texto: "Entreno todos los días" },
+];
+
+// Al bulkear se suma poco por día: más que esto termina siendo grasa, no músculo.
+export const SUPERAVIT_BULK = { 0.25: 150, 0.5: 250, 0.75: 350 };
 
 export const RITMOS = [
   { valor: 0.25, texto: "Suave" },
@@ -67,7 +87,7 @@ export function metabolismoBasal({ sexo, anio_nacimiento, altura_cm, peso_kg }) 
 
 export function calcularPlan(datos) {
   const basal = metabolismoBasal(datos);
-  const gasto = basal * nivelActividad(Number(datos.dias_actividad)).factor;
+  const gasto = basal * factorActividad(datos);
   const diferencia = Number(datos.peso_objetivo) - Number(datos.peso_kg);
   const ritmo = Number(datos.ritmo);
 
@@ -80,7 +100,7 @@ export function calcularPlan(datos) {
     const recorte = Math.min((ritmo * KCAL_POR_KILO) / 7, gasto * RECORTE_MAXIMO);
     calorias = Math.max(gasto - recorte, basal, MINIMO_KCAL);
   } else if (objetivo === "bulk") {
-    calorias = gasto + (Math.min(ritmo, 0.5) * KCAL_POR_KILO) / 7;
+    calorias = gasto + (SUPERAVIT_BULK[ritmo] ?? 250);
   }
   calorias = redondear(calorias);
 

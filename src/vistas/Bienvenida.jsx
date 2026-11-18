@@ -4,11 +4,11 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal } from "../lib/fechas.js";
-import { CAMPOS_A_MEDIDA, calcularPlan, macrosAMedidaValidos, nivelActividad, objetivoDe, OBJETIVOS, PRIORIDADES, RITMOS, tieneMacrosAMedida } from "../lib/cuerpo.js";
+import { CAMPOS_A_MEDIDA, calcularPlan, DIA_A_DIA, SUPERAVIT_BULK, macrosAMedidaValidos, nivelActividad, objetivoDe, OBJETIVOS, PRIORIDADES, RITMOS, tieneMacrosAMedida } from "../lib/cuerpo.js";
 import { Hoja, vibrar } from "../componentes/Base.jsx";
 
 const PASOS = ["Sobre vos", "Tus medidas", "Tu actividad", "Tu objetivo", "Tu plan"];
-const VACIO = { sexo: "", anio_nacimiento: "", altura_cm: "", peso_kg: "", dias_actividad: 3, peso_objetivo: "", ritmo: 0.5, objetivo: null, prioridad: "equilibrado", proteinas_propias: null, carbos_propios: null, grasas_propias: null };
+const VACIO = { sexo: "", anio_nacimiento: "", altura_cm: "", peso_kg: "", dias_actividad: 3, dia_a_dia: "sentado", peso_objetivo: "", ritmo: 0.5, objetivo: null, prioridad: "equilibrado", proteinas_propias: null, carbos_propios: null, grasas_propias: null };
 
 const anioActual = new Date().getFullYear();
 const entre = (v, min, max) => Number(v) >= min && Number(v) <= max;
@@ -79,7 +79,12 @@ function Asistente({ onGuardar }) {
       actualizado_en: new Date().toISOString(),
     };
     try {
-      const { error: errSalud } = await supabase.from("perfiles_salud").upsert(datos, { onConflict: "usuario_id" });
+      let { error: errSalud } = await supabase.from("perfiles_salud").upsert(datos, { onConflict: "usuario_id" });
+      // Si la base todavía no tiene la columna del día a día (SQL 051), se guarda el resto igual.
+      if (errSalud && /dia_a_dia/.test(errSalud.message || "")) {
+        const { dia_a_dia, ...sinDiaADia } = datos; // eslint-disable-line no-unused-vars
+        ({ error: errSalud } = await supabase.from("perfiles_salud").upsert(sinDiaADia, { onConflict: "usuario_id" }));
+      }
       if (errSalud) throw errSalud;
       const { error: errPeso } = await supabase.from("pesos").upsert({ usuario_id: usuario.id, fecha: fechaLocal(), peso_kg: datos.peso_kg }, { onConflict: "usuario_id,fecha" });
       if (errPeso) throw errPeso;
@@ -149,8 +154,20 @@ function Asistente({ onGuardar }) {
           )}
 
           {paso === 2 && (
+            <>
             <div className="campo">
-              <span id="etiqueta-dias">¿Cuántos días por semana entrenás o hacés actividad?</span>
+              <span id="etiqueta-dia-a-dia">¿Cómo es tu día a día? (sin contar el entreno)</span>
+              <div className="opciones-objetivo" role="radiogroup" aria-labelledby="etiqueta-dia-a-dia">
+                {DIA_A_DIA.map((o) => (
+                  <button key={o.id} role="radio" aria-checked={(d.dia_a_dia || "sentado") === o.id} className={(d.dia_a_dia || "sentado") === o.id ? "activo" : ""} onClick={() => setD({ ...d, dia_a_dia: o.id })}>
+                    <strong>{o.texto}</strong>
+                    <small>{o.detalle}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="campo">
+              <span id="etiqueta-dias">¿Cuántos días por semana entrenás o hacés deporte?</span>
               <div className="opciones-dias" role="radiogroup" aria-labelledby="etiqueta-dias">
                 {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
                   <button key={n} role="radio" aria-checked={Number(d.dias_actividad) === n} className={Number(d.dias_actividad) === n ? "activo" : ""} onClick={() => setD({ ...d, dias_actividad: n })}>
@@ -160,6 +177,7 @@ function Asistente({ onGuardar }) {
               </div>
               <p className="nota">{nivelActividad(Number(d.dias_actividad)).texto}</p>
             </div>
+            </>
           )}
 
           {paso === 3 && (
@@ -187,7 +205,7 @@ function Asistente({ onGuardar }) {
                   {RITMOS.map((r) => (
                     <button key={r.valor} role="radio" aria-checked={Number(d.ritmo) === r.valor} className={Number(d.ritmo) === r.valor ? "activo" : ""} onClick={() => setD({ ...d, ritmo: r.valor })}>
                       <strong>{r.texto}</strong>
-                      <small>{String(r.valor).replace(".", ",")} kg por semana</small>
+                      <small>{objetivoDe(d) === "bulk" ? `+${SUPERAVIT_BULK[r.valor]} kcal por día` : `${String(r.valor).replace(".", ",")} kg por semana`}</small>
                     </button>
                   ))}
                 </div>

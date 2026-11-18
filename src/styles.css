@@ -2475,3 +2475,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .dueno-usuario-num { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
 .dueno-usuario-num strong { font-variant-numeric: tabular-nums; }
 .dueno-usuario-num small { color: var(--tinta-2); font-size: 0.72rem; }
+
+/* Meta recalculada (Ajustes > Tu cuerpo y objetivo) */
+.meta-recalculada { display: grid; gap: 10px; padding: 12px 0; border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); }
+.meta-recalculada-botones { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }

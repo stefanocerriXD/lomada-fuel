@@ -39,6 +39,54 @@ function textoObjetivo(salud) {
   return `${objetivo} · ${detalle} · P ${plan.proteinas} g · C ${plan.carbohidratos} g · G ${plan.grasas} g`;
 }
 
+// El cálculo del gasto cambió (ahora cuenta el día a día aparte del entreno): si la meta guardada
+// quedó lejos de la que da el plan, se ofrece cambiarla. Nunca se cambia sola.
+function MetaRecalculada({ salud, metaActual, onUsar, onEditar }) {
+  const { usuario, cargarPerfiles } = useDatos();
+  const [guardando, setGuardando] = useState(false);
+  const plan = calcularPlan(salud);
+  const clave = `lomada-meta-nueva-${plan.calorias}`;
+  const [descartada, setDescartada] = useState(() => {
+    try {
+      return localStorage.getItem(clave) === "no";
+    } catch {
+      return false;
+    }
+  });
+  if (plan.aMedida || descartada || Math.abs(plan.calorias - metaActual) < 100) return null;
+
+  async function usar() {
+    setGuardando(true);
+    const { error } = await supabase.from("perfiles").update({ meta_calorias: plan.calorias }).eq("id", usuario.id);
+    setGuardando(false);
+    if (error) return;
+    onUsar(plan.calorias);
+    await cargarPerfiles();
+  }
+  function descartar() {
+    try {
+      localStorage.setItem(clave, "no");
+    } catch {
+      // Sin guardar, vuelve a aparecer la próxima vez.
+    }
+    setDescartada(true);
+  }
+
+  return (
+    <div className="meta-recalculada">
+      <p className="ajuste-texto">
+        Mejoramos la cuenta de cuánto quemás: ahora separa tu día a día del entreno. Con tu plan, tu meta da <strong>{plan.calorias.toLocaleString("es-AR")} kcal</strong> (hoy tenés {metaActual.toLocaleString("es-AR")}).
+        {!salud.dia_a_dia || salud.dia_a_dia === "sentado" ? " Si no pasás el día sentado, editá tu plan y elegí cómo es tu día a día." : ""}
+      </p>
+      <div className="meta-recalculada-botones">
+        <button className="boton" onClick={usar} disabled={guardando}>{guardando ? "Guardando…" : `Usar ${plan.calorias.toLocaleString("es-AR")} kcal`}</button>
+        <button className="boton-texto" onClick={onEditar}>Revisar mi plan</button>
+        <button className="boton-texto" onClick={descartar}>Dejar la mía</button>
+      </div>
+    </div>
+  );
+}
+
 export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const { castigo, usuario, yo, cargarPerfiles, salud, grupo, misGrupos, extras } = useDatos();
   const [nombre, setNombre] = useState(yo.nombre);
@@ -190,6 +238,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
               ) : (
                 <p className="ajuste-texto">Cargá tus medidas, tu actividad y tu objetivo para calcular cuánto quemás y tu meta diaria.</p>
               )}
+              {salud && <MetaRecalculada salud={salud} metaActual={yo.meta_calorias} onUsar={setMeta} onEditar={onEditarCuerpo} />}
               <button className="boton boton-secundario" onClick={onEditarCuerpo}><Target size={17} /> {salud ? "Editar mi plan" : "Armar mi plan"}</button>
               <button className="boton boton-secundario" onClick={() => setObjetivosMFP(true)}><RefreshCw size={17} /> Traer objetivos de MyFitnessPal</button>
             </section>
