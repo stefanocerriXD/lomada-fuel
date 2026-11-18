@@ -689,14 +689,6 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
           {!items.length && !panel && (combos.length > 0 || extras.favoritas.length > 0 || historial.recientes.length > 0 || extras.recetas?.length > 0) && (
             <div className="historial">
-              {extras.recetas?.length > 0 && (
-                <>
-                  <h3 className="titulo-lista">Tus recetas</h3>
-                  <ul className="resultados">
-                    {extras.recetas.slice(0, 4).map((r) => <FilaResultado key={r.id} alimento={recetaComoAlimento(r)} onElegir={agregar} />)}
-                  </ul>
-                </>
-              )}
               {combos.length > 0 && (
                 <>
                   <h3 className="titulo-lista">Tus {PLURALES[tipo]} anteriores</h3>
@@ -764,6 +756,14 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
                   <h3 className="titulo-lista">Los que más usás</h3>
                   <ul className="resultados">
                     {historial.frecuentes.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={agregar} />)}
+                  </ul>
+                </>
+              )}
+              {extras.recetas?.length > 0 && (
+                <>
+                  <h3 className="titulo-lista">Tus recetas</h3>
+                  <ul className="resultados">
+                    {extras.recetas.slice(0, 4).map((r) => <FilaResultado key={r.id} alimento={recetaComoAlimento(r)} onElegir={agregar} />)}
                   </ul>
                 </>
               )}
