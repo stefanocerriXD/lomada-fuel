@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { borrarFotosGuardadas } from "./lib/fotosGuardadas.js";
 import { EVENTO_IR } from "./lib/navegar.js";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
@@ -10,7 +10,7 @@ import { DatosProvider, GRUPO_BASE, useDatos } from "./lib/datos.jsx";
 import SinGrupo from "./componentes/SinGrupo.jsx";
 import SelectorGrupo from "./componentes/SelectorGrupo.jsx";
 import SubidaNivel from "./componentes/SubidaNivel.jsx";
-import { Aviso, Avatar, datosMarco, Esqueleto, Festejo, Hoja, Insignia, marcoDe, resorte, vibrar } from "./componentes/Base.jsx";
+import { Aviso, Avatar, datosMarco, Festejo, Hoja, Insignia, marcoDe, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import InstalarApp from "./componentes/InstalarApp.jsx";
@@ -20,14 +20,14 @@ import Login from "./vistas/Login.jsx";
 import Resumen from "./vistas/Resumen.jsx";
 import Grupo from "./vistas/Grupo.jsx";
 // Lo que no se ve al abrir la app se baja aparte, después: el primer arranque es más liviano.
-const Perfil = lazy(() => import("./vistas/Perfil.jsx"));
-const Retos = lazy(() => import("./vistas/Retos.jsx"));
-const Ajustes = lazy(() => import("./vistas/Ajustes.jsx"));
-const NuevaComida = lazy(() => import("./vistas/NuevaComida.jsx"));
-const Bienvenida = lazy(() => import("./vistas/Bienvenida.jsx"));
-const Importar = lazy(() => import("./vistas/Importar.jsx"));
-const Fiesta = lazy(() => import("./componentes/Fiesta.jsx"));
-const InformeSemanal = lazy(() => import("./componentes/InformeSemanal.jsx"));
+const Perfil = perezosa(() => import("./vistas/Perfil.jsx"));
+const Retos = perezosa(() => import("./vistas/Retos.jsx"));
+const Ajustes = perezosa(() => import("./vistas/Ajustes.jsx"));
+const NuevaComida = perezosa(() => import("./vistas/NuevaComida.jsx"));
+const Bienvenida = perezosa(() => import("./vistas/Bienvenida.jsx"));
+const Importar = perezosa(() => import("./vistas/Importar.jsx"));
+const Fiesta = perezosa(() => import("./componentes/Fiesta.jsx"));
+const InformeSemanal = perezosa(() => import("./componentes/InformeSemanal.jsx"));
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 import Logo from "./componentes/Logo.jsx";
@@ -36,6 +36,8 @@ import { FOTOS_POR_DIA, fotosDelDia } from "./lib/multas.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "./lib/grupos.js";
 import { fechaLocal } from "./lib/fechas.js";
 import { quitarSplash } from "./lib/splash.js";
+import { perezosa } from "./lib/perezosa.js";
+import Recuperable, { CargandoSeccion } from "./componentes/Recuperable.jsx";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -488,10 +490,12 @@ function Principal({ recuperando, onRecuperado }) {
           >
             {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} onFiesta={() => setFiesta(true)} onDia={setDiaResumen} avisar={avisar} />}
             {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} sentido={sentido} />}
-            <Suspense fallback={<Esqueleto />}>
+            <Recuperable>
+            <Suspense fallback={<CargandoSeccion />}>
               {vista === "retos" && <Retos />}
               {vista === "ajustes" && <Ajustes avisar={avisar} onEditarCuerpo={abrirCuerpo} pedido={pedidoAjustes} />}
             </Suspense>
+            </Recuperable>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -515,6 +519,7 @@ function Principal({ recuperando, onRecuperado }) {
         ))}
       </nav>
 
+      <Recuperable>
       <Suspense fallback={null}>
       <Perfil onEditar={() => { abrirPerfil(null); setVista("ajustes"); }} onEditarComida={(comida) => { abrirPerfil(null); abrirCarga({ comida }); }} />
       <NuevaComida carga={carga} onCerrar={() => setCarga(null)} onGuardar={alGuardar} onImportarDia={abrirImportar} onFiesta={() => { setCarga(null); setFiesta(true); }} onPostre={(comida, extra) => setCarga({ comida, postre: true, extra })} avisar={avisar} />
@@ -540,6 +545,7 @@ function Principal({ recuperando, onRecuperado }) {
         }}
       />
       </Suspense>
+      </Recuperable>
       <Hoja abierta={recuperando} onCerrar={onRecuperado} titulo="Creá tu nueva contraseña">
         <FormularioContrasena
           onListo={() => {

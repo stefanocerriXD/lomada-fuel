@@ -1,4 +1,6 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { perezosa } from "../lib/perezosa.js";
+import Recuperable, { CargandoSeccion } from "../componentes/Recuperable.jsx";
 import { motion } from "motion/react";
 import { ChevronRight, Users } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
@@ -8,8 +10,8 @@ import { nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
 import { Indicador, Avatar, Hoja, Insignia, vibrar } from "../componentes/Base.jsx";
 import { EnVivo } from "../componentes/EnVivo.jsx";
 // El chat y las imágenes se bajan cuando se abren.
-const Chat = lazy(() => import("./Chat.jsx"));
-const Imagenes = lazy(() => import("./Imagenes.jsx"));
+const Chat = perezosa(() => import("./Chat.jsx"));
+const Imagenes = perezosa(() => import("./Imagenes.jsx"));
 
 const SECCIONES = [["chat", "Chat"], ["imagenes", "Imágenes"]];
 
@@ -73,7 +75,7 @@ export default function Grupo({ seccion, onSeccion, onCargar, avisar, sentido })
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
       >
-        <Suspense fallback={null}>{seccion === "chat" ? <Chat avisar={avisar} /> : <Imagenes onCargar={onCargar} avisar={avisar} />}</Suspense>
+        <Recuperable key={seccion}><Suspense fallback={<CargandoSeccion />}>{seccion === "chat" ? <Chat avisar={avisar} /> : <Imagenes onCargar={onCargar} avisar={avisar} />}</Suspense></Recuperable>
       </motion.div>
       <Integrantes abierta={viendo} onCerrar={() => setViendo(false)} />
     </div>

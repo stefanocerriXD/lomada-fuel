@@ -6,7 +6,9 @@ import Tutorial from "../componentes/Tutorial.jsx";
 import ObjetivosMFP from "../componentes/ObjetivosMFP.jsx";
 import MisGrupos from "../componentes/MisGrupos.jsx";
 import MiMotivacion from "../componentes/MiMotivacion.jsx";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { perezosa } from "../lib/perezosa.js";
+import Recuperable, { CargandoSeccion } from "../componentes/Recuperable.jsx";
 import { motion } from "motion/react";
 import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, Download, FileText, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, MoonStar, Palette, Plane, RefreshCw, Skull, Sprout, SunMedium, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
@@ -22,7 +24,7 @@ import Actualizaciones from "../componentes/Actualizaciones.jsx";
 import { ACTUALIZACIONES, hayNovedades } from "../data/actualizaciones.js";
 import { ding, prenderSonidos, sonidosPrendidos } from "../lib/sonidos.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "../lib/grupos.js";
-const PanelDueno = lazy(() => import("../componentes/PanelDueno.jsx"));
+const PanelDueno = perezosa(() => import("../componentes/PanelDueno.jsx"));
 import PreferenciasAvisos from "../componentes/PreferenciasAvisos.jsx";
 import BorrarCuenta from "../componentes/BorrarCuenta.jsx";
 import PrivacidadTerminos from "../componentes/PrivacidadTerminos.jsx";
@@ -265,7 +267,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
       {seccion === "whoop" && <ConexionWhoop avisar={avisar} />}
       {seccion === "tutorial" && <Tutorial />}
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}
-      {seccion === "dueno" && esDueno && <Suspense fallback={null}><PanelDueno /></Suspense>}
+      {seccion === "dueno" && esDueno && <Recuperable><Suspense fallback={<CargandoSeccion />}><PanelDueno /></Suspense></Recuperable>}
       {seccion === "recetas" && <MisRecetas avisar={avisar} abrir={pedido?.receta ? pedido : null} />}
       {seccion === "caca" && <LaCaca avisar={avisar} />}
       {seccion === "registros" && <AjustesRegistros avisar={avisar} />}

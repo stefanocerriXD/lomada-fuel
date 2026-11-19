@@ -60,7 +60,8 @@ await p.screenshot({ path: "capturas/bocha-limpiando.png" });
 await p.getByRole("button", { name: "Listo" }).click().catch(() => {});
 await p.waitForTimeout(300);
 await p.getByRole("button", { name: "Grupo", exact: true }).locator("visible=true").first().click();
-await p.waitForTimeout(700);
+// El chat se baja al abrirlo: se espera a que esté (si no, los "no hay botón" pasarían sin chat).
+await p.locator(".castigo-nota.chat").waitFor({ timeout: 10000 });
 assert.equal(await p.getByRole("button", { name: "Stickers" }).count(), 0, "en castigo, solo texto");
 assert.equal(await p.getByLabel("Mandar foto o GIF").count(), 0);
 assert.ok((await p.locator(".castigo-nota.chat").count()) === 1);

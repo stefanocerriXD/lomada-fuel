@@ -4,7 +4,13 @@ const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
 await ctx.route(/\/api\//, (r) => r.fulfill({ json: { disponible: false, conectado: false, resultados: [] } }));
-await ctx.addInitScript(() => { localStorage.setItem("comidas-bienvenida", "vista"); });
+await ctx.addInitScript(() => {
+  localStorage.setItem("comidas-bienvenida", "vista");
+  // 9:30: el + abre en Desayuno (después de almorzar o cenar, el postre aparece solo: eso lo prueba postre-y-dia).
+  const Real = Date; const meta = new Real(); meta.setHours(9, 30, 0, 0); const d = meta.getTime() - Real.now();
+  class C extends Real { constructor(...a) { super(...(a.length ? a : [Real.now() + d])); } static now() { return Real.now() + d; } }
+  window.Date = C;
+});
 const p = await ctx.newPage();
 p.on("pageerror", (e) => errores.push(e.message));
 await p.goto("http://localhost:5199");
@@ -14,7 +20,7 @@ assert.equal(await p.locator(".postre-aviso").count(), 0);
 await p.locator(".boton-subir").click();
 await p.getByRole("heading", { name: "Subir comida" }).waitFor();
 await p.waitForTimeout(500);
-// En el + no aparece: solo como opción extra al elegir colación.
+// En el desayuno no aparece; al elegir colación, sí.
 assert.equal(await p.locator(".postre-opcion, .postre-atajos").count(), 0);
 await p.getByRole("radio", { name: /Colaciones/ }).click();
 const opcion = p.locator(".postre-opcion");
