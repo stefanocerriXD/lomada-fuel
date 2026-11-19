@@ -96,6 +96,48 @@ r = res();
 await handler({ method: "GET" }, r);
 assert.equal(r.statusCode, 405);
 
+// Día por día (SQL 056): con las listas del Atajo se sincroniza la ventana entera.
+{
+  const llamadas = [];
+  let sin056 = false;
+  globalThis.fetch = async (url, op) => {
+    const funcion = String(url).split("/").pop();
+    llamadas.push({ funcion, cuerpo: JSON.parse(op.body) });
+    if (funcion === "sincronizar_salud") {
+      if (sin056) return new Response(JSON.stringify({ code: "PGRST202", message: "Could not find the function public.sincronizar_salud" }), { status: 404 });
+      return new Response(JSON.stringify({ "2026-11-19": 500, "2026-11-18": 1350 }), { status: 200 });
+    }
+    return new Response("null", { status: 200 });
+  };
+  // Lo que manda el Atajo: totales agrupados por día (el último es ayer porque hoy quedó vacío) y las comidas sueltas.
+  const atajo = {
+    token: "bueno", fecha: "2026-11-19",
+    calorias: ["900", "1350"], proteinas: ["40", "60"],
+    kcal_horas: ["2026-11-18T21:00:00-03:00", "2026-11-18T22:30:00-03:00"], kcal_valores: ["700", "650"],
+    proteinas_horas: ["2026-11-18T21:00:00-03:00", "2026-11-18T22:30:00-03:00"], proteinas_valores: ["30", "30"],
+  };
+  let rs = res();
+  await handler({ method: "POST", body: atajo }, rs);
+  assert.equal(rs.statusCode, 200);
+  assert.deepEqual(llamadas.map((l) => l.funcion), ["sincronizar_salud"], "no usa el total de la lista como si fuera de hoy");
+  assert.deepEqual([llamadas[0].cuerpo.p_desde, llamadas[0].cuerpo.p_hasta], ["2026-11-14", "2026-11-19"]);
+  assert.deepEqual(llamadas[0].cuerpo.p_entradas.map((e) => [e.momento.slice(0, 10), e.kcal]), [["2026-11-18", 700], ["2026-11-18", 650]]);
+  assert.equal(rs.cuerpo.dias["2026-11-18"], 1350);
+
+  // Sin el SQL 056 sigue como antes.
+  llamadas.length = 0; sin056 = true;
+  rs = res();
+  await handler({ method: "POST", body: atajo }, rs);
+  assert.equal(rs.statusCode, 200);
+  assert.deepEqual(llamadas.map((l) => l.funcion), ["sincronizar_salud", "registrar_salud", "registrar_comidas_salud"]);
+  sin056 = false;
+
+  // Llegaron totales pero ninguna comida suelta (Salud no dejó leerlas): no se vacía la semana.
+  llamadas.length = 0;
+  await handler({ method: "POST", body: { token: "bueno", fecha: "2026-11-19", calorias: ["1200"], kcal_horas: [], kcal_valores: [] } }, res());
+  assert.deepEqual(llamadas.map((l) => l.funcion), ["registrar_salud"]);
+}
+
 console.log("importador y Apple Salud: todas las pruebas pasaron");
 
 // ---------- Importar desde una comida ----------

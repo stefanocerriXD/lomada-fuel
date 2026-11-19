@@ -91,10 +91,27 @@ export function comidasDeSalud(datos, fechaBase) {
       porMinuto.set(momento, entrada);
     }
   }
-  return [...porMinuto.values()].slice(0, 80);
+  return [...porMinuto.values()].slice(0, 300);
 }
 
 const hoyEnArgentina = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+
+// El Atajo trae las comidas sueltas de los últimos 7 días. Se sincronizan los últimos 6 (el más viejo puede venir por la mitad).
+export const DIAS_SINCRONIZADOS = 6;
+export function ventana(fecha) {
+  const [a, m, d] = fecha.split("-").map(Number);
+  const desde = new Date(Date.UTC(a, m - 1, d - (DIAS_SINCRONIZADOS - 1))).toISOString().slice(0, 10);
+  return { desde, hasta: fecha };
+}
+
+// Con las listas del Atajo, cada día queda igual que en Apple Salud. Si llegaron totales pero ninguna comida suelta
+// (Salud no dejó leer las muestras), no se toca nada: vaciar la semana por un error sería peor.
+export function sePuedeSincronizar(datos, entradas) {
+  const conListas = LISTAS.some(([, nombre]) => datos[`${nombre}_horas`] !== undefined);
+  if (!conListas) return false;
+  const totales = aLista(datos.calorias).map(aNumero).filter((n) => n > 0);
+  return entradas.length > 0 || totales.length === 0;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
@@ -109,32 +126,45 @@ export default async function handler(req, res) {
   const recibido = Object.fromEntries(Object.keys(valores).filter((k) => datos[k] !== undefined).map((k) => [k, JSON.stringify(datos[k]).slice(0, 120)]));
   if (Object.values(valores).some((v) => v !== null && (v < 0 || v > 100000))) return res.status(400).json({ error: "valores_invalidos", recibido });
 
-  const resp = await fetch(`${url}/rest/v1/rpc/registrar_salud`, {
+  const rpc = (funcion, cuerpo) => fetch(`${url}/rest/v1/rpc/${funcion}`, {
     method: "POST",
     headers: { "content-type": "application/json", apikey: clave },
-    body: JSON.stringify({
-      p_token: String(datos.token || ""),
-      p_fecha: fecha,
-      p_calorias: valores.calorias,
-      p_proteinas: valores.proteinas,
-      p_carbohidratos: valores.carbohidratos,
-      p_grasas: valores.grasas,
-      p_peso: valores.peso,
-    }),
+    body: JSON.stringify(cuerpo),
     signal: AbortSignal.timeout(10000),
+  });
+
+  // Día por día (SQL 056): las comidas y el total de cada día quedan como en Apple Salud.
+  const entradas = comidasDeSalud(datos, fecha);
+  if (sePuedeSincronizar(datos, entradas)) {
+    const { desde, hasta } = ventana(fecha);
+    const r = await rpc("sincronizar_salud", { p_token: String(datos.token || ""), p_entradas: entradas, p_desde: desde, p_hasta: hasta }).catch(() => null);
+    if (r?.ok) {
+      // El peso, si vino, va por el camino de siempre (sin totales, para no pisar lo sincronizado).
+      if (valores.peso !== null) await rpc("registrar_salud", { p_token: String(datos.token || ""), p_fecha: fecha, p_peso: valores.peso }).catch(() => null);
+      return res.status(200).json({ ok: true, fecha, dias: await r.json().catch(() => null), comidas: entradas.length });
+    }
+    const cuerpo = r ? await r.json().catch(() => ({})) : {};
+    const codigo = Object.keys(ERRORES).find((c) => cuerpo.message?.includes(c));
+    if (codigo) return res.status(ERRORES[codigo]).json({ error: codigo });
+    // Sin el SQL 056 (o si falló), sigue como antes.
+    if (r && !/sincronizar_salud/.test(cuerpo.message || "")) console.error("Sincronizar Apple Salud:", cuerpo);
+  }
+
+  const resp = await rpc("registrar_salud", {
+    p_token: String(datos.token || ""),
+    p_fecha: fecha,
+    p_calorias: valores.calorias,
+    p_proteinas: valores.proteinas,
+    p_carbohidratos: valores.carbohidratos,
+    p_grasas: valores.grasas,
+    p_peso: valores.peso,
   });
 
   if (resp.ok) {
     // Las comidas sueltas son un extra: si fallan, el total del día ya quedó guardado.
-    const entradas = comidasDeSalud(datos, fecha);
     let comidas;
     if (entradas.length) {
-      const r = await fetch(`${url}/rest/v1/rpc/registrar_comidas_salud`, {
-        method: "POST",
-        headers: { "content-type": "application/json", apikey: clave },
-        body: JSON.stringify({ p_token: String(datos.token || ""), p_entradas: entradas }),
-        signal: AbortSignal.timeout(10000),
-      }).catch(() => null);
+      const r = await rpc("registrar_comidas_salud", { p_token: String(datos.token || ""), p_entradas: entradas.slice(0, 80) }).catch(() => null);
       comidas = r?.ok ? entradas.length : "no se pudieron guardar";
       if (!r?.ok) console.error("Comidas de Apple Salud:", r && (await r.text().catch(() => r.status)));
     }

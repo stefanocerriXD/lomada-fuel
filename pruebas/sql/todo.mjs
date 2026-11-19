@@ -1165,3 +1165,60 @@ assert.deepEqual(await contar(), antesB, "no duplica");
 assert.equal((await uno("show session_replication_role")).session_replication_role, "origin");
 fs.rmSync(archivo, { force: true });
 console.log("backup: pruebas pasadas");
+
+// ===== 056: Apple Salud sincroniza dia por dia =====
+{
+  // El 037 (comidas sueltas de Apple Salud) no estaba en la cadena: va antes del 056.
+  await db.exec(fs.readFileSync(raiz + "037_comidas_de_salud.sql", "utf8"));
+  const s056 = fs.readFileSync(raiz + "056_sincronizar_salud.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s056), "056 en ASCII");
+  console.log((await db.exec(s056)).at(-1).rows[0].resultado);
+  await db.exec(s056);
+  const hoy = (await uno("select (now() at time zone 'America/Argentina/Buenos_Aires')::date::text d")).d;
+  const dia = async (n) => (await uno("select ($1::date + $2::int)::text d", [hoy, n])).d;
+  const [ayer, hace3, hace5, hace10] = [await dia(-1), await dia(-3), await dia(-5), await dia(-10)];
+  const e = (fecha, hora, kcal) => ({ momento: `${fecha}T${hora}:00-03:00`, kcal, p: 10, c: 20, g: 5 });
+  await db.exec("delete from tokens_salud");
+  await db.query("insert into tokens_salud (usuario_id, token_hash) values ($1, encode(extensions.digest('llave56', 'sha256'), 'hex'))", [U[0]]);
+  await db.query("delete from comidas where usuario_id = $1 and tipo = 'resumen'", [U[0]]);
+  await db.query("delete from salud_comidas where usuario_id = $1", [U[0]]);
+  const sincronizar = async (entradas) => {
+    await db.query("set role anon");
+    try { return (await db.query("select public.sincronizar_salud('llave56', $1::jsonb, $2::date, $3::date) r", [JSON.stringify(entradas), hace5, hoy])).rows[0].r; }
+    finally { await db.query("reset role"); }
+  };
+  const total = async (fecha) => (await uno("select calorias, descripcion from comidas where usuario_id = $1 and tipo = 'resumen' and fecha = $2", [U[0], fecha]))?.calorias ?? null;
+  const sueltas = async (fecha) => (await filas("select kcal from salud_comidas where usuario_id = $1 and fecha = $2 order by momento", [U[0], fecha])).map((x) => x.kcal);
+
+  // Un resumen importado a mano y una comida vieja fuera de la ventana: no se tocan.
+  await db.query("insert into comidas (usuario_id, tipo, fecha, descripcion, calorias, proteinas, carbohidratos, grasas, alimentos) values ($1, 'resumen', $2, 'Resumen importado', 1800, 1, 1, 1, '[]')", [U[0], hace3]);
+  await db.query("insert into salud_comidas (usuario_id, fecha, momento, kcal, proteinas, carbohidratos, grasas) values ($1, $2, $3, 400, 1, 1, 1)", [U[0], hace10, `${hace10}T12:00:00-03:00`]);
+
+  // 1. Hoy almuerzo y cena; ayer una cena.
+  let r56 = await sincronizar([e(hoy, "13:00", 500), e(hoy, "21:10", 650), e(ayer, "21:00", 700), e(hace3, "13:00", 300)]);
+  assert.equal(r56[hoy], 1150);
+  assert.deepEqual([await total(hoy), await total(ayer)], [1150, 700]);
+  assert.equal(await total(hace3), 1800, "el resumen importado a mano no se pisa");
+
+  // 2. La cena de hoy se paso a ayer en MyFitnessPal (el caso del 19/11).
+  await sincronizar([e(hoy, "13:00", 500), e(ayer, "21:00", 700), e(ayer, "22:30", 650)]);
+  assert.deepEqual([await total(hoy), await total(ayer)], [500, 1350], "hoy baja y ayer sube");
+  assert.deepEqual(await sueltas(hoy), [500], "la cena ya no figura hoy");
+  assert.deepEqual(await sueltas(ayer), [700, 650]);
+
+  // 3. Hoy quedo vacio: el total de hoy se va (antes quedaba el de ayer como de hoy).
+  await sincronizar([e(ayer, "21:00", 700), e(ayer, "22:30", 650)]);
+  assert.equal(await total(hoy), null, "hoy sin nada");
+  assert.deepEqual(await sueltas(hoy), []);
+  assert.equal(await total(ayer), 1350);
+  assert.deepEqual(await sueltas(hace10), [400], "fuera de la ventana no se toca");
+  assert.equal(await total(hace3), 1800);
+
+  // Permisos y errores
+  await db.query("set role anon");
+  await assert.rejects(db.query("select public.sincronizar_salud('mala', '[]', $1::date, $2::date)", [hace5, hoy]), /token_invalido/);
+  await assert.rejects(db.query("select public.sincronizar_salud('llave56', '[]', $1::date, $2::date)", [hace10 + "x".slice(1), await dia(-20)]), /fecha_invalida/);
+  await db.query("reset role");
+  await assert.rejects(rol(U[0], () => db.query("select public.sincronizar_salud('llave56', '[]', $1::date, $2::date)", [hace5, hoy])), /permission denied/);
+  console.log("056: pruebas pasadas");
+}
