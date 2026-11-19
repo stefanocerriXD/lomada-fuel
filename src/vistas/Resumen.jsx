@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Activity, BarChart3, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, Share2, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
@@ -22,7 +22,7 @@ import CompartirInstagram from "../componentes/CompartirInstagram.jsx";
 import { createPortal } from "react-dom";
 import { clink } from "../lib/sonidos.js";
 
-export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta, avisar }) {
+export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta, onDia, avisar }) {
   const [modo, setModo] = useState("dia");
   return (
     <>
@@ -34,17 +34,22 @@ export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta
         ))}
         <Indicador indice={[["dia", "Por día"], ["semana", "Semana"], ["progreso", "Progreso"]].findIndex(([id]) => id === modo)} total={3} />
       </div>
-      {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} onFiesta={onFiesta} avisar={avisar} />}
+      {modo === "dia" && <ResumenDia onCargar={onCargar} onImportar={onImportar} onFiesta={onFiesta} onDia={onDia} avisar={avisar} />}
       {modo === "semana" && <ResumenSemana />}
       {modo === "progreso" && <Progreso onEditarCuerpo={onEditarCuerpo} avisar={avisar} />}
     </>
   );
 }
 
-function ResumenDia({ onCargar, onImportar, onFiesta, avisar }) {
+function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
   const { usuario, yo, perfiles, comidas, fotos, whoop, salud, extras, cargarComidas } = useDatos();
   const hoy = fechaLocal();
   const [fecha, setFecha] = useState(hoy);
+  // El + de abajo carga en el día que estás mirando.
+  useEffect(() => {
+    onDia?.(fecha);
+  }, [fecha, onDia]);
+  useEffect(() => () => onDia?.(null), [onDia]);
   const [, setVasoRapido] = useState(0);
   const [compartirDia, setCompartirDia] = useState(false);
 

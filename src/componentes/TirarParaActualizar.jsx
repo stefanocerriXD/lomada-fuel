@@ -5,9 +5,12 @@ import { clic } from "../lib/sonidos.js";
 
 const UMBRAL = 70; // Cuánto hay que bajar (ya amortiguado) para que actualice.
 const MAXIMO = 110;
-const MINIMO_MS = 700; // Aunque llegue enseguida, el logo gira un ratito para que se note.
+const MINIMO_MS = 900; // Aunque llegue enseguida, el logo gira un ratito para que se note.
+const VUELTA_MS = 850; // Una vuelta del plato mientras carga.
+const GRADOS_POR_PX = 3;
 
-// Deslizar hacia abajo estando arriba de todo: baja el logo, el plato gira entre los cubiertos y trae lo nuevo.
+// Deslizar hacia abajo estando arriba de todo: baja el logo y el plato gira con el dedo. Al soltar sigue girando
+// desde donde quedó (sin saltos) mientras los cubiertos "comen", y al terminar frena suave y se va achicando.
 export default function TirarParaActualizar({ activo = true, onActualizar }) {
   const indicador = useRef(null);
   const estado = useRef({ desde: null, distancia: 0, actualizando: false, avisado: false });
@@ -17,18 +20,45 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
   useEffect(() => {
     if (!activo) return undefined;
     const el = indicador.current;
+    const disco = () => el?.querySelector(".logo-disco");
+    let giro = null;
+    let angulo = 0;
+    const rotar = (grados) => {
+      angulo = grados;
+      const d = disco();
+      if (d) d.style.transform = `rotate(${grados}deg)`;
+    };
     const pintar = (distancia, girando = false) => {
       if (!el) return;
       const avance = Math.min(distancia / UMBRAL, 1);
-      el.style.transform = `translate(-50%, ${distancia - 64}px)`;
-      el.style.opacity = String(distancia > 4 ? Math.max(avance, 0.35) : 0);
+      // Baja, aparece y crece con el dedo.
+      el.style.transform = `translate(-50%, ${distancia - 64}px) scale(${0.55 + 0.45 * avance})`;
+      el.style.opacity = String(distancia > 4 ? Math.min(1, avance * 1.4) : 0);
       el.classList.toggle("girando", girando);
       el.classList.toggle("listo", !girando && avance >= 1);
-      const logo = el.querySelector(".logo-disco");
-      if (logo && !girando) logo.style.transform = `rotate(${distancia * 3}deg)`;
+      if (!girando && !giro) rotar(distancia * GRADOS_POR_PX);
+    };
+    // Sigue girando desde el ángulo en que quedó.
+    const empezarGiro = () => {
+      const d = disco();
+      if (!d?.animate) return;
+      giro = d.animate([{ transform: `rotate(${angulo}deg)` }, { transform: `rotate(${angulo + 360}deg)` }], { duration: VUELTA_MS, iterations: Infinity });
+    };
+    // Frena suave hasta quedar derecho.
+    const frenarGiro = async () => {
+      const d = disco();
+      if (!giro || !d) return;
+      const vuelta = ((Number(giro.currentTime) || 0) % VUELTA_MS) / VUELTA_MS;
+      const ahora = angulo + 360 * vuelta;
+      giro.cancel();
+      giro = null;
+      const destino = Math.ceil((ahora + 90) / 360) * 360;
+      const freno = d.animate([{ transform: `rotate(${ahora}deg)` }, { transform: `rotate(${destino}deg)` }], { duration: 420, easing: "cubic-bezier(0.2, 0.8, 0.3, 1)" });
+      rotar(0);
+      await freno.finished.catch(() => {});
     };
     const soltar = (animado = true) => {
-      if (el) el.style.transition = animado ? "transform 0.3s ease, opacity 0.3s ease" : "none";
+      if (el) el.style.transition = animado ? "transform 0.32s cubic-bezier(0.3, 0.7, 0.4, 1), opacity 0.25s ease" : "none";
       pintar(0);
     };
 
@@ -69,6 +99,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
       clic();
       if (el) el.style.transition = "transform 0.2s ease";
       pintar(UMBRAL, true);
+      empezarGiro();
       const desde = Date.now();
       try {
         await accion.current?.();
@@ -76,6 +107,8 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
         // Si algo no llegó, se vuelve a intentar solo al rato.
       }
       await new Promise((listo) => setTimeout(listo, Math.max(0, MINIMO_MS - (Date.now() - desde))));
+      el?.classList.remove("girando");
+      await frenarGiro();
       s.actualizando = false;
       s.distancia = 0;
       soltar();
@@ -86,6 +119,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
     window.addEventListener("touchend", fin);
     window.addEventListener("touchcancel", fin);
     return () => {
+      giro?.cancel();
       window.removeEventListener("touchstart", inicio);
       window.removeEventListener("touchmove", mover);
       window.removeEventListener("touchend", fin);
@@ -96,7 +130,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
   if (!activo) return null;
   return (
     <div ref={indicador} className="tirar-actualizar" aria-hidden="true">
-      <Logo tam={44} />
+      <Logo tam={40} />
     </div>
   );
 }

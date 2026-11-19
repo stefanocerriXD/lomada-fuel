@@ -34,8 +34,8 @@ export default function Logo({ tam = 36, className = "" }) {
         </mask>
       </defs>
       <g mask={`url(#aro-${id})`} fill="var(--logo-cubiertos, currentColor)">
-        <path d={LOGO.tenedorD} />
-        <path d={LOGO.cuchilloD} />
+        <path className="logo-tenedor" d={LOGO.tenedorD} />
+        <path className="logo-cuchillo" d={LOGO.cuchilloD} />
       </g>
       <g className="logo-disco" clipPath={`url(#disco-${id})`}>
         <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill="#fff" />

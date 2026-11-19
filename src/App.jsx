@@ -298,6 +298,9 @@ function Principal({ recuperando, onRecuperado }) {
   }, []);
 
   const abrirCarga = useCallback((datos = {}) => setCarga(datos), []);
+  // El día que se está mirando en el Resumen: el + carga ahí.
+  const [diaResumen, setDiaResumen] = useState(null);
+  const abrirCargaDelDia = useCallback(() => abrirCarga(diaResumen && diaResumen !== fechaLocal() ? { fecha: diaResumen } : {}), [abrirCarga, diaResumen]);
   const [fiesta, setFiesta] = useState(pedida === "fiesta");
 
   // Responder una foto lleva al chat desde cualquier pantalla.
@@ -483,7 +486,7 @@ function Principal({ recuperando, onRecuperado }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
           >
-            {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} onFiesta={() => setFiesta(true)} avisar={avisar} />}
+            {vista === "resumen" && <Resumen onCargar={abrirCarga} onImportar={abrirImportar} onEditarCuerpo={abrirCuerpo} onFiesta={() => setFiesta(true)} onDia={setDiaResumen} avisar={avisar} />}
             {vista === "grupo" && <Grupo seccion={seccion} onSeccion={(s) => irA("grupo", s)} onCargar={abrirCarga} avisar={avisar} sentido={sentido} />}
             <Suspense fallback={<Esqueleto />}>
               {vista === "retos" && <Retos />}
@@ -499,7 +502,7 @@ function Principal({ recuperando, onRecuperado }) {
         ))}
         <motion.button
           className="boton-subir"
-          onClick={() => { pop(); abrirCarga(); }}
+          onClick={() => { pop(); vista === "resumen" ? abrirCargaDelDia() : abrirCarga(); }}
           whileTap={{ scale: 0.88 }}
           whileHover={{ scale: 1.06 }}
           transition={resorte}

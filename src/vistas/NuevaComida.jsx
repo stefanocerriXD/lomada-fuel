@@ -11,7 +11,15 @@ import { filaDeComida, itemImportado } from "../lib/importar.js";
 import { alimentosDelGrupo, alimentosUsados, buscarEnHistorial, claveAlimento, combosDe, haceTanto, vecesPorAlimento } from "../lib/historial.js";
 import { buscarRecetas, recetaComoAlimento } from "../lib/recetasPropias.js";
 import { buscarCatalogo, sumarAlCatalogo } from "../lib/productosPropios.js";
-import { fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
+import { aFecha, fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
+
+// "Ayer", "Mañana" o "Lun 16": para el título cuando la carga no es de hoy.
+const diaDeLaCarga = (fecha) => {
+  const nombre = nombreDia(fecha);
+  if (nombre.length <= 7) return nombre;
+  const corto = aFecha(fecha).toLocaleDateString("es-AR", { weekday: "short", day: "numeric" }).replace(".", "");
+  return corto.charAt(0).toUpperCase() + corto.slice(1);
+};
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
@@ -31,7 +39,7 @@ const PLURALES = { desayuno: "desayunos", almuerzo: "almuerzos", merienda: "meri
 export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
   const editando = carga?.comida;
   return (
-    <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={carga?.postre ? "Agregar postre" : editando ? "Editar comida" : "Subir comida"} ancha>
+    <Hoja abierta={!!carga} onCerrar={onCerrar} titulo={carga?.postre ? "Agregar postre" : editando ? "Editar comida" : carga?.fecha && carga.fecha !== fechaLocal() ? `Subir comida · ${diaDeLaCarga(carga.fecha)}` : "Subir comida"} ancha>
       {carga && <Formulario key={editando?.id || "nueva"} carga={carga} onGuardar={onGuardar} onImportarDia={onImportarDia} onFiesta={onFiesta} onPostre={onPostre} avisar={avisar} />}
     </Hoja>
   );
@@ -518,13 +526,16 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   }
 
   const buscando = texto.trim().length > 0;
-  // En colación, una opción discreta: si es el postre del almuerzo o la cena, va dentro de esa comida.
+  // Si ya almorzaste o cenaste ese día, una opción discreta: lo que vas a cargar puede ser el postre de esa comida.
+  // Aparece en Colación o si la comida elegida ya está cargada (por ejemplo, tocás + después de cenar).
   const fechaCarga = carga.fecha || fechaLocal();
-  const paraPostre = original || carga.postre || !onPostre || tipo !== "colacion"
+  const principales = comidas
+    .filter((c) => c.usuario_id === usuario.id && c.fecha === fechaCarga && (c.tipo === "almuerzo" || c.tipo === "cena"))
+    .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1));
+  const yaCargada = principales.find((c) => c.tipo === tipo);
+  const paraPostre = original || carga.postre || !onPostre || !principales.length || (tipo !== "colacion" && !yaCargada)
     ? null
-    : comidas
-        .filter((c) => c.usuario_id === usuario.id && c.fecha === fechaCarga && (c.tipo === "almuerzo" || c.tipo === "cena"))
-        .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1))[0];
+    : yaCargada || principales[0];
 
   return (
     <div className="carga">

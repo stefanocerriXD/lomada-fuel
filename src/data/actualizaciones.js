@@ -23,11 +23,15 @@ function vistas() {
   }
 }
 
-// La última que viste: lo que está arriba de esa es nuevo.
-export function nuevasDesde() {
+// "Nuevo" dura 3 días desde la fecha de la novedad.
+export const DIAS_NUEVO = 3;
+export const esReciente = (a, ahora = Date.now()) => ahora - new Date(`${a.fecha}T00:00:00-03:00`).getTime() < DIAS_NUEVO * 86400000;
+
+// La última que viste: lo que está arriba de esa es nuevo (si es de los últimos 3 días).
+export function nuevasDesde(ahora = Date.now()) {
   const ultima = vistas();
   const i = ACTUALIZACIONES.findIndex((a) => a.id === ultima);
-  return new Set((i < 0 ? ACTUALIZACIONES : ACTUALIZACIONES.slice(0, i)).map((a) => a.id));
+  return new Set((i < 0 ? ACTUALIZACIONES : ACTUALIZACIONES.slice(0, i)).filter((a) => esReciente(a, ahora)).map((a) => a.id));
 }
 
 export const hayNovedades = () => nuevasDesde().size > 0;
