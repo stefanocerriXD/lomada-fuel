@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { Avatar } from "./Base.jsx";
 import EspacioApp from "./EspacioApp.jsx";
+import AvisoATodos from "./AvisoATodos.jsx";
 
 const num = (n) => Number(n || 0).toLocaleString("es-AR");
 const diaCorto = (fecha) => new Date(`${fecha}T12:00:00`).toLocaleDateString("es-AR", { weekday: "short", day: "numeric" }).replace(".", "");
@@ -28,6 +29,7 @@ export default function PanelDueno() {
   return (
     <div className="panel-dueno">
       <EspacioApp />
+      <AvisoATodos />
       {error && <section className="tarjeta ajuste"><p className="nota">{error}</p></section>}
       {datos && (
         <>

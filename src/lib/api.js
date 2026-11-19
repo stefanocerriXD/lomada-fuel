@@ -31,6 +31,28 @@ export async function avisarGrupo(tipo, id, nombre) {
   }
 }
 
+// Panel del dueño: una notificación a todos. Devuelve a cuántos celulares llegó o qué pasó.
+const ERRORES_ANUNCIO = {
+  no_sos_dueno: "Solo el dueño de la app puede mandar avisos a todos.",
+  texto_invalido: "Revisá el título y el texto.",
+  muy_seguido: "Ya se mandó un aviso hace menos de 10 minutos.",
+  falta_sql: "Falta correr el SQL 058 en Supabase.",
+};
+export async function mandarAnuncio({ titulo, cuerpo, vista }) {
+  try {
+    const r = await fetch("/api/notificar", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(await encabezados()) },
+      body: JSON.stringify({ tipo: "anuncio", titulo, cuerpo, vista }),
+    });
+    const datos = await r.json().catch(() => ({}));
+    if (!r.ok) return { ok: false, error: ERRORES_ANUNCIO[datos.error] || "No se pudo mandar. Probá de nuevo." };
+    return { ok: true, enviadas: datos.enviadas || 0 };
+  } catch {
+    return { ok: false, error: "Sin conexión. Probá de nuevo." };
+  }
+}
+
 // Lo que dictaste ("dos empanadas y una coca"): Gemini lo pasa a alimentos con cantidades.
 export async function reconocerTexto(texto) {
   const resp = await fetch("/api/reconocer", {

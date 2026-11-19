@@ -7,8 +7,8 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: "Falta iniciar sesión" });
   if (!avisosConfigurados()) return res.status(200).json({ enviadas: 0 });
 
-  const { tipo, id, nombre } = req.body || {};
-  if (!tipo || !id) return res.status(400).json({ error: "Pedido no válido" });
+  const { tipo, id, nombre, titulo, cuerpo, vista } = req.body || {};
+  if (!tipo || (!id && tipo !== "anuncio")) return res.status(400).json({ error: "Pedido no válido" });
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const clave = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -24,6 +24,8 @@ export default async function handler(req, res) {
     const pedido = {
       medalla: () => rpc("aviso_medalla", { p_codigo: id, p_nombre: nombre || null }),
       mejora: () => rpc("aviso_mejora", { p_id: id }),
+      // El dueño a todos (SQL 058): la base revisa que sea el dueño y el texto.
+      anuncio: () => rpc("aviso_anuncio", { p_titulo: titulo, p_cuerpo: cuerpo, p_vista: vista || null }),
       mejora_hecha: () => rpc("aviso_mejora_hecha", { p_id: id }),
       invitacion: () => rpc("aviso_invitacion", { p_id: id }),
       salida: () => rpc("aviso_salida", { p_id: id }),
@@ -31,11 +33,15 @@ export default async function handler(req, res) {
       reaccion_mensaje: () => rpc("aviso_reaccion", { p_tipo: "mensaje", p_id: id, p_emoji: String(nombre || "").slice(0, 16) }),
     }[tipo];
     const resp = await (pedido ? pedido() : rpc("destinos_aviso", { p_tipo: tipo, p_id: id }));
-    if (!resp.ok) return res.status(resp.status === 401 ? 401 : 400).json({ error: "No autorizado" });
+    if (!resp.ok) {
+      const motivo = tipo === "anuncio" ? ((await resp.json().catch(() => ({}))).message || "") : "";
+      const codigo = ["no_sos_dueno", "texto_invalido", "muy_seguido"].find((c) => motivo.includes(c)) || (/aviso_anuncio/.test(motivo) ? "falta_sql" : null);
+      return res.status(resp.status === 401 ? 401 : 400).json({ error: codigo || "No autorizado" });
+    }
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });
     // Cada grupo se entera solo de lo suyo. Las mejoras van a quien administra, sea del grupo que sea.
-    if (!["mejora", "mejora_hecha"].includes(tipo)) {
+    if (!["mejora", "mejora_hecha", "anuncio"].includes(tipo)) {
       const filtro = await rpc("solo_mi_grupo", { p_endpoints: aviso.destinos.map((d) => d.endpoint) });
       if (filtro.ok) {
         const permitidos = new Set(await filtro.json());

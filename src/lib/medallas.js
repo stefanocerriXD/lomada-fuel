@@ -1,6 +1,7 @@
 import {
   Beef, Bomb, Camera, Candy, CupSoda, Droplets, Dumbbell, Flame, Leaf, Moon, Pizza, Repeat, Scale, Soup, Sparkles,
   Sunrise, Target, Utensils, UtensilsCrossed, Wine, Crown, Martini, PartyPopper, Pill,
+  Volleyball, Footprints, Trophy, PersonStanding,
 } from "lucide-react";
 import { calcularPlan } from "./cuerpo.js";
 import { desafioTerminado, puntajes } from "./desafios.js";
@@ -16,7 +17,7 @@ const logro = (codigo, grupo, icono, unidad, niveles) => ({
   niveles: niveles.map(([meta, nombre]) => ({ meta, nombre })),
 });
 
-// Cada logro tiene sus niveles (cinco, o más en los de gym): cuanto más lejos llegás, mejor es el título.
+// Cada logro tiene sus niveles (cinco, o más en los de gym y deportes): cuanto más lejos llegás, mejor es el título.
 export const LOGROS = [
   logro("comidas", "objetivos", Utensils, "comidas", [[1, "Primer plato"], [30, "Bien documentado"], [100, "Registrador"], [300, "Archivista"], [1000, "Historiador de la comida"]]),
   logro("racha", "objetivos", Flame, "días seguidos", [[7, "Semana completa"], [14, "Quincena firme"], [30, "Mes imparable"], [90, "Trimestre de hierro"], [365, "Un año sin fallar"]]),
@@ -48,6 +49,12 @@ export const LOGROS = [
   // Gym: salen de los registros del día. Tienen más niveles para ir progresando; el gym termina en CBUM y RONNIE COLEMAN.
   logro("gym", "gym", Dumbbell, "días de gym", [[5, "Flaco"], [15, "Powerlifter"], [30, "Jefe de las pesas"], [50, "Rata de gimnasio"], [80, "Bestia del gym"], [120, "Monstruo de hierro"], [200, "CBUM"], [300, "RONNIE COLEMAN"]]),
   logro("creatina", "gym", Pill, "días con creatina", [[3, "Primera cucharada"], [7, "Cargando"], [15, "Bien saturado"], [30, "Músculo hidratado"], [60, "Adicto al polvito"], [100, "Químico del gym"], [200, "Monohidrato andante"], [365, "Hecho de creatina"]]),
+
+  // Deportes: también salen de los registros del día (Ajustes › Registros diarios).
+  logro("futbol", "deportes", Volleyball, "partidos de fútbol", [[3, "Pata dura"], [10, "Suplente de lujo"], [25, "Titular indiscutido"], [50, "Crack del barrio"], [100, "Goleador histórico"], [200, "El 10 de la Lomada"]]),
+  logro("running", "deportes", Footprints, "salidas a correr", [[3, "Trotador"], [10, "Corredor de plaza"], [25, "Fondista"], [50, "Maratonista"], [100, "Keniata"], [200, "Forrest Gump"]]),
+  logro("padel", "deportes", Trophy, "partidos de pádel", [[3, "Paleta nueva"], [10, "Del drive"], [25, "Bandejero"], [50, "Rey de la víbora"], [100, "Pared andante"], [200, "Número uno del ranking"]]),
+  logro("caminata", "deportes", PersonStanding, "caminatas", [[5, "Paseador"], [15, "Caminante"], [40, "Trekker"], [80, "Peregrino"], [150, "Explorador"], [300, "Vuelta al mundo"]]),
 ];
 
 export const nivelDe = (l, cantidad) => l.niveles.filter((n) => cantidad >= n.meta).length;
@@ -142,6 +149,7 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
     // Los registros son privados: solo se cuentan los tuyos.
     gym: new Set(registros.filter((r) => r.codigo === "gym").map((r) => r.fecha)).size,
     creatina: new Set(registros.filter((r) => r.codigo === "creatina").map((r) => r.fecha)).size,
+    ...Object.fromEntries(["futbol", "running", "padel", "caminata"].map((d) => [d, new Set(registros.filter((r) => r.codigo === d).map((r) => r.fecha)).size])),
   };
 
   if (salud) {

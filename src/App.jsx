@@ -225,6 +225,7 @@ function Principal({ recuperando, onRecuperado }) {
   const pedida = useRef(new URLSearchParams(location.search).get("vista")).current;
   const [vista, setVista] = useState(() => {
     if (SECCIONES_GRUPO.includes(pedida)) return "grupo";
+    if (pedida === "mejoras") return "ajustes";
     return VISTAS_VALIDAS.includes(pedida) ? pedida : "resumen";
   });
   const [seccion, setSeccion] = useState(SECCIONES_GRUPO.includes(pedida) ? pedida : "chat");
@@ -232,7 +233,7 @@ function Principal({ recuperando, onRecuperado }) {
   const [logroNuevo, setLogroNuevo] = useState(null);
   const toque = useRef(null);
   const terminarLogro = useCallback(() => setLogroNuevo(null), []);
-  const [pedidoAjustes, setPedidoAjustes] = useState(null);
+  const [pedidoAjustes, setPedidoAjustes] = useState(() => (pedida === "mejoras" ? { vista: "ajustes", seccion: "mejoras", vez: 0 } : null));
 
   // La animación entra por el lado hacia el que se va.
   const irA = useCallback((proxima, proximaSeccion) => {

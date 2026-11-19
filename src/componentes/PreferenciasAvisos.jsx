@@ -31,6 +31,7 @@ const SECCIONES = [
       ["lomada", "Tu viaje y tu Match Day"],
       ["grupos", "Pedidos para entrar a tus grupos"],
       ["mejoras", "Mejoras (cuando hacen la tuya)"],
+      ["anuncios", "Anuncios de la app"],
     ],
   },
 ];

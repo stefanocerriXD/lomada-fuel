@@ -15,6 +15,7 @@ import Habitos from "../componentes/Habitos.jsx";
 import { MarcaFiesta } from "../componentes/MarcaFiesta.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import TiraDias from "../componentes/TiraDias.jsx";
+import CartelMejoras from "../componentes/CartelMejoras.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 import Visor from "../componentes/Visor.jsx";
@@ -101,6 +102,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
 
       <InvitacionesComida avisar={avisar} />
 
+      <CartelMejoras />
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
 
       <section className="tarjeta tarjeta-heroe">
