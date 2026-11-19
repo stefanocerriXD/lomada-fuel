@@ -292,6 +292,13 @@ export const supabase = {
       return { data: { ...g, codigo: "nuevo-0001" }, error: null };
     }
     if (nombre === "es_dueno") return { data: !window.__noDueno, error: null };
+    if (nombre === "responder_mejora") {
+      if (window.__sin060) return { data: null, error: { code: "PGRST202", message: "Could not find the function public.responder_mejora" } };
+      const m = db.mejoras.find((x) => x.id === p.p_id);
+      const t = String(p.p_respuesta || "").trim() || null;
+      Object.assign(m, { respuesta: t, no_va: Boolean(p.p_no_va), respondida_en: t ? new Date().toISOString() : null });
+      return { data: null, error: null };
+    }
     if (nombre === "borrar_mi_cuenta") {
       (window.__borrados = window.__borrados || []).push(p.p_confirmacion);
       if (window.__sin055) return { data: null, error: { code: "PGRST202", message: "Could not find the function public.borrar_mi_cuenta(p_confirmacion)" } };

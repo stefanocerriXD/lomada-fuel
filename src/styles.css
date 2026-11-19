@@ -2521,6 +2521,16 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .desplegable-mejoras summary { display: flex; flex-direction: column; justify-content: center; min-height: 52px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
 .desplegable-mejoras summary small { color: var(--tinta-2); font-weight: 500; font-size: 0.78rem; }
 .desplegable-mejoras .lista-mejoras { margin: 0; padding: 0 12px 12px; }
+.lista-mejoras li.no-va > p { color: var(--tinta-2); }
+.mejora-respuesta { align-self: stretch; margin-top: 4px; padding: 8px 10px; border-left: 3px solid var(--acento); border-radius: 0 10px 10px 0; background: var(--superficie); }
+.mejora-respuesta strong { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-2); }
+.mejora-respuesta p { margin-top: 2px; font-size: 0.85rem; }
+.lista-mejoras li.no-va .mejora-respuesta { border-left-color: var(--tinta-2); }
+.mejora-acciones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.mejora-responder { align-self: stretch; display: grid; gap: 8px; margin-top: 6px; }
+.mejora-responder textarea { width: 100%; font-size: 16px; }
+.mejora-no-va { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 0.86rem; }
+.mejora-no-va input { width: 18px; height: 18px; accent-color: var(--acento); }
 
 /* Panel del dueño */
 .panel-dueno { display: grid; gap: 14px; }

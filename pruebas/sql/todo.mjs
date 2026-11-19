@@ -1289,3 +1289,40 @@ console.log("backup: pruebas pasadas");
   assert.equal((await rol(U[0], () => filas("select * from salud_envios"))).length, 10, "cada uno ve los suyos");
   console.log("059: pruebas pasadas");
 }
+
+// ===== 060: el duenio responde los pedidos de mejora =====
+{
+  const s060 = fs.readFileSync(raiz + "060_respuesta_a_mejoras.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s060), "060 en ASCII");
+  console.log((await db.exec(s060)).at(-1).rows[0].resultado);
+  await db.exec(s060);
+  const otro = (await uno("select id from perfiles where id not in (select usuario_id from dueno_app) limit 1")).id;
+  const pedido = (await rol(otro, () => uno("insert into mejoras (usuario_id, texto) values ($1, 'Que la app me cocine') returning id", [otro]))).id;
+  // Solo el duenio responde.
+  await assert.rejects(rol(otro, () => db.query("select public.responder_mejora($1, 'yo mismo', false)", [pedido])), /no_sos_dueno/);
+  await assert.rejects(rol(otro, () => db.query("select public.aviso_respuesta_mejora($1)", [pedido])), /no_sos_dueno/);
+  await assert.rejects(rol(U[0], () => db.query("select public.responder_mejora($1, '  ', true)", [pedido])), /texto_invalido/, "no va necesita explicacion");
+  await rol(U[0], () => db.query("select public.responder_mejora($1, 'No se puede: la app no tiene manos', true)", [pedido]));
+  const r = await uno("select respuesta, no_va, respondida_en from mejoras where id = $1", [pedido]);
+  assert.equal(r.respuesta, "No se puede: la app no tiene manos");
+  assert.equal(r.no_va, true);
+  assert.ok(r.respondida_en);
+  const aviso = (await rol(U[0], () => uno("select public.aviso_respuesta_mejora($1) a", [pedido]))).a;
+  assert.equal(aviso.titulo, "Sobre tu pedido de mejora");
+  assert.equal(aviso.vista, "mejoras");
+  assert.ok(Array.isArray(aviso.destinos));
+  // Quien lo pidio ve la respuesta; pero no la puede cambiar a mano.
+  assert.equal((await rol(otro, () => uno("select respuesta from mejoras where id = $1", [pedido]))).respuesta, "No se puede: la app no tiene manos");
+  await assert.rejects(rol(otro, () => db.query("update mejoras set respuesta = 'trucho' where id = $1", [pedido])), /permission denied/);
+  // Respuesta normal: otro titulo. Vieja (mas de 2 minutos): ya no avisa.
+  await rol(U[0], () => db.query("select public.responder_mejora($1, 'Lo vemos para la proxima', false)", [pedido]));
+  assert.match((await rol(U[0], () => uno("select public.aviso_respuesta_mejora($1) a", [pedido]))).a.titulo, /Te respondieron/);
+  await db.query("update mejoras set respondida_en = now() - interval '5 minutes' where id = $1", [pedido]);
+  assert.equal((await rol(U[0], () => uno("select public.aviso_respuesta_mejora($1) a", [pedido]))).a, null);
+  // Borrar la respuesta.
+  await rol(U[0], () => db.query("select public.responder_mejora($1, '', false)", [pedido]));
+  assert.equal((await uno("select respuesta from mejoras where id = $1", [pedido])).respuesta, null);
+  assert.equal((await uno("select public.categoria_aviso('mejora_respuesta') c")).c, "mejoras");
+  assert.equal((await uno("select public.categoria_aviso('anuncio') c")).c, "anuncios");
+  console.log("060: pruebas pasadas");
+}

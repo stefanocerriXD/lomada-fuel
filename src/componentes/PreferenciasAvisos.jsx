@@ -30,7 +30,7 @@ const SECCIONES = [
       ["informe", "Informe semanal (domingo)"],
       ["lomada", "Tu viaje y tu Match Day"],
       ["grupos", "Pedidos para entrar a tus grupos"],
-      ["mejoras", "Mejoras (cuando hacen la tuya)"],
+      ["mejoras", "Mejoras (cuando responden o hacen la tuya)"],
       ["anuncios", "Anuncios de la app"],
     ],
   },

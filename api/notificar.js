@@ -27,6 +27,8 @@ export default async function handler(req, res) {
       // El dueño a todos (SQL 058): la base revisa que sea el dueño y el texto.
       anuncio: () => rpc("aviso_anuncio", { p_titulo: titulo, p_cuerpo: cuerpo, p_vista: vista || null }),
       mejora_hecha: () => rpc("aviso_mejora_hecha", { p_id: id }),
+      // El dueño respondió un pedido (SQL 060): le llega solo a quien lo pidió.
+      mejora_respuesta: () => rpc("aviso_respuesta_mejora", { p_id: id }),
       invitacion: () => rpc("aviso_invitacion", { p_id: id }),
       salida: () => rpc("aviso_salida", { p_id: id }),
       reaccion: () => rpc("aviso_reaccion", { p_tipo: "comida", p_id: id, p_emoji: String(nombre || "").slice(0, 16) }),
@@ -41,7 +43,7 @@ export default async function handler(req, res) {
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });
     // Cada grupo se entera solo de lo suyo. Las mejoras van a quien administra, sea del grupo que sea.
-    if (!["mejora", "mejora_hecha", "anuncio"].includes(tipo)) {
+    if (!["mejora", "mejora_hecha", "mejora_respuesta", "anuncio"].includes(tipo)) {
       const filtro = await rpc("solo_mi_grupo", { p_endpoints: aviso.destinos.map((d) => d.endpoint) });
       if (filtro.ok) {
         const permitidos = new Set(await filtro.json());
