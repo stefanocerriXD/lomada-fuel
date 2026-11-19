@@ -28,14 +28,6 @@ export default function PrivacidadTerminos() {
         <li>No vendemos tus datos ni los usamos para publicidad.</li>
       </ul>
 
-      <h4>Con qué servicios funciona</h4>
-      <ul>
-        <li><strong>Supabase:</strong> guarda la base de datos y las fotos.</li>
-        <li><strong>Vercel:</strong> aloja la app.</li>
-        <li><strong>Google Gemini (IA):</strong> cuando usás el reconocimiento de fotos, etiquetas o capturas, esa imagen se manda a Google para leerla. Usamos el servicio gratuito, y Google puede usar lo que recibe para mejorar sus productos. Si no querés, cargá las comidas a mano.</li>
-        <li><strong>Open Food Facts y USDA:</strong> bases públicas de alimentos. Solo les mandamos lo que buscás o el código de barras, nunca tus datos.</li>
-      </ul>
-
       <h4>Cuánto tiempo</h4>
       <p>Mientras tengas tu cuenta. Si la borrás, se borra todo lo tuyo. Podemos tener copias de seguridad por hasta dos meses; tu información desaparece de ellas cuando vencen.</p>
 
