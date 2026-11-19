@@ -29,7 +29,7 @@ lomada-backups/
   fotos/                          todas las fotos (una sola carpeta que se va completando)
 ```
 
-Se guardan los últimos 8 backups de la base (`BACKUP_GUARDAR` para cambiarlo). Conviene que `BACKUP_CARPETA` esté dentro de OneDrive, así también queda en la nube.
+Se guardan los últimos 8 backups de la base (`BACKUP_GUARDAR` para cambiarlo). Para que también quede en la nube, poné `BACKUP_CARPETA` en una carpeta sincronizada de una cuenta **personal** (por ejemplo Google Drive para escritorio). Nunca en una nube del trabajo: el backup tiene datos de todos los usuarios.
 
 ### Que se haga solo cada semana (Windows)
 
