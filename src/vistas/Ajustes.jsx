@@ -26,6 +26,7 @@ const PanelDueno = lazy(() => import("../componentes/PanelDueno.jsx"));
 import PreferenciasAvisos from "../componentes/PreferenciasAvisos.jsx";
 import BorrarCuenta from "../componentes/BorrarCuenta.jsx";
 import PrivacidadTerminos from "../componentes/PrivacidadTerminos.jsx";
+import { LoQueLlego, MandarASalud } from "../componentes/SaludDetalle.jsx";
 import { descargarMisDatos } from "../lib/misDatos.js";
 
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
@@ -260,7 +261,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
 
       {seccion === "notificaciones" && <Notificaciones avisar={avisar} />}
       {seccion === "privacidad" && <Privacidad avisar={avisar} />}
-      {seccion === "salud" && <AppleSalud avisar={avisar} />}
+      {seccion === "salud" && <><AppleSalud avisar={avisar} /><LoQueLlego /><MandarASalud avisar={avisar} /></>}
       {seccion === "whoop" && <ConexionWhoop avisar={avisar} />}
       {seccion === "tutorial" && <Tutorial />}
       {seccion === "mejoras" && <Mejoras avisar={avisar} />}

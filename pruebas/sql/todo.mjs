@@ -1222,3 +1222,54 @@ console.log("backup: pruebas pasadas");
   await assert.rejects(rol(U[0], () => db.query("select public.sincronizar_salud('llave56', '[]', $1::date, $2::date)", [hace5, hoy])), /permission denied/);
   console.log("056: pruebas pasadas");
 }
+
+// ===== 057: tus comidas de Lomada pasan a Apple Salud =====
+{
+  const s057 = fs.readFileSync(raiz + "057_comidas_a_salud.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s057), "057 en ASCII");
+  console.log((await db.exec(s057)).at(-1).rows[0].resultado);
+  await db.exec(s057);
+  const hoy = (await uno("select (now() at time zone 'America/Argentina/Buenos_Aires')::date::text d")).d;
+  const ayer = (await uno("select ($1::date - 1)::text d", [hoy])).d;
+  const pedir = async (marcar = true) => {
+    await db.query("set role anon");
+    try { return (await db.query("select public.comidas_para_salud('llave56', $1) r", [marcar])).rows[0].r; }
+    finally { await db.query("reset role"); }
+  };
+  await db.query("delete from comidas where usuario_id = $1 and tipo <> 'resumen'", [U[0]]);
+  const comida = (tipo, fecha, kcal, alimentos = [], creado = null) => db.query(
+    "insert into comidas (usuario_id, tipo, fecha, descripcion, calorias, proteinas, carbohidratos, grasas, alimentos, creado_en) values ($1, $2, $3, $4, $5, 30, 50, 10, $6::jsonb, coalesce($7::timestamptz, now())) returning id",
+    [U[0], tipo, fecha, `${tipo} ${kcal}`, kcal, JSON.stringify(alimentos), creado]);
+  await comida("almuerzo", hoy, 650, [{ nombre: "Milanesa", fuente: "tipico" }], `${hoy}T13:05:00-03:00`);
+  await comida("cena", hoy, 500, [{ nombre: "Cena de Apple Salud", fuente: "importado", salud_id: "x" }]);
+  await comida("merienda", hoy, 300, [{ nombre: "Importado", fuente: "importado" }]);
+  await comida("cena", ayer, 800, [{ nombre: "Asado", fuente: "tipico" }], `${ayer}T22:10:00-03:00`);
+
+  // Probar (sin marcar) no cuenta como mandado.
+  assert.equal((await pedir(false)).length, 1);
+  // La primera vez: solo lo de hoy cargado en Lomada (ni lo de Salud ni lo importado, ni lo de ayer).
+  let r57 = await pedir();
+  assert.deepEqual(r57.map((c) => [c.nombre, c.kcal, c.fecha]), [["almuerzo 650", 650, `${hoy}T13:05:00-03:00`]]);
+  assert.equal((await pedir()).length, 0, "una sola vez");
+  // Una comida nueva de hoy y una de ayer cargada hoy (va con la hora tipica de la cena).
+  await comida("colacion", hoy, 200, [{ nombre: "Banana", fuente: "tipico" }], `${hoy}T16:40:00-03:00`);
+  r57 = await pedir();
+  assert.deepEqual(r57.map((c) => [c.kcal, c.fecha]), [[200, `${hoy}T16:40:00-03:00`]], "ayer no, porque se empezo hoy");
+  // Al dia siguiente (simulado corriendo la primera exportacion un dia para atras) entra lo que quedo de ayer.
+  await db.query("update salud_exportadas set fecha = fecha - 1 where usuario_id = $1", [U[0]]);
+  r57 = await pedir();
+  assert.deepEqual(r57.map((c) => [c.kcal, c.fecha]), [[800, `${ayer}T22:10:00-03:00`]]);
+
+  // Lo que mando Lomada vuelve con el Atajo de MyFitnessPal: no se cuenta como llegado de Salud.
+  await db.query("delete from salud_comidas where usuario_id = $1", [U[0]]);
+  await db.query("set role anon");
+  const hace5 = (await db.query("select ($1::date - 5)::text d", [hoy])).rows[0].d;
+  await db.query("select public.sincronizar_salud('llave56', $1::jsonb, $2::date, $3::date)", [JSON.stringify([
+    { momento: `${hoy}T13:05:00-03:00`, kcal: 650, p: 30, c: 50, g: 10 },
+    { momento: `${hoy}T08:30:00-03:00`, kcal: 400, p: 20, c: 40, g: 10 },
+  ]), hace5, hoy]);
+  await db.query("reset role");
+  assert.deepEqual((await filas("select kcal from salud_comidas where usuario_id = $1 and fecha = $2", [U[0], hoy])).map((x) => x.kcal), [400], "solo lo de MyFitnessPal");
+  await assert.rejects(rol(U[0], () => db.query("select public.comidas_para_salud('llave56')")), /permission denied/);
+  console.log("057: pruebas pasadas");
+}

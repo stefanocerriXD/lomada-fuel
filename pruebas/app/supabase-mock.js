@@ -184,6 +184,7 @@ class Consulta {
 }
 
 if (window.__con054) db.productos = window.__productos || [];
+if (window.__con057) db.salud_exportadas = window.__exportadas || [];
 if (window.__con053) db.recordatorios = window.__recordatorios || [];
 if (window.__con052) db.motivacion = window.__motivacion ? [window.__motivacion] : [];
 if (!window.__sinRegistros) { db.registros_config = window.__registrosConfig ? [window.__registrosConfig] : []; db.registros_diarios = window.__registrosDiarios || []; }
