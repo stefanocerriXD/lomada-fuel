@@ -2612,12 +2612,10 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .recordatorio-llave { display: grid; place-items: center; padding: 6px; }
 .dias-semana.chicos button { min-height: 36px; font-size: 0.8rem; }
 
-/* Carga con el logo: igual que la pantalla de index.html (el disco gira con una pausa). */
+/* Carga con el logo: igual que la pantalla de index.html (el plato gira de corrido, los cubiertos quietos). */
 .pantalla-carga { min-height: var(--alto-visible, 100dvh); }
 .carga-logo { display: inline-flex; animation: splash-entra 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-.carga-logo .logo-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.7s 0.45s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
-.carga-logo .logo-tenedor { animation: comer-tenedor 0.7s 0.6s ease-in-out infinite; }
-.carga-logo .logo-cuchillo { animation: comer-cuchillo 0.7s 0.95s ease-in-out infinite; }
+.carga-logo .logo-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.1s linear infinite; }
 @keyframes splash-entra { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
-@keyframes splash-gira { 0% { transform: rotate(0deg); } 65%, 100% { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .carga-logo, .carga-logo .logo-disco, .carga-logo .logo-tenedor, .carga-logo .logo-cuchillo { animation: none; } }
+@keyframes splash-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .carga-logo, .carga-logo .logo-disco { animation: none; } }

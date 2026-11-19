@@ -34,17 +34,14 @@
       #splash { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: var(--splash-fondo, #f2f6ef); transition: opacity 0.4s ease, visibility 0.4s ease; }
       #splash.fuera { opacity: 0; visibility: hidden; pointer-events: none; }
       #splash svg { overflow: visible; animation: splash-entra 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-      /* Los cubiertos entran de los costados y después "comen": suben y bajan alternados, como cortando. */
-      #splash .splash-tenedor, #splash .splash-cuchillo { transform-box: fill-box; transform-origin: 50% 100%; }
-      #splash .splash-tenedor { animation: splash-izquierda 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both, splash-come-tenedor 0.7s 0.7s ease-in-out infinite; }
-      #splash .splash-cuchillo { animation: splash-derecha 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both, splash-come-cuchillo 0.7s 1.05s ease-in-out infinite; }
-      #splash .splash-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.7s 0.45s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+      /* Al abrir: los cubiertos entran de los costados y el plato gira de corrido, sin pausas. */
+      #splash .splash-tenedor { animation: splash-izquierda 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
+      #splash .splash-cuchillo { animation: splash-derecha 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
+      #splash .splash-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.1s linear infinite; }
       @keyframes splash-entra { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
       @keyframes splash-izquierda { from { opacity: 0; transform: translateX(46px); } }
       @keyframes splash-derecha { from { opacity: 0; transform: translateX(-46px); } }
-      @keyframes splash-come-tenedor { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-28px) rotate(-7deg); } }
-      @keyframes splash-come-cuchillo { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-28px) rotate(7deg); } }
-      @keyframes splash-gira { 0% { transform: rotate(0deg); } 65%, 100% { transform: rotate(360deg); } }
+      @keyframes splash-gira { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { #splash * { animation: none !important; } }
     </style>
   </head>
