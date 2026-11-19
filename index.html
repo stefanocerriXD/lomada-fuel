@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2F6EF" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14100C" />
+    <meta name="theme-color" content="#F2F6EF" />
     <link rel="icon" type="image/svg+xml" href="/icono.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/disco-180.png" />
@@ -13,9 +12,64 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Lomada Fuel" />
     <title>Lomada Fuel</title>
+    <script>
+      // Antes que todo: el tema guardado pinta la barra de arriba y el fondo, así no hay franja clara ni destello blanco.
+      // Los colores son los --fondo y --tinta de cada tema en styles.css (y la lista, la de src/lib/tema.js).
+      (function () {
+        var temas = { lomada: ["#f2f6ef", "#11251a"], negro: ["#000000", "#ffffff"], blanco: ["#ffffff", "#000000"] };
+        var tema = "lomada";
+        try { tema = localStorage.getItem("comidas-tema") || "lomada"; } catch (e) {}
+        if (!temas[tema]) tema = "lomada";
+        var raiz = document.documentElement;
+        raiz.setAttribute("data-tema", tema);
+        raiz.style.setProperty("--splash-fondo", temas[tema][0]);
+        raiz.style.setProperty("--splash-tinta", temas[tema][1]);
+        raiz.style.background = temas[tema][0];
+        document.querySelector('meta[name="theme-color"]').setAttribute("content", temas[tema][0]);
+        // En Full black la barra del iPhone va negra con letras blancas, pegada a la app.
+        if (tema === "negro") document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute("content", "black-translucent");
+      })();
+    </script>
+    <style>
+      #splash { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: var(--splash-fondo, #f2f6ef); transition: opacity 0.4s ease, visibility 0.4s ease; }
+      #splash.fuera { opacity: 0; visibility: hidden; pointer-events: none; }
+      #splash svg { overflow: visible; animation: splash-entra 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+      #splash .splash-tenedor { animation: splash-izquierda 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
+      #splash .splash-cuchillo { animation: splash-derecha 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
+      #splash .splash-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.7s 0.45s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+      @keyframes splash-entra { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
+      @keyframes splash-izquierda { from { opacity: 0; transform: translateX(46px); } }
+      @keyframes splash-derecha { from { opacity: 0; transform: translateX(-46px); } }
+      @keyframes splash-gira { 0% { transform: rotate(0deg); } 65%, 100% { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { #splash * { animation: none !important; } }
+    </style>
   </head>
   <body>
+    <div id="splash" role="status" aria-label="Cargando Lomada Fuel">
+      <svg viewBox="28 -26.5 520 520" width="104" height="104" aria-hidden="true">
+        <defs>
+          <clipPath id="splash-clip"><circle cx="299" cy="233.5" r="177" /></clipPath>
+          <mask id="splash-aro" maskUnits="userSpaceOnUse" x="-1000" y="-1000" width="3000" height="3000">
+            <rect x="-1000" y="-1000" width="3000" height="3000" fill="#fff" />
+            <circle cx="299" cy="233.5" r="199" fill="#000" />
+          </mask>
+        </defs>
+        <g mask="url(#splash-aro)" fill="var(--splash-tinta, #11251a)">
+          <path class="splash-tenedor" d="M36,132 H166 V190 C166,228 118,236 118,256 V413.5 A17.5,17.5 0 0 1 83,413.5 V256 C83,236 36,228 36,190 Z M35.75,48.25 A12.25,12.25 0 0 1 60.25,48.25 V140 H35.75 Z M88.25,48.5 A12.5,12.5 0 0 1 113.25,48.5 V140 H88.25 Z M141.25,48.5 A12.5,12.5 0 0 1 166.25,48.5 V140 H141.25 Z" />
+          <path class="splash-cuchillo" d="M473,250 V60 C473,45 482,36 492,36 C520,40 540,90 540,150 V246 H521 V413.5 A17.5,17.5 0 0 1 486,413.5 V250 Z" />
+        </g>
+        <g class="splash-disco" clip-path="url(#splash-clip)">
+          <rect x="122" y="56.5" width="354" height="354" fill="#fff" />
+          <path d="M118.0,52.5 H480.0 V228.0 Q299.0,213.2 118.0,274.0 Z" fill="#0165a0" />
+          <path d="M118.0,297.7 Q299.0,244.8 480.0,257.7 V414.5 H118.0 Z" fill="#046a43" />
+        </g>
+      </svg>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Por las dudas: si algo tarda de más, el logo no se queda para siempre.
+      setTimeout(function () { var s = document.getElementById("splash"); if (s) { s.classList.add("fuera"); setTimeout(function () { s.remove(); }, 450); } }, 15000);
+    </script>
   </body>
 </html>

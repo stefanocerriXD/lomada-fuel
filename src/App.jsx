@@ -35,6 +35,7 @@ import { alivio, campanita, cerrar, ding, pop, prepararSonidos } from "./lib/son
 import { FOTOS_POR_DIA, fotosDelDia } from "./lib/multas.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "./lib/grupos.js";
 import { fechaLocal } from "./lib/fechas.js";
+import { quitarSplash } from "./lib/splash.js";
 
 const VISTAS = [
   { id: "resumen", texto: "Resumen", icono: CalendarDays },
@@ -96,6 +97,10 @@ export default function App() {
     });
     return () => data.subscription.unsubscribe();
   }, []);
+  // Sin sesión, el login ya está para mostrar: se va el logo de carga.
+  useEffect(() => {
+    if (!cargando && !sesion) quitarSplash();
+  }, [cargando, sesion]);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -153,6 +158,10 @@ function ConGrupo({ usuario, children }) {
     if (grupo !== undefined) grupoAntes.current = grupo;
   }, [grupo]);
 
+  useEffect(() => {
+    if (grupo === null) quitarSplash();
+  }, [grupo]);
+
   if (grupo === undefined) return <Cargando />;
   if (grupo === null) return <SinGrupo onAdentro={cargar} />;
   return (
@@ -162,23 +171,21 @@ function ConGrupo({ usuario, children }) {
   );
 }
 
+// El mismo movimiento que la pantalla de carga de index.html: los cubiertos entran y el disco gira con una pausa.
 function Cargando() {
   return (
-    <div className="pantalla-centro" role="status" aria-label="Cargando">
-      <motion.span
-        className="cargando-icono"
-        animate={{ rotate: [0, 12, -12, 0], scale: [1, 1.12, 1] }}
-        transition={{ repeat: Infinity, duration: 1.4 }}
-        aria-hidden="true"
-      >
-        <Logo tam={72} />
-      </motion.span>
+    <div className="pantalla-centro pantalla-carga" role="status" aria-label="Cargando">
+      <span className="carga-logo" aria-hidden="true"><Logo tam={96} /></span>
     </div>
   );
 }
 
 function Principal({ recuperando, onRecuperado }) {
   const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidas, comidasLogros, aguaLogros, registrosLogros, actualizarTodo, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
+  // Con los datos listos (o un error para mostrar) se va el logo de carga.
+  useEffect(() => {
+    if (estado.listo || estado.error) quitarSplash();
+  }, [estado.listo, estado.error]);
   // Puntito en Ajustes cuando hay actualizaciones que no viste.
   const [novedad, setNovedad] = useState(hayNovedades);
   useEffect(() => {
@@ -420,7 +427,7 @@ function Principal({ recuperando, onRecuperado }) {
     );
   }, [avisar]);
 
-  if (!estado.listo) return <Esqueleto />;
+  if (!estado.listo) return <Cargando />;
 
   if (estado.error) {
     return (

@@ -8,7 +8,7 @@ import MisGrupos from "../componentes/MisGrupos.jsx";
 import MiMotivacion from "../componentes/MiMotivacion.jsx";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, Download, FileText, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, Monitor, Moon, MoonStar, Palette, Plane, RefreshCw, Skull, Sprout, Sun, SunMedium, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, Download, FileText, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, MoonStar, Palette, Plane, RefreshCw, Skull, Sprout, SunMedium, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -31,9 +31,6 @@ import { descargarMisDatos } from "../lib/misDatos.js";
 const COLORES = ["#E4572E", "#E0A100", "#3FA45B", "#17A2A2", "#3F7FD9", "#7A5CD6", "#CE5AA8", "#8C6A4F"];
 const TEMAS = [
   { id: "lomada", texto: "Lomada", icono: Sprout },
-  { id: "auto", texto: "Automático", icono: Monitor },
-  { id: "claro", texto: "Claro", icono: Sun },
-  { id: "oscuro", texto: "Oscuro", icono: Moon },
   { id: "negro", texto: "Full black", icono: MoonStar },
   { id: "blanco", texto: "Full white", icono: SunMedium },
 ];
