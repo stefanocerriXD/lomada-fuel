@@ -1273,3 +1273,19 @@ console.log("backup: pruebas pasadas");
   await assert.rejects(rol(U[0], () => db.query("select public.comidas_para_salud('llave56')")), /permission denied/);
   console.log("057: pruebas pasadas");
 }
+
+// ===== 059: los ultimos envios del Atajo de Apple Salud =====
+{
+  const s059 = fs.readFileSync(raiz + "059_envios_de_salud.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s059), "059 en ASCII");
+  console.log((await db.exec(s059)).at(-1).rows[0].resultado);
+  await db.exec(s059);
+  await db.query("set role anon");
+  for (let i = 0; i < 12; i++) await db.query("select public.registrar_envio_salud('llave56', $1::jsonb)", [JSON.stringify({ n: i })]);
+  await assert.rejects(db.query("select public.registrar_envio_salud('mala', '{}')"), /token_invalido/);
+  await db.query("reset role");
+  const envios = await filas("select resumen from salud_envios where usuario_id = $1 order by creado_en desc", [U[0]]);
+  assert.equal(envios.length, 10, "quedan los ultimos 10");
+  assert.equal((await rol(U[0], () => filas("select * from salud_envios"))).length, 10, "cada uno ve los suyos");
+  console.log("059: pruebas pasadas");
+}

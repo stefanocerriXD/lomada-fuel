@@ -96,6 +96,29 @@ export function comidasDeSalud(datos, fechaBase) {
 
 const hoyEnArgentina = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
 
+// Un resumen de lo que mandó el Atajo (SQL 059): cuánto vino en cada lista, cómo vinieron las fechas y qué quedó por día.
+// Sirve para ver si un día no llegó desde Salud o si llegó y se leyó mal.
+export function resumenDelEnvio(datos, fecha, entradas) {
+  const listas = Object.fromEntries(LISTAS.flatMap(([, n]) => [[`${n}_horas`, aLista(datos[`${n}_horas`]).length], [`${n}_valores`, aLista(datos[`${n}_valores`]).length]]));
+  const horas = aLista(datos.kcal_horas).map(String);
+  const sinLeer = horas.filter((h) => !aMomento(h, fecha)).slice(0, 3);
+  const dias = {};
+  for (const e of entradas) {
+    const d = e.momento.slice(0, 10);
+    dias[d] = dias[d] || { comidas: 0, kcal: 0 };
+    dias[d].comidas += 1;
+    dias[d].kcal += Math.round(e.kcal);
+  }
+  return {
+    fecha,
+    listas,
+    ejemplos: [...horas.slice(0, 2), ...horas.slice(-2)].map((h) => h.slice(0, 40)),
+    sin_leer: sinLeer.map((h) => h.slice(0, 40)),
+    totales: aLista(datos.calorias).map((v) => String(v).slice(0, 20)).slice(-8),
+    dias,
+  };
+}
+
 // El Atajo trae las comidas sueltas de los últimos 7 días. Se sincronizan los últimos 6 (el más viejo puede venir por la mitad).
 export const DIAS_SINCRONIZADOS = 6;
 export function ventana(fecha) {
@@ -135,6 +158,8 @@ export default async function handler(req, res) {
 
   // Día por día (SQL 056): las comidas y el total de cada día quedan como en Apple Salud.
   const entradas = comidasDeSalud(datos, fecha);
+  // Queda anotado qué llegó (si falta el SQL 059, no pasa nada).
+  await rpc("registrar_envio_salud", { p_token: String(datos.token || ""), p_resumen: { ...resumenDelEnvio(datos, fecha, entradas), sincroniza: sePuedeSincronizar(datos, entradas) } }).catch(() => null);
   if (sePuedeSincronizar(datos, entradas)) {
     const { desde, hasta } = ventana(fecha);
     const r = await rpc("sincronizar_salud", { p_token: String(datos.token || ""), p_entradas: entradas, p_desde: desde, p_hasta: hasta }).catch(() => null);

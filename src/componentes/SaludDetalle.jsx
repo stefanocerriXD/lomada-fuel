@@ -19,14 +19,35 @@ function porDia(filas, campoFecha) {
   return [...dias.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
 }
 
+// El último envío del Atajo: qué días trajo y cuántas comidas de cada uno (SQL 059).
+function UltimoEnvio({ envio }) {
+  if (!envio) return null;
+  const r = envio.resumen || {};
+  const dias = Object.entries(r.dias || {}).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  const cuando = new Date(envio.creado_en).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  return (
+    <div className="salud-dia salud-envio">
+      <p className="salud-dia-titulo"><strong>Último envío del Atajo</strong><span>{cuando}</span></p>
+      <ul>
+        <li><span>Comidas sueltas que mandó Salud</span><span>{r.listas?.kcal_horas ?? 0}</span></li>
+        {dias.map(([d, x]) => <li key={d}><span>{nombreDia(d)}</span><span>{x.comidas} {x.comidas === 1 ? "comida" : "comidas"} · {miles(x.kcal)} kcal</span></li>)}
+        {r.sin_leer?.length > 0 && <li><span>Fechas que no se pudieron leer</span><span>{r.sin_leer.join(" | ")}</span></li>}
+      </ul>
+    </div>
+  );
+}
+
 // Cada comida que llegó de Apple Salud, día por día: para comparar con MyFitnessPal si un total no coincide.
 export function LoQueLlego() {
   const { usuario } = useDatos();
   const [filas, setFilas] = useState(null);
+  const [envio, setEnvio] = useState(null);
   useEffect(() => {
     supabase.from("salud_comidas").select("fecha, momento, kcal, proteinas, carbohidratos, grasas").eq("usuario_id", usuario.id)
       .gte("fecha", haceDias(DIAS - 1)).order("momento", { ascending: true })
       .then(({ data, error }) => setFilas(error ? null : data || []));
+    supabase.from("salud_envios").select("creado_en, resumen").eq("usuario_id", usuario.id).order("creado_en", { ascending: false }).limit(1).maybeSingle()
+      .then(({ data, error }) => setEnvio(error ? null : data));
   }, [usuario.id]);
   if (!filas) return null;
   return (
@@ -49,6 +70,7 @@ export function LoQueLlego() {
           ))}
         </>
       )}
+      <UltimoEnvio envio={envio} />
     </section>
   );
 }
