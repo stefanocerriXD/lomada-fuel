@@ -19,6 +19,8 @@ function porDia(filas, campoFecha) {
   return [...dias.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
 }
 
+const MACROS_ENVIO = [["kcal", "Kcal"], ["proteinas", "Prote"], ["carbos", "Carbos"], ["grasas", "Grasas"]];
+
 // El último envío del Atajo: qué días trajo y cuántas comidas de cada uno (SQL 059).
 function UltimoEnvio({ envio }) {
   if (!envio) return null;
@@ -30,6 +32,13 @@ function UltimoEnvio({ envio }) {
       <p className="salud-dia-titulo"><strong>Último envío del Atajo</strong><span>{cuando}</span></p>
       <ul>
         <li><span>Comidas sueltas que mandó Salud</span><span>{r.listas?.kcal_horas ?? 0}</span></li>
+        {/* Cuántos datos de cada macro: si uno viene en 0, MyFitnessPal no lo está pasando a Salud. */}
+        {r.listas && (
+          <li className={MACROS_ENVIO.some(([k]) => (r.listas[`${k}_valores`] ?? 0) === 0) && (r.listas.kcal_valores ?? 0) > 0 ? "salud-envio-falta" : ""}>
+            <span>Datos por macro</span>
+            <span>{MACROS_ENVIO.map(([k, n]) => `${n} ${r.listas[`${k}_valores`] ?? 0}`).join(" · ")}</span>
+          </li>
+        )}
         {dias.map(([d, x]) => <li key={d}><span>{nombreDia(d)}</span><span>{x.comidas} {x.comidas === 1 ? "comida" : "comidas"} · {miles(x.kcal)} kcal</span></li>)}
         {r.sin_leer?.length > 0 && <li><span>Fechas que no se pudieron leer</span><span>{r.sin_leer.join(" | ")}</span></li>}
       </ul>

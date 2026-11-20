@@ -2696,3 +2696,4 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .video-detectado { display: flex; align-items: center; gap: 8px; }
 .nuevo-video textarea { width: 100%; font-size: 16px; }
 .lista-videos .boton-chico.peligro { color: var(--peligro); flex: none; }
+.salud-envio-falta span:last-child { color: var(--peligro); font-weight: 700; }

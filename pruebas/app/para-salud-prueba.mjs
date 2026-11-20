@@ -58,6 +58,8 @@ await p.evaluate(async () => {
     { usuario_id: "u1", fecha: hoy, momento: `${hoy}T09:10:00-03:00`, kcal: 320, proteinas: 15, carbohidratos: 40, grasas: 8 },
   );
   window.__db.salud_exportadas.push({ usuario_id: "u1", fecha: hoy, momento: `${hoy}T13:05:00-03:00`, kcal: 650 });
+  // El último envío del Atajo: llegaron kcal, prote y grasas pero ningún carbo.
+  window.__db.salud_envios = [{ usuario_id: "u1", creado_en: new Date().toISOString(), resumen: { listas: { kcal_horas: 3, kcal_valores: 3, proteinas_valores: 3, carbos_valores: 0, grasas_valores: 3 }, dias: { [hoy]: { comidas: 1, kcal: 320 } } } }];
 });
 await p.getByRole("button", { name: "Ajustes", exact: true }).locator("visible=true").first().click();
 await p.waitForTimeout(400);
@@ -66,6 +68,8 @@ await p.waitForTimeout(800);
 const llego = p.locator(".salud-detalle");
 await llego.waitFor();
 assert.match(await llego.innerText(), /Ayer\s*1\.961 kcal[\s\S]*13:00[\s\S]*700 kcal[\s\S]*21:30[\s\S]*1\.261 kcal/);
+assert.match(await llego.innerText(), /Datos por macro\s*Kcal 3 · Prote 3 · Carbos 0 · Grasas 3/);
+assert.equal(await llego.locator(".salud-envio-falta").count(), 1, "marca que falta un macro");
 const mandar = p.locator(".salud-mandar");
 assert.match(await mandar.innerText(), /lomada-fuel\.vercel\.app\/api\/para-salud/);
 assert.match(await mandar.innerText(), /Mandado a Salud[\s\S]*Hoy\s*1 comida · 650 kcal/);
