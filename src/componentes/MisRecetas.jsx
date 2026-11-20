@@ -5,6 +5,7 @@ import { pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
 import { Avatar, Vacio } from "./Base.jsx";
 import EditorReceta from "./EditorReceta.jsx";
 import VerReceta from "./VerReceta.jsx";
+import VideosRecetas from "./VideosRecetas.jsx";
 
 const redondo = (n) => Math.round(n).toLocaleString("es-AR");
 
@@ -75,6 +76,7 @@ export default function MisRecetas({ avisar, abrir }) {
       ) : (
         <p className="ajuste-texto">Cuando alguien del grupo guarde una receta, la vas a ver acá.</p>
       )}
+      <VideosRecetas avisar={avisar} />
       <EditorReceta receta={editando} onCerrar={() => setEditando(null)} avisar={avisar} />
       <VerReceta receta={viendo} onCerrar={() => setViendo(null)} avisar={avisar} />
     </section>

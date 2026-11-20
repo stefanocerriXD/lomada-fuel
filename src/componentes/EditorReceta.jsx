@@ -12,6 +12,7 @@ import { macrosDeItem } from "../lib/macros.js";
 import { compartirEnChat, pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
 import { FilaItem, Resultados } from "../vistas/NuevaComida.jsx";
 import { leerIngredientes } from "../lib/ingredientes.js";
+import { limpiarPasos, MAX_PASOS } from "../lib/pasosReceta.js";
 import Lector from "./Lector.jsx";
 import { Hoja, vibrar } from "./Base.jsx";
 
@@ -93,8 +94,9 @@ function Formulario({ receta, onListo, avisar }) {
   }, [comidasLogros, comidas, usuario.id, receta.id, nombre]);
 
   // Una foto o el texto de la receta: cada ingrediente reconocido entra con su cantidad.
-  function alLeer({ titulo, porciones: rinde, items: nuevos, sinReconocer }) {
+  function alLeer({ titulo, porciones: rinde, items: nuevos, sinReconocer, pasos: pasosLeidos }) {
     setItems((prev) => [...prev, ...nuevos.map((i) => ({ ...i, id: crypto.randomUUID() }))]);
+    if (pasosLeidos) setPasos((p) => (p.trim() ? p : pasosLeidos));
     if (titulo) setNombre((n) => n || titulo.slice(0, 80));
     if (rinde) setPorciones(Math.min(100, rinde));
     setLeido({ cantidad: nuevos.length, sinReconocer });
@@ -103,6 +105,7 @@ function Formulario({ receta, onListo, avisar }) {
   }
   const [items, setItems] = useState(() => (receta.ingredientes || []).map((i) => ({ ...(i.por100 ? prepararItem(i) : i), id: crypto.randomUUID() })));
   const [texto, setTexto] = useState("");
+  const [pasos, setPasos] = useState(receta.pasos || "");
   const [guardando, setGuardando] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [error, setError] = useState("");
@@ -143,7 +146,11 @@ function Formulario({ receta, onListo, avisar }) {
     }
     // Las fotos se mandan solo si hay (o había): así sigue andando aunque falte el SQL nuevo.
     const conFotos = rutasFotos.length || receta.fotos?.length ? { fotos: rutasFotos } : {};
-    let { error: err } = await escribir({ ...fila, compartida, ...conFotos });
+    // El paso a paso, igual: solo si hay (o había). Si falta el SQL 061, se guarda sin él.
+    const pasosLimpios = limpiarPasos(pasos);
+    const conPasos = pasosLimpios || receta.pasos ? { pasos: pasosLimpios } : {};
+    let { error: err } = await escribir({ ...fila, compartida, ...conFotos, ...conPasos });
+    if (err && /pasos/.test(err.message || "")) ({ error: err } = await escribir({ ...fila, compartida, ...conFotos }));
     if (err && /fotos/.test(err.message || "")) ({ error: err } = await escribir({ ...fila, compartida }));
     // Si todavía no se corrió el SQL de recetas compartidas, se guarda igual.
     if (err && /compartida/.test(err.message || "")) ({ error: err } = await escribir(fila));
@@ -294,6 +301,12 @@ function Formulario({ receta, onListo, avisar }) {
           </p>
         </div>
       )}
+
+      <label className="campo pasos-campo">
+        <span>Paso a paso (opcional)</span>
+        <textarea value={pasos} onChange={(e) => setPasos(e.target.value)} rows={Math.min(10, Math.max(4, pasos.split("\n").length + 1))} maxLength={MAX_PASOS}
+          placeholder={"Un paso por renglón. Por ejemplo:\nPrecalentá el horno a 180°.\nMezclá los secos.\nHorneá 40 minutos."} aria-label="Paso a paso de la receta" />
+      </label>
 
       <label className="interruptor">
         <input type="checkbox" checked={compartida} onChange={(e) => setCompartida(e.target.checked)} />

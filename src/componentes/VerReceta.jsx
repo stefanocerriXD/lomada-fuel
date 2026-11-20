@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { macrosDeItem } from "../lib/macros.js";
 import { compartirEnChat, pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
+import { listaDePasos } from "../lib/pasosReceta.js";
 import { Avatar, Hoja, vibrar } from "./Base.jsx";
 
 const redondo = (n) => Math.round(n).toLocaleString("es-AR");
@@ -50,17 +51,20 @@ function Detalle({ receta, onCerrar, avisar, onEditar }) {
   const porciones = Math.max(1, Number(receta.porciones) || 1);
   const total = totalesDeReceta(receta.ingredientes || []);
   const peso = pesoDeReceta(receta);
+  const pasos = listaDePasos(receta.pasos);
   const yaLaTengo = !propia && (extras.recetas || []).some((r) => r.nombre.trim().toLowerCase() === receta.nombre.trim().toLowerCase());
 
   async function guardarCopia() {
     setOcupado("guardar");
-    const { error } = await supabase.from("recetas_propias").insert({
+    const copia = {
       usuario_id: usuario.id,
       nombre: receta.nombre,
       ingredientes: receta.ingredientes,
       porciones: receta.porciones,
       peso_final: receta.peso_final,
-    });
+    };
+    let { error } = await supabase.from("recetas_propias").insert(receta.pasos ? { ...copia, pasos: receta.pasos } : copia);
+    if (error && receta.pasos && /pasos/.test(error.message || "")) ({ error } = await supabase.from("recetas_propias").insert(copia));
     setOcupado("");
     if (error) return avisar("No se pudo guardar la receta");
     await cargarExtras();
@@ -127,6 +131,14 @@ function Detalle({ receta, onCerrar, avisar, onEditar }) {
           </li>
         ))}
       </ul>
+      {pasos.length > 0 && (
+        <>
+          <h3 className="titulo-lista">Paso a paso</h3>
+          <ol className="pasos-receta">
+            {pasos.map((p, n) => <li key={n}>{p}</li>)}
+          </ol>
+        </>
+      )}
       <div className="ver-receta-botones">
         {propia && (
           <button className="boton boton-secundario" onClick={onEditar}>

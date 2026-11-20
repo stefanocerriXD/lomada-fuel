@@ -3,6 +3,7 @@
 import { buscarTipicos } from "../data/alimentos-ar.js";
 import { prepararItem, unidadesDe } from "./unidades.js";
 import { itemImportado, leerAlimentos } from "./importar.js";
+import { pasosDelTexto } from "./pasosReceta.js";
 
 const normal = (t) => String(t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
@@ -143,7 +144,12 @@ function leerRecetaMFP(lineas) {
   return { titulo: "", porciones: raciones ? Number(raciones[1]) : null, items, sinReconocer };
 }
 
+// Los ingredientes y, si el texto trae "Preparación", también el paso a paso.
 export function leerIngredientes(texto) {
+  return { ...leerIngredientesSolos(texto), pasos: pasosDelTexto(texto) };
+}
+
+function leerIngredientesSolos(texto) {
   // "100 9" era "100 g": el OCR lee la g como 9 cuando queda sola al final.
   // La flechita de cada fila queda pegada a cualquier renglón ("100 g >") y a veces se lee como ")" o "|".
   const crudas = String(texto || "")

@@ -96,7 +96,7 @@ db.administradores = [{ usuario_id: "u1" }];
 db.invitaciones_comida = [];
 db.recetas_propias = [];
 if (window.__recetaJuan) {
-  db.recetas_propias.push({ id: "r1", usuario_id: "u3", nombre: "Budín de banana", porciones: 8, peso_final: 800, compartida: true, ingredientes: [{ nombre: "Banana", gramos: 300, por100: { kcal: 89, p: 1.1, c: 23, g: 0.3 } }, { nombre: "Harina", gramos: 250, por100: { kcal: 364, p: 10, c: 76, g: 1 } }] });
+  db.recetas_propias.push({ id: "r1", usuario_id: "u3", nombre: "Budín de banana", porciones: 8, peso_final: 800, compartida: true, ...(window.__pasosJuan ? { pasos: "1. Pisar las bananas\nPaso 2: mezclar con la harina\n- Hornear 40 minutos" } : {}), ingredientes: [{ nombre: "Banana", gramos: 300, por100: { kcal: 89, p: 1.1, c: 23, g: 0.3 } }, { nombre: "Harina", gramos: 250, por100: { kcal: 364, p: 10, c: 76, g: 1 } }] });
   db.comidas.find((x) => x.id === "c4").alimentos = [{ nombre: "Budín de banana", receta_id: "r1", marca: "Tu receta", fuente: "receta", gramos: 100, unidad: { nombre: "porción (1/8)", g: 100 }, cantidad: 1, por100: { kcal: 160, p: 3, c: 38, g: 0.5 } }];
 }
 db.multas = [];
@@ -183,6 +183,7 @@ class Consulta {
   }
 }
 
+if (window.__con061) db.recetas_videos = window.__videos || [];
 if (window.__con054) db.productos = window.__productos || [];
 if (window.__con057) db.salud_exportadas = window.__exportadas || [];
 if (window.__con053) db.recordatorios = window.__recordatorios || [];

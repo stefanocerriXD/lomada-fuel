@@ -1326,3 +1326,26 @@ console.log("backup: pruebas pasadas");
   assert.equal((await uno("select public.categoria_aviso('anuncio') c")).c, "anuncios");
   console.log("060: pruebas pasadas");
 }
+
+// ===== 061: el paso a paso de las recetas =====
+{
+  const s061 = fs.readFileSync(raiz + "061_recetas_pasos_y_videos.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s061), "061 en ASCII");
+  console.log((await db.exec(s061)).at(-1).rows[0].resultado);
+  await db.exec(s061);
+  const r = (await rol(U[0], () => uno("insert into recetas_propias (usuario_id, nombre, pasos) values ($1, 'Con pasos', 'Mezclar\nHornear') returning id, pasos", [U[0]])));
+  assert.equal(r.pasos, "Mezclar\nHornear");
+  await assert.rejects(rol(U[0], () => db.query("update recetas_propias set pasos = repeat('x', 4001) where id = $1", [r.id])), /pasos_check/);
+  // Videos de recetas: los del grupo si estan compartidos, solo el duenio los borra, links validos.
+  const otro = (await uno("select id from perfiles where id <> $1 limit 1", [U[0]])).id;
+  const v = await rol(U[0], () => uno("insert into recetas_videos (usuario_id, url, titulo, red) values ($1, 'https://vm.tiktok.com/abc/', 'Budin proteico', 'tiktok') returning id", [U[0]]));
+  await rol(U[0], () => db.query("insert into recetas_videos (usuario_id, url, titulo, red, compartida) values ($1, 'https://youtu.be/abcdefgh', 'Solo mio', 'youtube', false)", [U[0]]));
+  await assert.rejects(rol(U[0], () => db.query("insert into recetas_videos (usuario_id, url, titulo) values ($1, 'javascript:alert(1)', 'x')", [U[0]])), /check/);
+  await assert.rejects(rol(U[0], () => db.query("insert into recetas_videos (usuario_id, url, titulo, red) values ($1, 'https://x.com/a', 'x', 'facebook')", [U[0]])), /check/);
+  await assert.rejects(rol(otro, () => db.query("insert into recetas_videos (usuario_id, url, titulo) values ($1, 'https://x.com/abc', 'trucho')", [U[0]])), /row-level security/);
+  assert.equal((await rol(U[0], () => filas("select * from recetas_videos"))).length, 2, "veo los mios");
+  await rol(otro, () => db.query("delete from recetas_videos where id = $1", [v.id]));
+  assert.equal((await uno("select count(*)::int n from recetas_videos")).n, 2, "otro no borra lo mio");
+  await assert.rejects(db.query("set role anon").then(() => db.query("select * from recetas_videos")).finally(() => db.query("reset role")), /permission denied/);
+  console.log("061: pruebas pasadas");
+}
