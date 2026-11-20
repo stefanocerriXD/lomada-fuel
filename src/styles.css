@@ -1759,12 +1759,23 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .marco-aurora::before { background-size: 300% 300%; animation: fluir 4s linear infinite; }
 .marco-aurora .avatar-chispa { color: #00c3ff; }
 /* 60 · Legendario: arcoíris que gira, con corona */
+.marco-obsidiana { --marco: linear-gradient(135deg, #07070b 0%, #3a2d5c 20%, #0b0b12 38%, #b69cff 52%, #0b0b12 66%, #5b3fa0 84%, #07070b 100%); box-shadow: 0 0 4px rgb(150 110 240 / 70%); }
+.marco-obsidiana::before { animation: brillo-metal 3.2s ease-in-out infinite; }
+.marco-obsidiana .avatar-chispa { color: #b69cff; text-shadow: 0 0 4px rgb(123 92 196 / 90%); }
+
 .marco-legendario { --marco: conic-gradient(from 0deg, #ff4d6d, #ffb347, #ffe94d, #59f59a, #4dc9ff, #8f6bff, #ff5ccd, #ff4d6d); animation: brillo-legendario 2.8s ease-in-out infinite; }
 .marco-legendario::before { background-size: 100% 100%; animation: girar-marco 3s linear infinite; }
 /* 75 · Mítico: llamas de arcoíris que giran y titilan */
+.marco-tormenta { --marco: conic-gradient(from 0deg, #16213a, #4b6a9b, #16213a, #a9c6ff, #16213a, #3d5a8a, #16213a, #7fa4e8, #16213a); box-shadow: 0 0 3px rgb(127 164 232 / 50%); }
+.marco-tormenta::before { background-size: 100% 100%; animation: girar-marco 7s linear infinite, relampago 3.4s steps(1, end) infinite; }
+.avatar-relampago { position: absolute; top: -0.14em; right: -0.06em; z-index: 3; line-height: 1; pointer-events: none; font-size: 0.5em; color: #ffe14d; text-shadow: 0 0 4px rgb(255 225 77 / 95%), 0 0 1px rgb(0 0 0 / 50%); animation: relampago 3.4s steps(1, end) infinite; }
+
 .marco-mitico { --marco: conic-gradient(#ff3d00, #ffea00, #ff3d00, #d500f9, #2979ff, #00e5ff, #ff3d00); }
 .marco-mitico::before { animation: girar-marco 4s linear infinite, llamear-suave 0.6s ease-in-out infinite alternate; }
 /* 90 · Inmortal: rayos de sol dorados y un halo */
+.marco-eclipse { --marco: radial-gradient(circle closest-side, #000 80%, #1b1404 85%, #ffb300 92%, #fff4c2 100%); animation: corona-eclipse 3s ease-in-out infinite; }
+.marco-eclipse::before { background-size: 100% 100%; }
+
 .marco-inmortal { --marco: repeating-conic-gradient(#fff6c4 0 7.5deg, #f2b800 7.5deg 15deg); box-shadow: 0 0 4px rgb(255 214 0 / 70%); }
 .marco-inmortal::before { animation: girar-marco 10s linear infinite; }
 .avatar-halo { position: absolute; left: 22%; right: 22%; top: -6%; height: 16%; border-radius: 50%; border: max(1.5px, calc(var(--hueco) * 0.3)) solid #ffd54f; box-shadow: 0 0 4px #ffd54f; animation: flotar-halo 2.6s ease-in-out infinite; pointer-events: none; }
@@ -1789,12 +1800,15 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 @keyframes hervir { 0%, 100% { filter: brightness(0.95); } 50% { filter: brightness(1.3) saturate(1.2); } }
 @keyframes chispazo { 0%, 100% { filter: brightness(1); transform: rotate(0deg); } 12% { filter: brightness(1.8); transform: rotate(18deg); } 16% { filter: brightness(0.9); } 50% { transform: rotate(18deg); } 62% { filter: brightness(1.7); transform: rotate(36deg); } 66% { filter: brightness(1); } }
 @keyframes neon { 0%, 100% { box-shadow: 0 0 3px 0 rgb(255 61 242 / 70%); } 50% { box-shadow: 0 0 5px 1px rgb(61 242 255 / 75%); } }
+@keyframes relampago { 0%, 100% { filter: brightness(1); } 38% { filter: brightness(2.3); } 40% { filter: brightness(1); } 44% { filter: brightness(1.9); } 46% { filter: brightness(1); } }
+@keyframes corona-eclipse { 0%, 100% { box-shadow: 0 0 4px 0 rgb(255 179 0 / 60%); } 50% { box-shadow: 0 0 8px 2px rgb(255 214 102 / 85%); } }
+@keyframes brillo-olimpo { 0%, 100% { box-shadow: 0 0 4px 0 rgb(255 230 150 / 70%); } 50% { box-shadow: 0 0 9px 2px rgb(255 240 190 / 95%); } }
 @keyframes brillo-legendario { 0%, 100% { box-shadow: 0 0 3px 0 rgb(255 120 90 / 55%); } 50% { box-shadow: 0 0 6px 1px rgb(150 100 255 / 60%); } }
 @keyframes chispa { 0%, 60%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 75% { opacity: 1; transform: scale(1) rotate(45deg); } }
 @keyframes flotar-corona { 0%, 100% { transform: translate(-50%, 0) rotate(-12deg); } 50% { transform: translate(-50%, -2px) rotate(-6deg); } }
 @keyframes flotar-halo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) {
-  .avatar.con-marco, .avatar.con-marco::before, .avatar-corona, .avatar-chispa, .avatar-orbita, .avatar-estrellas::before, .avatar-estrellas::after, .avatar-halo { animation: none; }
+  .avatar.con-marco, .avatar.con-marco::before, .avatar-corona, .avatar-chispa, .avatar-relampago, .avatar-orbita, .avatar-estrellas::before, .avatar-estrellas::after, .avatar-halo { animation: none; }
   .avatar-chispa { opacity: 1; }
 }
 /* Aire a la izquierda en las listas, para el brillo del marco. */
@@ -1874,6 +1888,19 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .publicar-nota { margin: 0 0 10px; }
 
 /* LOMADA LEGENDARY: el marco final, llamas grandes con el logo de la Lomada arriba */
+.marco-fenix { --marco: radial-gradient(circle closest-side, #fff3a0 64%, #ffb300 71%, #ff5722 80%, #e91e63 90%, #6a1b9a 100%); box-shadow: 0 0 5px rgb(255 87 34 / 60%); }
+.marco-fenix::before { animation: llamear 0.8s ease-in-out infinite alternate; transform-origin: 50% 55%; }
+.marco-titan { --marco: linear-gradient(120deg, #3e4852 0%, #cfd8dc 18%, #56636f 34%, #ffd54f 50%, #56636f 66%, #e3e9ec 82%, #3e4852 100%); box-shadow: 0 0 3px rgb(255 213 79 / 55%); }
+.marco-titan::before { animation: brillo-metal 2.4s ease-in-out infinite; }
+.marco-titan .avatar-chispa { color: #ffd54f; text-shadow: 0 0 4px rgb(255 213 79 / 90%); }
+.marco-supernova { --marco: repeating-conic-gradient(from 0deg, #ffffff 0 7.5deg, #ff9ce6 7.5deg 15deg, #7ad7ff 15deg 22.5deg); box-shadow: 0 0 6px 1px rgb(122 215 255 / 70%); }
+.marco-supernova::before { background-size: 100% 100%; animation: girar-marco 6s linear infinite, destello 1.6s ease-in-out infinite; }
+.marco-nebulosa { --marco: linear-gradient(120deg, #ff6ec7, #7873f5, #2dd4bf, #22d3ee, #ff6ec7, #7873f5); box-shadow: 0 0 4px rgb(120 115 245 / 60%); }
+.marco-nebulosa::before { background-size: 300% 300%; animation: fluir 5s linear infinite; }
+.marco-olimpo { --marco: conic-gradient(from 0deg, #fffdf5, #f2d27a, #ffffff, #e0b84a, #fffdf5, #f7e6b0, #ffffff, #e0b84a, #fffdf5); animation: brillo-olimpo 3s ease-in-out infinite; }
+.marco-olimpo::before { background-size: 100% 100%; animation: girar-marco 9s linear infinite; }
+.marco-olimpo .avatar-chispa { color: #e0b84a; text-shadow: 0 0 4px rgb(255 230 150 / 95%); }
+
 .marco-lomada { --marco: radial-gradient(circle closest-side, #fff8c2 62%, #ffd21f 70%, #ff8a00 80%, #ff3d12 90%, #b3001b 100%); }
 .marco-lomada::before { animation: llamear 0.55s ease-in-out infinite alternate; transform-origin: 50% 55%; }
 .avatar-lomada { position: absolute; z-index: 3; top: -0.55em; left: 50%; width: 0.98em; height: 0.98em; transform: translateX(-50%); border-radius: 50%; filter: drop-shadow(0 0 3px #ff9a00) drop-shadow(0 0 6px rgb(255 60 0 / 70%)); animation: logo-arde 1.2s ease-in-out infinite alternate; pointer-events: none; }

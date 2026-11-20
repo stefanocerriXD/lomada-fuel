@@ -44,7 +44,7 @@ await p.getByRole("button", { name: "Logros", exact: true }).locator("visible=tr
 await p.waitForTimeout(900);
 // Cerrado: una sola línea, sin la lista.
 assert.equal(await p.locator(".camino-paso").count(), 0);
-assert.match(await p.locator(".camino-cabecera").innerText(), /Camino de niveles[\s\S]*5 de 19 marcos · Zafiro en 2 niveles/);
+assert.match(await p.locator(".camino-cabecera").innerText(), /Camino de niveles[\s\S]*5 de 27 marcos · Zafiro en 2 niveles/);
 await p.locator(".camino").screenshot({ path: "capturas/camino-plegado.png" });
 await p.locator(".camino-cabecera").click();
 await p.waitForTimeout(500);
@@ -53,9 +53,9 @@ assert.match(await p.locator(".camino-paso.actual").innerText(), /Esmeralda/);
 assert.match(await p.locator(".camino-paso.proximo").innerText(), /Zafiro[\s\S]*te faltan 2/);
 assert.match(await p.locator(".camino-paso.final").innerText(), /LOMADA LEGENDARY/);
 await p.locator(".camino").screenshot({ path: "capturas/camino-cerrado.png" });
-await p.getByRole("button", { name: /Ver los 19 niveles/ }).click();
+await p.getByRole("button", { name: /Ver los 27 niveles/ }).click();
 await p.waitForTimeout(500);
-assert.equal(await p.locator(".camino-paso").count(), 19);
+assert.equal(await p.locator(".camino-paso").count(), 27);
 await ctx.close();
 
 // El final: LOMADA LEGENDARY

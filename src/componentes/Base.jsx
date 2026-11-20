@@ -15,7 +15,8 @@ export function vibrar(ms = 10) {
   }
 }
 
-// El marco del avatar mejora con el nivel general: uno nuevo cada 2 o 3 niveles al principio, más espaciados arriba.
+// El marco del avatar mejora con el nivel general: uno nuevo cada 2 o 3 niveles al principio, más espaciados arriba
+// (pero nunca más de 15 niveles sin uno nuevo).
 // [desde qué nivel, clave, nombre, emoji]
 export const MARCOS = [
   [2, "cobre", "Cobre", "🟤"],
@@ -33,9 +34,17 @@ export const MARCOS = [
   [35, "galaxia", "Galaxia", "🌌"],
   [40, "magma", "Magma", "🌋"],
   [44, "aurora", "Aurora", "🌈"],
+  [48, "obsidiana", "Obsidiana", "🖤"],
   [52, "legendario", "Legendario", "👑"],
+  [58, "tormenta", "Tormenta", "⛈️"],
   [65, "mitico", "Mítico", "🐉"],
+  [72, "eclipse", "Eclipse", "🌑"],
   [80, "inmortal", "Inmortal", "☀️"],
+  [90, "fenix", "Fénix", "🪽"],
+  [100, "titan", "Titán", "🗿"],
+  [112, "supernova", "Supernova", "💥"],
+  [125, "nebulosa", "Nebulosa", "🌠"],
+  [140, "olimpo", "Olimpo", "🏛️"],
   // El final: todos los logros al máximo.
   [NIVEL_MAXIMO, "lomada", "LOMADA LEGENDARY", "🔥"],
 ];
@@ -64,10 +73,15 @@ const FORMAS = {
   magma: puntas([50, 44, 48, 45, 50, 43, 47, 45, 49, 44, 46, 45], 38),
   mitico: puntas([50, 44, 48, 43, 50, 45, 47, 43, 50, 44, 48, 43, 50, 45, 47, 43], 37.5),
   inmortal: puntas(repetir(24, 50), 40),
+  fenix: puntas([50, 42, 47, 41, 50, 43, 46, 41, 50, 42, 47, 41, 50, 43, 46, 41, 50, 42], 36),
+  titan: puntas(repetir(12, 50), 46.5),
+  supernova: puntas(repetir(16, 50), 41),
+  nebulosa: puntas(repetir(20, 50), 46.5),
   lomada: puntas([50, 40, 47, 38, 50, 41, 46, 38, 50, 40, 47, 39, 50, 41, 46, 38], 34),
 };
 // Cuánto lugar deja el marco alrededor de la cara (en % del tamaño).
-const HUECO = { esmeralda: 9, rubi: 10, fuego: 17, hielo: 17, rayo: 16, magma: 16, mitico: 16, inmortal: 13, lomada: 20, galaxia: 10, neon: 11 };
+const HUECO = { esmeralda: 9, rubi: 10, fuego: 17, hielo: 17, rayo: 16, magma: 16, mitico: 16, inmortal: 13, lomada: 20, galaxia: 10, neon: 11,
+  eclipse: 10, fenix: 18, titan: 10, supernova: 14, nebulosa: 11, olimpo: 11 };
 
 export function Avatar({ perfil, tam = 40 }) {
   const marco = marcoDe(perfil?.nivel);
@@ -90,12 +104,13 @@ export function Avatar({ perfil, tam = 40 }) {
     >
       <span className="avatar-letra">{(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}</span>
       {deco && marco === "zafiro" && <span className="avatar-orbita" />}
-      {deco && (marco === "galaxia" || marco === "mitico") && <span className="avatar-estrellas" />}
+      {deco && ["galaxia", "mitico", "nebulosa", "supernova"].includes(marco) && <span className="avatar-estrellas" />}
       {deco && ["legendario", "mitico"].includes(marco) && <span className="avatar-corona">👑</span>}
-      {deco && marco === "inmortal" && <span className="avatar-halo" />}
+      {deco && ["inmortal", "olimpo"].includes(marco) && <span className="avatar-halo" />}
+      {deco && marco === "tormenta" && <span className="avatar-relampago">⚡</span>}
       {deco && marco === "lomada" && <img className="avatar-lomada" src="/lomada.svg" alt="" />}
       {deco && marco === "lomada" && <span className="avatar-brasas"><i /><i /><i /></span>}
-      {deco && ["oro", "diamante", "hielo", "aurora"].includes(marco) && <span className="avatar-chispa">✦</span>}
+      {deco && ["oro", "diamante", "hielo", "aurora", "obsidiana", "titan", "olimpo"].includes(marco) && <span className="avatar-chispa">✦</span>}
       {perfil?.fiesta?.gol && perfil.fiesta.modo === "resaca" && !["legendario", "mitico"].includes(marco) && <span className="avatar-corona avatar-gol"><IconoCorona tam="1em" /></span>}
       {perfil?.calavera ? <span className="avatar-caca calavera">💀</span> : perfil?.caca && <span className={`avatar-caca ${perfil.caca}`}>💩</span>}
     </span>

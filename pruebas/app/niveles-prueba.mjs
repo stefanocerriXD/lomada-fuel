@@ -34,13 +34,13 @@ await p.waitForTimeout(5000);
 const marcos = await p.locator(".tarjeta-amigo").evaluateAll((els) => els.map((e) => [e.querySelector(".amigo-datos strong").textContent, e.querySelector(".avatar").className]));
 console.log(marcos);
 const marcoDe = (n) => marcos.find(([t]) => t.startsWith(n))[1];
-assert.equal(marcoDe("Nahuel"), "avatar con-marco marco-plata"); assert.equal(marcoDe("Juan"), "avatar con-marco marco-neon"); assert.equal(marcoDe("Tobi"), "avatar con-marco marco-legendario");
+assert.equal(marcoDe("Nahuel"), "avatar con-marco marco-plata"); assert.equal(marcoDe("Juan"), "avatar con-marco marco-neon"); assert.equal(marcoDe("Tobi"), "avatar con-marco marco-tormenta");
 assert.ok(!/con-marco/.test(marcoDe("Steve")), "nivel bajo, sin marco");
-assert.equal(await p.locator(".tarjeta-amigo .avatar-corona").count(), 1, "corona solo para el legendario");
+assert.equal(await p.locator(".tarjeta-amigo .avatar-corona").count(), 0, "la corona es solo del legendario y el mitico");
 await p.locator(".lista-amigos").screenshot({ path: "capturas/nv-marcos.png" });
 await p.evaluate(() => [...document.querySelectorAll(".tarjeta-amigo")].find((e) => e.textContent.includes("Tobi")).scrollIntoView({ block: "center" }));
 await p.waitForTimeout(500);
-await p.locator(".tarjeta-amigo", { hasText: "Tobi" }).screenshot({ path: "capturas/nv-legendario.png" });
+await p.locator(".tarjeta-amigo", { hasText: "Tobi" }).screenshot({ path: "capturas/nv-tormenta.png" });
 
 // El día de cada uno, por comida
 const yo = p.locator(".tarjeta-amigo", { hasText: "(vos)" });
