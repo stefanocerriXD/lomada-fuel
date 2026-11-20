@@ -39,12 +39,13 @@ export const MARCOS = [
   [58, "tormenta", "Tormenta", "⛈️"],
   [65, "mitico", "Mítico", "🐉"],
   [72, "eclipse", "Eclipse", "🌑"],
-  [80, "inmortal", "Inmortal", "☀️"],
-  [90, "fenix", "Fénix", "🪽"],
-  [100, "titan", "Titán", "🗿"],
-  [112, "supernova", "Supernova", "💥"],
-  [125, "nebulosa", "Nebulosa", "🌠"],
-  [140, "olimpo", "Olimpo", "🏛️"],
+  [80, "fenix", "Fénix", "🪽"],
+  [90, "titan", "Titán", "🗿"],
+  [100, "supernova", "Supernova", "💥"],
+  [112, "nebulosa", "Nebulosa", "🌠"],
+  [125, "olimpo", "Olimpo", "🏛️"],
+  // Inmortal queda justo antes del final.
+  [140, "inmortal", "Inmortal", "☀️"],
   // El final: todos los logros al máximo.
   [NIVEL_MAXIMO, "lomada", "LOMADA LEGENDARY", "🔥"],
 ];

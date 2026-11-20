@@ -1772,7 +1772,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 .marco-mitico { --marco: conic-gradient(#ff3d00, #ffea00, #ff3d00, #d500f9, #2979ff, #00e5ff, #ff3d00); }
 .marco-mitico::before { animation: girar-marco 4s linear infinite, llamear-suave 0.6s ease-in-out infinite alternate; }
-/* 90 · Inmortal: rayos de sol dorados y un halo */
+/* 140 · Inmortal: rayos de sol dorados y un halo (el último antes de LOMADA LEGENDARY) */
 .marco-eclipse { --marco: radial-gradient(circle closest-side, #000 80%, #1b1404 85%, #ffb300 92%, #fff4c2 100%); animation: corona-eclipse 3s ease-in-out infinite; }
 .marco-eclipse::before { background-size: 100% 100%; }
 
