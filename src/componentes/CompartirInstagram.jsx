@@ -23,6 +23,10 @@ const puedeCompartir = (archivo) => {
   }
 };
 
+// En iPhone una descarga abre un link con vista previa: para guardar en Fotos se usa el menú de compartir,
+// que trae "Guardar imagen" arriba de todo. En Android la descarga va directo a la galería.
+const esIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
 // La imagen se arma al abrir la hoja: así el botón Compartir abre el menú del celu en el mismo toque.
 // Con `comida` arma la de una comida; con `dia` ({ comidas, fotos, fecha, total, meta }) la del día entero.
 export default function CompartirInstagram({ abierta, onCerrar, comida, foto, dia }) {
@@ -59,7 +63,7 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto, di
     return () => URL.revokeObjectURL(url);
   }, [archivo]);
 
-  function guardar() {
+  function descargar() {
     const a = document.createElement("a");
     a.href = vista;
     a.download = archivo.name;
@@ -70,13 +74,19 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto, di
 
   async function compartir() {
     if (!archivo) return;
-    if (!puedeCompartir(archivo)) return guardar();
+    if (!puedeCompartir(archivo)) return descargar();
     try {
       await navigator.share({ files: [archivo] });
       vibrar(14);
     } catch (e) {
-      if (e?.name !== "AbortError") guardar();
+      if (e?.name !== "AbortError") descargar();
     }
+  }
+
+  function guardar() {
+    if (!archivo) return;
+    if (esIphone() && puedeCompartir(archivo)) return compartir();
+    descargar();
   }
 
   return createPortal(
@@ -103,8 +113,8 @@ export default function CompartirInstagram({ abierta, onCerrar, comida, foto, di
           {error && <p className="error" role="alert">{error}</p>}
         </div>
         <button type="button" className="boton" onClick={compartir} disabled={!archivo}><Share2 size={18} /> Compartir</button>
-        <button type="button" className="boton-texto" onClick={guardar} disabled={!archivo}><Download size={15} /> Guardar imagen</button>
-        <p className="nota">En el menú elegí Instagram (historia, publicación o mensaje). Si no aparece, guardala y subila desde Instagram.</p>
+        <button type="button" className="boton-texto" onClick={guardar} disabled={!archivo}><Download size={15} /> Guardar en Fotos</button>
+        <p className="nota">En el menú elegí Instagram (historia, publicación o mensaje). Para guardarla, tocá Guardar en Fotos y en el menú, Guardar imagen. También podés mantener apretada la imagen.</p>
       </div>
     </Hoja>,
     document.body,

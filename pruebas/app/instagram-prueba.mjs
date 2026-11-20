@@ -63,3 +63,36 @@ await ctx.close();
 assert.deepEqual(errores, []);
 await b.close();
 console.log("instagram ok");
+
+// En iPhone, "Guardar en Fotos" abre el menú de compartir (que trae "Guardar imagen"), no una descarga con link.
+{
+  const b2 = await (await import("playwright-core")).chromium.launch({ channel: "chrome", headless: true });
+  const ctx = await b2.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" });
+  await ctx.route(/\/api\//, (r) => r.fulfill({ json: {} }));
+  await ctx.addInitScript(() => {
+    localStorage.setItem("comidas-bienvenida", "vista");
+    window.__compartidos = [];
+    navigator.canShare = () => true;
+    navigator.share = async (d) => { window.__compartidos.push(d.files.map((f) => f.type)); };
+  });
+  const p = await ctx.newPage();
+  let descargas = 0;
+  p.on("download", () => descargas++);
+  await p.goto("http://localhost:5199");
+  await p.waitForTimeout(1500);
+  await p.getByRole("button", { name: /^Grupo/ }).locator("visible=true").first().click(); await p.waitForTimeout(600);
+  await p.getByRole("tab", { name: "Imágenes" }).click(); await p.waitForTimeout(600);
+  await p.locator(".grupo-fotos-cabecera").first().click(); await p.waitForTimeout(800);
+  const ig = p.getByRole("button", { name: "Instagram" }).first();
+  await ig.scrollIntoViewIfNeeded();
+  await ig.click();
+  const guardarFotos = p.getByRole("button", { name: /Guardar en Fotos/ });
+  await guardarFotos.waitFor();
+  await p.waitForFunction(() => !document.querySelector(".compartir-ig .boton-texto")?.disabled);
+  await guardarFotos.click();
+  await p.waitForTimeout(400);
+  const compartidos = await p.evaluate(() => window.__compartidos);
+  if (compartidos.length !== 1 || descargas !== 0) throw new Error(`iPhone: esperaba el menú de compartir, hubo ${compartidos.length} menús y ${descargas} descargas`);
+  await b2.close();
+  console.log("iPhone: Guardar en Fotos abre el menú de compartir");
+}
