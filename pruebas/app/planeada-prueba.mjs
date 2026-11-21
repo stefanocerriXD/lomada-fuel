@@ -37,6 +37,7 @@ async function sumarPollo(p) {
 let { ctx, p } = await abrir();
 await p.getByRole("button", { name: /Agregar cena/ }).click();
 await p.waitForTimeout(700);
+await p.getByText("Más opciones").click();
 assert.equal(await p.getByText("Todavía no la comí").count(), 0);
 await ctx.close();
 
@@ -53,6 +54,7 @@ await p.waitForTimeout(700);
 await sumarPollo(p);
 await p.getByLabel("Nota de la comida").fill("Pollo de la noche");
 assert.equal(await p.getByLabel("Foto de la comida").count(), 1);
+await p.getByText("Más opciones").click();
 await p.getByText("Todavía no la comí").click();
 assert.equal(await p.getByLabel("Foto de la comida").count(), 0, "planeada: sin foto");
 await p.screenshot({ path: "capturas/planeada-nueva.png" });
@@ -93,6 +95,7 @@ await p.getByRole("button", { name: /Agregar merienda/ }).click();
 await p.waitForTimeout(700);
 await sumarPollo(p);
 await p.getByLabel("Nota de la comida").fill("Merienda planeada");
+await p.getByText("Más opciones").click();
 await p.getByText("Todavía no la comí").click();
 await p.getByRole("button", { name: "Guardar comida planeada" }).click();
 await p.waitForTimeout(900);

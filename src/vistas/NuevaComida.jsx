@@ -8,7 +8,7 @@ import { itemsDelDictado, partesDelDictado } from "../lib/dictado.js";
 import { itemsDeFoto } from "../lib/reconocer.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
-import { alimentosDelGrupo, alimentosUsados, buscarEnHistorial, claveAlimento, combosDe, haceTanto, vecesPorAlimento } from "../lib/historial.js";
+import { alimentosDelGrupo, alimentosUsados, buscarCombos, buscarEnHistorial, claveAlimento, combosDe, haceTanto, vecesPorAlimento } from "../lib/historial.js";
 import { buscarRecetas, recetaComoAlimento } from "../lib/recetasPropias.js";
 import { buscarCatalogo, sumarAlCatalogo } from "../lib/productosPropios.js";
 import { aFecha, fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
@@ -77,8 +77,10 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   }, [original, avisarEstado]);
 
   const [tipo, setTipo] = useState(original?.tipo || carga.tipo || tipoSegunHora());
-  const [descripcion, setDescripcion] = useState(original?.descripcion || carga.receta?.descripcion || "");
+  const [descripcion, setDescripcion] = useState(original?.descripcion || carga.receta?.descripcion || carga.copia?.descripcion || "");
   const [items, setItems] = useState(() => {
+    // Una comida copiada en Resumen (y pegada en este día): sus alimentos con las mismas cantidades.
+    if (!original && carga.copia) return carga.copia.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() }));
     if (!original) return (carga.receta?.items || []).map((i) => ({ ...prepararItem(i), id: crypto.randomUUID() }));
     // Lo que se había cargado como colación y resultó ser el postre pasa adentro de esta comida.
     const delPostre = (carga.extra?.items || []).map((a) => ({ ...a, id: crypto.randomUUID(), postre: true }));
@@ -115,7 +117,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [faltan, setFaltan] = useState(null);
   const [ajuste, setAjuste] = useState(
-    original?.macros_editados ? { kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas } : null,
+    original?.macros_editados ? { kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas } : carga.copia?.ajuste || null,
   );
   const [privada, setPrivada] = useState(original?.privada ?? yo.comidas_privadas ?? false);
   const [guardando, setGuardando] = useState(false);
@@ -158,7 +160,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const saludAutomatica = useRef(false);
   const [precargada, setPrecargada] = useState(null);
   useEffect(() => {
-    if (saludAutomatica.current || original || carga.postre || carga.receta || carga.buscar || !deSalud.length) return;
+    if (saludAutomatica.current || original || carga.postre || carga.receta || carga.copia || carga.buscar || !deSalud.length) return;
     saludAutomatica.current = true;
     if (items.length) return;
     const actual = carga.tipo || tipo;
@@ -196,6 +198,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
   const historial = useMemo(() => alimentosUsados(comidasLogros || comidas, usuario.id), [comidasLogros, comidas, usuario.id]);
   const combos = useMemo(() => combosDe(comidasLogros || comidas, usuario.id, tipo), [comidasLogros, comidas, usuario.id, tipo]);
+  const anterioresBuscadas = useMemo(() => buscarCombos(comidasLogros || comidas, usuario.id, texto), [comidasLogros, comidas, usuario.id, texto]);
 
   // Solo se libera la vista previa propia: la foto guardada en el celu la usan otras pantallas.
   useEffect(() => () => { if (vistaFoto?.startsWith("blob:") && vistaFoto !== fotos[original?.foto_path]) URL.revokeObjectURL(vistaFoto); }, [vistaFoto]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -352,6 +355,14 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   // Repite una comida anterior completa, con sus cantidades.
   function usarCombo(combo) {
     setItems(combo.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() })));
+    setDescripcion((d) => d || combo.nombre);
+    setError("");
+    vibrar(10);
+  }
+
+  // Desde el buscador: se suma a lo que ya estaba cargado.
+  function sumarCombo(combo) {
+    setItems((prev) => [...prev, ...combo.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() }))]);
     setDescripcion((d) => d || combo.nombre);
     setError("");
     vibrar(10);
@@ -621,7 +632,27 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       </div>
 
       {buscando ? (
-        <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
+        <>
+          {anterioresBuscadas.length > 0 && (
+            <div className="historial comidas-anteriores">
+              <h3 className="titulo-lista">Tus comidas anteriores</h3>
+              <ul className="resultados">
+                {anterioresBuscadas.map((c) => (
+                  <li key={c.id}>
+                    <button onClick={() => { sumarCombo(c); setTexto(""); }} aria-label={`Repetir ${c.nombre}`}>
+                      <span className="resultado-datos">
+                        <strong>{c.nombre}</strong>
+                        <span>{tipoInfo(c.tipo).texto} · {nombreDia(c.fecha)} · {c.kcal.toLocaleString("es-AR")} kcal · {c.alimentos.length} {c.alimentos.length === 1 ? "alimento" : "alimentos"}</span>
+                      </span>
+                      <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
+        </>
       ) : (
         <>
           {!original && !items.length && !reconociendo && panel !== "codigo" && panel !== "mano" && panel !== "voz" && (
@@ -811,11 +842,8 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           {yaPlaneada && !futura && !carga.postre && (
             <p className="nota comida-planeada"><CalendarClock size={15} aria-hidden="true" /> La tenías planeada. Cuando la comas, sumale la foto y tocá Ya la comí: ahí le llega el aviso al grupo.</p>
           )}
-          {columnaPlaneada && !original && !futura && !carga.postre && !vistaFoto && tipo !== "resumen" && (
-            <label className="interruptor planear-comida">
-              <input type="checkbox" checked={planear} onChange={(e) => setPlanear(e.target.checked)} />
-              <span>Todavía no la comí<small>Queda guardada sin foto y sin aviso. Cuando la comas, le sumás la foto.</small></span>
-            </label>
+          {planear && (
+            <p className="nota comida-planeada"><CalendarClock size={15} aria-hidden="true" /> Comida planeada: sin foto y sin aviso hasta que la comas.</p>
           )}
           {!carga.postre && (
             <div className="foto-y-nota">
@@ -906,6 +934,13 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           <details className="mas-opciones">
             <summary>Más opciones</summary>
             <div className="mas-opciones-cuerpo">
+              {/* Ya pesada pero todavía sin comer: se guarda planeada (SQL 062). */}
+              {columnaPlaneada && !original && !futura && !carga.postre && !vistaFoto && tipo !== "resumen" && (
+                <label className="interruptor planear-comida">
+                  <input type="checkbox" checked={planear} onChange={(e) => setPlanear(e.target.checked)} />
+                  <span>Todavía no la comí<small>Queda guardada sin foto y sin aviso. Cuando la comas, le sumás la foto.</small></span>
+                </label>
+              )}
               <button className={ajuste ? "boton-chico activo" : "boton-chico"} onClick={() => setAjuste(ajuste ? null : { kcal: Math.round(calculado.kcal), p: Math.round(calculado.p), c: Math.round(calculado.c), g: Math.round(calculado.g) })}>
                 {ajuste ? "Volver al cálculo" : "Ajustar totales"}
               </button>

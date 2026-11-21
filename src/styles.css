@@ -2747,12 +2747,8 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .fracciones button { min-width: 44px; min-height: 32px; padding: 0 10px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta); font-size: 1rem; font-weight: 700; }
 .fracciones button.activo { background: var(--acento); color: var(--sobre-acento, #fff); }
 
-/* Copiar comidas a otro día */
-.copiar-comidas { display: grid; gap: 14px; }
-.copiar-lista { display: grid; margin: 0; padding: 0; list-style: none; }
-.copiar-lista li { border-bottom: 1px solid var(--borde); }
-.copiar-fila { display: flex; align-items: center; gap: 10px; padding: 9px 0; cursor: pointer; }
-.copiar-fila input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--acento); }
-.copiar-destino { display: grid; gap: 8px; }
-.copiar-destino > span { font-weight: 700; }
-.copiar-comidas .boton-grande { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+/* Copiar una comida y pegarla en otro día */
+.pegar-comida { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px 10px; padding: 12px 14px; border: 1.5px dashed var(--acento); }
+.pegar-comida .planeada-datos small { white-space: normal; }
+.pegar-comida .boton-chico { grid-column: 1 / -1; grid-row: 2; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; }
+.dia-por-comida-fila .copiar-comida { flex: none; margin-left: auto; color: var(--tinta-2); }

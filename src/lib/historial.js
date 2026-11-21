@@ -46,6 +46,29 @@ export function combosDe(comidas, usuarioId, tipo, tope = 5) {
   return combos;
 }
 
+// Al buscar: tus comidas anteriores (de cualquier momento del día) que tengan esas palabras en el título o en un alimento.
+export function buscarCombos(comidas, usuarioId, texto, tope = 3) {
+  const palabras = normal(texto).split(/\s+/).filter((p) => p.length >= 2);
+  if (!palabras.length) return [];
+  const vistos = new Set();
+  const combos = [];
+  const propias = comidas
+    .filter((c) => c.usuario_id === usuarioId && !["resumen", "fiesta"].includes(c.tipo))
+    .sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1));
+  for (const c of propias) {
+    const alimentos = (c.alimentos || []).filter((a) => a.nombre && a.fuente !== "foto" && !GENERICOS.test(a.nombre));
+    if (!alimentos.length) continue;
+    const donde = normal([c.descripcion, ...alimentos.map((a) => a.nombre)].join(" "));
+    if (!palabras.every((p) => donde.includes(p))) continue;
+    const firma = alimentos.map((a) => normal(a.nombre)).sort().join("|");
+    if (vistos.has(firma)) continue;
+    vistos.add(firma);
+    combos.push({ id: c.id, tipo: c.tipo, fecha: c.fecha, nombre: c.descripcion || alimentos.map((a) => a.nombre).join(", "), kcal: Number(c.calorias) || 0, alimentos: alimentos.map(limpio) });
+    if (combos.length >= tope) break;
+  }
+  return combos;
+}
+
 // Lo que cargaron los demás del grupo (solo comidas que el grupo puede ver), para encontrarlo al buscar.
 export function alimentosDelGrupo(comidas, usuarioId) {
   const vistos = new Map();
