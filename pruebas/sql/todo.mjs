@@ -1364,3 +1364,36 @@ console.log("backup: pruebas pasadas");
   assert.equal((await uno("select count(*)::int n from comidas where planeada")).n, 0, "las de antes quedan como comidas");
   console.log("062: pruebas pasadas");
 }
+
+// ===== 063: bio y destacadas =====
+{
+  const s063 = fs.readFileSync(raiz + "063_perfil_bio_y_destacadas.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s063), "063 en ASCII");
+  console.log((await db.exec(s063)).at(-1).rows[0].resultado);
+  await db.exec(s063);
+  const yo = U[0];
+  const companero = (await uno("select m2.usuario_id id from miembros_grupo m1 join miembros_grupo m2 on m1.grupo_id = m2.grupo_id where m1.usuario_id = $1 and m2.usuario_id <> $1 limit 1", [yo])).id;
+  const ajeno = (await uno("select p.id from perfiles p where p.id <> $1 and not exists (select 1 from miembros_grupo a join miembros_grupo b on a.grupo_id = b.grupo_id where a.usuario_id = p.id and b.usuario_id = $1) limit 1", [yo]))?.id;
+  // La bio: propia y corta.
+  await rol(yo, () => db.query("update perfiles set bio = 'Volumen' where id = $1", [yo]));
+  await assert.rejects(rol(yo, () => db.query("update perfiles set bio = repeat('x', 121) where id = $1", [yo])), /bio_check/);
+  // Una destacada del grupo y una privada.
+  const gym = await rol(yo, () => uno("insert into destacadas (nombre) values ('Gym') returning id"));
+  const cambio = await rol(yo, () => uno("insert into destacadas (nombre, privada) values ('Cambio fisico', true) returning id"));
+  await rol(yo, () => db.query("insert into destacadas_fotos (destacada_id, foto_path) values ($1, $2), ($3, $4)", [gym.id, `${yo}/destacadas/a.jpg`, cambio.id, `${yo}/destacadas/b.jpg`]));
+  await assert.rejects(rol(yo, () => db.query("insert into destacadas_fotos (destacada_id, foto_path) values ($1, $2)", [gym.id, `${companero}/x.jpg`])), /foto_ajena/, "no se suman fotos de otro");
+  await assert.rejects(rol(companero, () => db.query("insert into destacadas_fotos (destacada_id, foto_path) values ($1, $2)", [gym.id, `${companero}/x.jpg`])), /destacada_ajena/);
+  assert.deepEqual((await rol(companero, () => filas("select nombre from destacadas where usuario_id = $1", [yo]))).map((r) => r.nombre), ["Gym"], "la privada no la ve el grupo");
+  assert.equal((await rol(companero, () => filas("select * from destacadas_fotos where usuario_id = $1", [yo]))).length, 1);
+  assert.equal((await rol(yo, () => filas("select * from destacadas_fotos where usuario_id = $1", [yo]))).length, 2, "las propias se ven todas");
+  if (ajeno) assert.equal((await rol(ajeno, () => filas("select * from destacadas where usuario_id = $1", [yo]))).length, 0, "otro grupo no las ve");
+  await rol(companero, () => db.query("delete from destacadas where id = $1", [gym.id]));
+  assert.equal((await uno("select count(*)::int n from destacadas where id = $1", [gym.id])).n, 1, "otro no la borra");
+  // Tope de fotos.
+  for (let i = 1; i < 30; i++) await rol(yo, () => db.query("insert into destacadas_fotos (destacada_id, foto_path) values ($1, $2)", [gym.id, `${yo}/destacadas/f${i}.jpg`]));
+  await assert.rejects(rol(yo, () => db.query("insert into destacadas_fotos (destacada_id, foto_path) values ($1, $2)", [gym.id, `${yo}/destacadas/f31.jpg`])), /demasiadas_fotos/);
+  await rol(yo, () => db.query("delete from destacadas where id = $1", [gym.id]));
+  assert.equal((await uno("select count(*)::int n from destacadas_fotos where destacada_id = $1", [gym.id])).n, 0, "al borrar la destacada se van sus fotos");
+  await assert.rejects(db.query("set role anon").then(() => db.query("select * from destacadas")).finally(() => db.query("reset role")), /permission denied/);
+  console.log("063: pruebas pasadas");
+}

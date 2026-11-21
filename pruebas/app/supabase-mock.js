@@ -183,6 +183,13 @@ class Consulta {
   }
 }
 
+// SQL 063: bio y destacadas del perfil.
+if (window.__con063) {
+  db.perfiles.forEach((pf) => { pf.bio = pf.bio ?? null; });
+  if (window.__bio) Object.assign(db.perfiles.find((pf) => pf.id === "u2"), { bio: window.__bio });
+  db.destacadas = window.__destacadas || [];
+  db.destacadas_fotos = window.__destacadasFotos || [];
+}
 // SQL 062: comidas planeadas (y una de Nahuel que todavía no comió, que no se tiene que ver).
 if (window.__con062) {
   db.comidas.forEach((x) => { x.planeada = false; });

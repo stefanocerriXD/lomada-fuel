@@ -996,7 +996,7 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .perfil-cabecera > div { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; color: var(--tinta-2); }
 .perfil-cabecera strong { color: var(--tinta); overflow-wrap: anywhere; }
 .perfil-cabecera small { font-size: 0.8rem; }
-.perfil-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.perfil-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .perfil-stats li { display: flex; flex-direction: column; align-items: center; padding: 10px 4px; border-radius: 15px; background: var(--superficie); color: var(--tinta-2); text-align: center; }
 .perfil-stats strong { color: var(--tinta); font-family: var(--titulo); font-size: 1.1rem; font-weight: 800; line-height: 1.2; }
 .perfil-stats small { font-size: 0.7rem; line-height: 1.2; }
@@ -2752,3 +2752,64 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .pegar-comida .planeada-datos small { white-space: normal; }
 .pegar-comida .boton-chico { grid-column: 1 / -1; grid-row: 2; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; }
 .dia-por-comida-fila .copiar-comida { flex: none; margin-left: auto; color: var(--tinta-2); }
+
+/* Perfil tipo Instagram: cabecera con números y destacadas */
+.perfil-ig { display: grid; gap: 12px; }
+.perfil-ig-fila { display: flex; align-items: center; gap: 18px; }
+.perfil-ig-numeros { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; padding: 0; list-style: none; text-align: center; }
+.perfil-ig-numeros li { display: flex; flex-direction: column; gap: 1px; }
+.perfil-ig-numeros strong { font-size: 1.25rem; font-weight: 800; color: var(--tinta); }
+.perfil-ig-numeros small { font-size: 0.78rem; color: var(--tinta-2); }
+.perfil-ig-datos { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; color: var(--tinta-2); }
+.perfil-ig-datos > strong { color: var(--tinta); font-size: 1.02rem; overflow-wrap: anywhere; }
+.perfil-ig-datos small { font-size: 0.8rem; }
+.perfil-usuario { margin-top: -3px; }
+.perfil-bio { margin: 2px 0; color: var(--tinta); font-size: 0.92rem; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
+.perfil-editar { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; }
+.campo-bio { margin-top: 12px; }
+.campo-bio span { display: flex; justify-content: space-between; }
+.campo-bio textarea { width: 100%; font-size: 16px; resize: none; }
+
+.destacadas { display: flex; gap: 14px; margin: 2px -16px 0; padding: 4px 16px 6px; list-style: none; overflow-x: auto; scrollbar-width: none; }
+.destacadas::-webkit-scrollbar { display: none; }
+.destacadas li { flex: none; }
+.destacada { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 70px; padding: 0; background: none; color: var(--tinta); }
+.destacada-circulo { position: relative; display: grid; place-items: center; width: 66px; height: 66px; border-radius: 50%; padding: 3px; background: var(--superficie); box-shadow: 0 0 0 2px var(--borde); color: var(--tinta-2); }
+.destacada-circulo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.destacada.nueva .destacada-circulo { border: 1.5px dashed var(--tinta-2); box-shadow: none; }
+.destacada-candado { position: absolute; right: -1px; bottom: -1px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--tinta); color: var(--fondo); border: 2px solid var(--fondo); }
+.destacada-nombre { max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; font-weight: 600; }
+
+.visor-destacada { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: #000; color: #fff; }
+.visor-destacada-foto { width: 100%; height: 100%; object-fit: contain; }
+.visor-destacada-barras { position: absolute; top: calc(env(safe-area-inset-top) + 10px); left: 10px; right: 10px; z-index: 3; display: flex; gap: 4px; }
+.visor-destacada-barras > span { flex: 1; height: 3px; border-radius: 2px; background: rgb(255 255 255 / 35%); overflow: hidden; }
+.visor-destacada-barras > span > span { display: block; height: 100%; width: 0; background: #fff; }
+.visor-destacada-barras .llena { width: 100%; }
+.visor-destacada-barras .corriendo { animation: barra-destacada linear forwards; }
+.visor-destacada-barras .pausada { animation-play-state: paused; }
+@keyframes barra-destacada { from { width: 0; } to { width: 100%; } }
+.visor-destacada-cabecera { position: absolute; top: calc(env(safe-area-inset-top) + 22px); left: 12px; right: 8px; z-index: 3; display: flex; align-items: center; gap: 9px; text-shadow: 0 1px 3px rgb(0 0 0 / 60%); }
+.visor-destacada-privada { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; opacity: 0.85; }
+.visor-destacada-acciones { margin-left: auto; display: flex; gap: 2px; }
+.visor-destacada-acciones .boton-icono { background: transparent; color: #fff; }
+.visor-destacada-texto { position: absolute; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 28px); z-index: 3; margin: 0; padding: 10px 14px; border-radius: 14px; background: rgb(0 0 0 / 55%); text-align: center; }
+.visor-destacada-zona { position: absolute; top: 80px; bottom: 0; z-index: 2; width: 50%; background: transparent; border: 0; }
+.visor-destacada-zona.anterior { left: 0; width: 35%; }
+.visor-destacada-zona.siguiente { right: 0; width: 65%; }
+
+.editor-destacada { display: grid; gap: 14px; }
+.interruptor-detalle { display: block; font-weight: 400; font-size: 0.8rem; color: var(--tinta-2); }
+.editor-destacada-titulo { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 8px; }
+.editor-destacada-titulo small { color: var(--tinta-2); }
+.editor-destacada-grilla { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.editor-destacada-grilla li { position: relative; aspect-ratio: 1; }
+.editor-destacada-grilla img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+.editor-destacada-grilla .quitar-foto { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgb(0 0 0 / 60%); color: #fff; }
+.editor-destacada-grilla .sin-vista { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 10px; background: var(--superficie-2); }
+.agregar-foto-destacada { display: grid; place-items: center; align-content: center; gap: 2px; width: 100%; height: 100%; border-radius: 10px; border: 1.5px dashed var(--borde); color: var(--tinta-2); cursor: pointer; }
+.agregar-foto-destacada input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.editor-destacada-grilla.de-comidas { margin-top: 8px; }
+.editor-destacada-grilla.de-comidas button { position: relative; width: 100%; height: 100%; padding: 0; border-radius: 10px; overflow: hidden; }
+.editor-destacada-grilla.de-comidas button.elegida img { opacity: 0.6; }
+.marca-elegida { position: absolute; right: 5px; bottom: 5px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--acento); color: var(--sobre-acento); }

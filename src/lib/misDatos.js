@@ -19,6 +19,8 @@ export const TABLAS_PROPIAS = [
   ["favoritas", "usuario_id"],
   ["recetas_propias", "usuario_id"],
   ["recetas_videos", "usuario_id"],
+  ["destacadas", "usuario_id"],
+  ["destacadas_fotos", "usuario_id"],
   ["mensajes", "usuario_id"],
   ["comentarios", "usuario_id"],
   ["reacciones", "usuario_id"],

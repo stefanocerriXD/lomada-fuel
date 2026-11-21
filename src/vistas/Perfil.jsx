@@ -7,7 +7,7 @@ import { useDatos } from "../lib/datos.jsx";
 import { esDeAppleSalud } from "../lib/importar.js";
 import { nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
-import { cantidades, LOGROS, nivelesGuardados } from "../lib/medallas.js";
+import { cantidades, LOGROS, nivelGeneral, nivelesGuardados } from "../lib/medallas.js";
 import { comidasFavoritas, estadisticas, porDia } from "../lib/perfil.js";
 import { Indicador, Avatar, Hoja, Vacio, vibrar } from "../componentes/Base.jsx";
 import DetalleLogro from "../componentes/DetalleLogro.jsx";
@@ -16,24 +16,25 @@ import NivelGeneral from "../componentes/NivelGeneral.jsx";
 import { inicioSemana } from "../lib/multas.js";
 import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 import Visor from "../componentes/Visor.jsx";
+import Destacadas from "../componentes/Destacadas.jsx";
 
 const SECCIONES = [["dias", "Días"], ["fotos", "Fotos"], ["logros", "Logros"]];
 // De otra persona no se ve su plan, su peso ni su agua: esos logros muestran solo el nivel.
 const SOLO_PROPIOS = new Set(["proteina", "agua", "peso", "reto", "gym", "creatina", "futbol", "running", "padel", "caminata"]);
 const numero = (v) => Math.round(v).toLocaleString("es-AR");
 
-export default function Perfil({ onEditar, onEditarComida }) {
+export default function Perfil({ onEditar, onEditarComida, avisar }) {
   const { perfiles, perfilId, abrirPerfil } = useDatos();
   const perfil = perfiles[perfilId];
   const cerrar = useCallback(() => abrirPerfil(null), [abrirPerfil]);
   return (
     <Hoja abierta={!!perfil} onCerrar={cerrar} titulo={perfil?.nombre || "Perfil"} ancha>
-      {perfil && <Contenido key={perfil.id} perfil={perfil} onEditar={onEditar} onEditarComida={onEditarComida} />}
+      {perfil && <Contenido key={perfil.id} perfil={perfil} onEditar={onEditar} onEditarComida={onEditarComida} avisar={avisar} />}
     </Hoja>
   );
 }
 
-function Contenido({ perfil, onEditar, onEditarComida }) {
+function Contenido({ perfil, onEditar, onEditarComida, avisar }) {
   const { usuario, comidas, fotos, extras, cargarHistorial, perfiles, progreso, reacciones, castigo } = useDatos();
   const [abierto, setAbierto] = useState(null);
   const [lista, setLista] = useState(null);
@@ -61,6 +62,7 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
   const favoritas = useMemo(() => comidasFavoritas(lista || []), [lista]);
   const conFoto = useMemo(() => (lista || []).filter((c) => c.foto_path && fotos[c.foto_path]), [lista, fotos]);
   const niveles = useMemo(() => nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === perfil.id).map((m) => m.codigo)), [extras.medallas, perfil.id]);
+  const nivel = useMemo(() => nivelGeneral(niveles).nivel, [niveles]);
   const avance = useMemo(() => {
     if (propio) return progreso;
     return lista ? cantidades({ usuarioId: perfil.id, comidas: lista, agua: [], reacciones, perfiles, salud: null, pesos: [] }) : null;
@@ -76,10 +78,20 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
 
   return (
     <div className={castigo.calavera && !propio ? "perfil fotos-ocultas" : "perfil"}>
-      <div className="perfil-cabecera">
-        <Avatar perfil={perfil} tam={68} />
-        <div>
-          {perfil.usuario && <strong>@{perfil.usuario}</strong>}
+      {/* Como en Instagram: la foto con tres números al lado, y abajo el nombre, la bio y lo demás. */}
+      <div className="perfil-ig">
+        <div className="perfil-ig-fila">
+          <Avatar perfil={perfil} tam={84} />
+          <ul className="perfil-ig-numeros">
+            <li><strong>{lista ? stats.fotos : "–"}</strong><small>Fotos</small></li>
+            <li><strong>{lista ? stats.racha : "–"}</strong><small>Racha</small></li>
+            <li><strong>{nivel}</strong><small>Nivel</small></li>
+          </ul>
+        </div>
+        <div className="perfil-ig-datos">
+          <strong>{perfil.nombre}</strong>
+          {perfil.usuario && <small className="perfil-usuario">@{perfil.usuario}</small>}
+          {perfil.bio && <p className="perfil-bio">{perfil.bio}</p>}
           <small>Meta: {numero(perfil.meta_calorias)} kcal por día</small>
           {perfil.fiesta && (
             <button type="button" className={`sello-multas sello-fiesta ${perfil.fiesta.modo}${perfil.fiesta.gol && perfil.fiesta.modo === "resaca" ? " gol" : ""}`} onClick={() => abrirFestejo(perfil.id)}>
@@ -91,18 +103,18 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
           {perfil.calavera && <span className="sello-multas calavera">💀 Dos semanas sin subir fotos</span>}
           {perfil.caca === "evo" && <span className="sello-multas evo">BOCHA EVO esta semana</span>}
           {cacasSemana > 0 && <span className="sello-multas">{"💩".repeat(Math.min(cacasSemana, 7))} esta semana</span>}
-          {propio && <button className="boton-texto" onClick={onEditar}><Pencil size={14} /> Editar perfil</button>}
         </div>
+        {propio && <button className="boton boton-secundario perfil-editar" onClick={onEditar}><Pencil size={15} /> Editar perfil</button>}
       </div>
+
+      <Destacadas perfil={perfil} propio={propio} fotosComidas={propio ? conFoto : []} avisar={avisar} />
 
       <div className="tarjeta nivel-propio"><NivelGeneral niveles={niveles} perfil={perfil} /></div>
 
       {error && <p className="error" role="alert">No pudimos traer el historial. Probá de nuevo.</p>}
 
       <ul className="perfil-stats">
-        <li><strong>{stats.racha}</strong><small>Racha</small></li>
         <li><strong>{stats.dias}</strong><small>Días</small></li>
-        <li><strong>{stats.fotos}</strong><small>Fotos</small></li>
         <li><strong>{numero(stats.kcal)}</strong><small>kcal por día</small></li>
         <li><strong>{stats.proteinas} g</strong><small>Prote por día</small></li>
         <li><strong>{logros.length}</strong><small>Logros</small></li>

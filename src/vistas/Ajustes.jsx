@@ -98,6 +98,9 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const [nombre, setNombre] = useState(yo.nombre);
   const [color, setColor] = useState(yo.color);
   const [meta, setMeta] = useState(yo.meta_calorias);
+  // La bio (SQL 063): solo si la base ya la tiene.
+  const conBio = "bio" in yo;
+  const [bio, setBio] = useState(yo.bio || "");
   const [objetivosMFP, setObjetivosMFP] = useState(false);
   const [tema, setTema] = useState(leerTema());
   const [guardando, setGuardando] = useState(false);
@@ -119,7 +122,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     return () => window.removeEventListener(EVENTO_PEDIDOS, cargar);
   }, []);
 
-  const cambios = nombre.trim() !== yo.nombre || color !== yo.color || meta !== yo.meta_calorias;
+  const cambios = nombre.trim() !== yo.nombre || color !== yo.color || meta !== yo.meta_calorias || (conBio && bio.trim() !== (yo.bio || ""));
 
   async function guardar(e) {
     e.preventDefault();
@@ -128,7 +131,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     setGuardando(true);
     const { error: err } = await supabase
       .from("perfiles")
-      .update({ nombre: nombre.trim(), color, meta_calorias: meta })
+      .update({ nombre: nombre.trim(), color, meta_calorias: meta, ...(conBio ? { bio: bio.trim() || null } : {}) })
       .eq("id", usuario.id);
     setGuardando(false);
     if (err) return setError(err.message);
@@ -211,6 +214,12 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
                   <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={30} required />
                 </label>
               </div>
+              {conBio && (
+                <label className="campo campo-bio">
+                  <span>Bio <small>{bio.length}/120</small></span>
+                  <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={120} rows={2} placeholder="Ej: Volumen · gym 5 veces por semana" aria-label="Bio" />
+                </label>
+              )}
 
               <fieldset>
                 <legend>Tu color</legend>
