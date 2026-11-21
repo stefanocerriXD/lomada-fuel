@@ -8,7 +8,7 @@ import { itemsDelDictado, partesDelDictado } from "../lib/dictado.js";
 import { itemsDeFoto } from "../lib/reconocer.js";
 import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
-import { alimentosDelGrupo, alimentosUsados, buscarCombos, buscarEnHistorial, claveAlimento, combosDe, haceTanto, vecesPorAlimento } from "../lib/historial.js";
+import { alimentosUsados, buscarCombos, buscarEnHistorial, claveAlimento, combosDe, haceTanto, vecesPorAlimento } from "../lib/historial.js";
 import { buscarRecetas, recetaComoAlimento } from "../lib/recetasPropias.js";
 import { buscarCatalogo, sumarAlCatalogo } from "../lib/productosPropios.js";
 import { aFecha, fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
@@ -632,9 +632,12 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
       </div>
 
       {buscando ? (
-        <>
-          {anterioresBuscadas.length > 0 && (
-            <div className="historial comidas-anteriores">
+        <Resultados
+          texto={texto}
+          onElegir={agregar}
+          propios={historial.todos}
+          anteriores={anterioresBuscadas.length > 0 && (
+            <div className="comidas-anteriores">
               <h3 className="titulo-lista">Tus comidas anteriores</h3>
               <ul className="resultados">
                 {anterioresBuscadas.map((c) => (
@@ -651,8 +654,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
               </ul>
             </div>
           )}
-          <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
-        </>
+        />
       ) : (
         <>
           {!original && !items.length && !reconociendo && panel !== "codigo" && panel !== "mano" && panel !== "voz" && (
@@ -1117,8 +1119,9 @@ function FilaResultado({ alimento, onElegir, uso }) {
   );
 }
 
-export function Resultados({ texto, onElegir, propios }) {
-  const { extras, perfiles, comidas, usuario } = useDatos();
+// El orden al buscar: los alimentos solos de la base, tus recientes, tus comidas anteriores, recetas y marcas.
+export function Resultados({ texto, onElegir, propios, anteriores = null }) {
+  const { extras, perfiles } = useDatos();
   const recetas = useMemo(
     () => [
       ...buscarRecetas(extras.recetas || [], texto).map((r) => recetaComoAlimento(r)),
@@ -1127,12 +1130,6 @@ export function Resultados({ texto, onElegir, propios }) {
     [extras.recetas, extras.recetasGrupo, perfiles, texto],
   );
   const tuyos = useMemo(() => buscarEnHistorial(propios, texto), [propios, texto]);
-  // Lo que cargaron los demás: así la base crece con las marcas que usa el grupo.
-  const grupo = useMemo(() => alimentosDelGrupo(comidas, usuario.id), [comidas, usuario.id]);
-  const delGrupo = useMemo(() => {
-    const propiosNombres = new Set(tuyos.map((h) => claveAlimento(h.alimento)));
-    return buscarEnHistorial(grupo, texto).filter((h) => !propiosNombres.has(claveAlimento(h.alimento))).slice(0, 4);
-  }, [grupo, texto, tuyos]);
   const usados = useMemo(() => vecesPorAlimento(propios), [propios]);
   const usoDe = (a) => usados.get(claveAlimento(a)) || (a.marca ? null : usados.get(claveAlimento({ nombre: a.nombre })));
   // De la lista propia (comidas caseras), pocas: lo que más se busca son marcas.
@@ -1190,23 +1187,25 @@ export function Resultados({ texto, onElegir, propios }) {
 
   return (
     <div className="buscador">
+      {locales.length > 0 && (
+        <>
+          <h3 className="titulo-lista">Alimentos</h3>
+          <ul className="resultados">
+            {locales.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} uso={usoDe(a)} />)}
+          </ul>
+        </>
+      )}
+
       {tuyos.length > 0 && (
         <>
-          <h3 className="titulo-lista">Tus alimentos</h3>
+          <h3 className="titulo-lista">Recientes</h3>
           <ul className="resultados">
             {tuyos.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={onElegir} />)}
           </ul>
         </>
       )}
 
-      {delGrupo.length > 0 && (
-        <>
-          <h3 className="titulo-lista">Del grupo</h3>
-          <ul className="resultados">
-            {delGrupo.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={onElegir} delGrupo />)}
-          </ul>
-        </>
-      )}
+      {anteriores}
 
       {recetas.length > 0 && (
         <>
@@ -1215,12 +1214,6 @@ export function Resultados({ texto, onElegir, propios }) {
             {recetas.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} />)}
           </ul>
         </>
-      )}
-
-      {locales.length > 0 && (
-        <ul className="resultados">
-          {locales.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} uso={usoDe(a)} />)}
-        </ul>
       )}
 
       {locales.length > 0 && !conMarcas && limpio.length >= 2 && (

@@ -81,7 +81,7 @@ const item = await p.locator(".fila-item .fila-datos").first().innerText();
 assert.ok(/Papines/.test(item) && /120 kcal/.test(item), item);
 await p.getByLabel("Buscar alimento o producto").fill("pollo");
 await p.waitForTimeout(300);
-assert.equal(await p.locator(".buscador .titulo-lista", { hasText: /tus alimentos/i }).count(), 1);
+assert.equal(await p.locator(".buscador .titulo-lista", { hasText: /recientes/i }).count(), 1);
 await p.screenshot({ path: "capturas/c-busqueda.png" });
 await p.getByRole("dialog").getByRole("button", { name: "Cerrar" }).click();
 await p.waitForTimeout(500);

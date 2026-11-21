@@ -56,15 +56,15 @@ if (await ver.count()) {
   await p.screenshot({ path: "capturas/buscador-combo.png" });
 } else console.log("(sin almuerzos anteriores en la prueba)");
 
-// 3. Buscar: tus alimentos con veces, los del grupo, y productos con verificado y "lo cargaste".
+// 3. Buscar: primero los alimentos de la base, después tus recientes con veces; lo del grupo no sale. Productos con verificado y "lo cargaste".
 await p.getByLabel("Buscar alimento o producto").fill("yogur");
 await p.waitForTimeout(1500);
 const texto = (await p.locator(".buscador").innerText()).replace(/\s+/g, " ");
 console.log("buscador:", texto.slice(0, 400));
-assert.match(texto, /tus alimentos/i);
+assert.match(texto, /recientes/i);
 assert.match(texto, /2 veces/);
-assert.match(texto, /del grupo/i);
-assert.match(texto, /Yogur griego Ser/);
+assert.doesNotMatch(texto, /del grupo/i);
+assert.doesNotMatch(texto, /Yogur griego Ser/, "lo del grupo no aparece");
 await p.screenshot({ path: "capturas/buscador-yogur.png", fullPage: true });
 await p.getByRole("button", { name: "Buscar en productos de supermercado" }).click().catch(() => {});
 await p.waitForTimeout(1200);
