@@ -1,14 +1,14 @@
-// Cantidades con decimales y fracciones: "1,5", "1.5", "1/2", "1 1/2" y los botones ¼ ½ ¾.
+// Cantidades con decimales, con coma: "0,5", "1,5" (o con punto). Sin fracciones.
 import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
 import { leerCantidad, mostrarCantidad } from "../../src/lib/unidades.js";
 
 // La lectura y cómo se muestra.
-for (const [t, v] of [["1,5", 1.5], ["1.5", 1.5], ["1/2", 0.5], ["1 1/2", 1.5], ["½", 0.5], ["1½", 1.5], ["2 ¾", 2.75], [",5", 0.5], ["1,", 1], ["3", 3], ["1/3", 1 / 3]]) {
+for (const [t, v] of [["1,5", 1.5], ["1.5", 1.5], ["0,5", 0.5], [",5", 0.5], ["1,", 1], ["3", 3], ["0,25", 0.25]]) {
   assert.ok(Math.abs(leerCantidad(t) - v) < 1e-9, `${t} -> ${leerCantidad(t)}`);
 }
-for (const t of ["", "abc", "1/0", "1/2/3", "-1"]) assert.equal(leerCantidad(t), null, t);
-assert.deepEqual([0.5, 1.5, 0.25, 2, 0.3333, 1.2, 0.75].map(mostrarCantidad), ["½", "1½", "¼", "2", "⅓", "1,2", "¾"]);
+for (const t of ["", "abc", "1/2", "½", "-1"]) assert.equal(leerCantidad(t), null, t);
+assert.deepEqual([0.5, 1.5, 0.25, 2, 0.3333, 1.2, 0.75].map(mostrarCantidad), ["0,5", "1,5", "0,25", "2", "0,33", "1,2", "0,75"]);
 
 const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
@@ -41,28 +41,24 @@ await campo.pressSequentially("1,5", { delay: 60 });
 await p.waitForTimeout(700);
 assert.equal(await campo.inputValue(), "1,5");
 assert.equal(await kcal(), "300");
-await campo.fill("1/2");
+await campo.fill("0,5");
 await p.waitForTimeout(700);
 assert.equal(await kcal(), "100");
-await campo.fill("2 1/4");
+await campo.fill("0.75");
 await p.waitForTimeout(700);
-assert.equal(await kcal(), "450");
-await campo.blur();
-assert.equal(await campo.inputValue(), "2¼", "al salir se ve como fracción");
-// Los botones de fracción.
-await p.getByRole("button", { name: "¾ porción" }).click();
-await p.waitForTimeout(700);
-assert.equal(await campo.inputValue(), "¾");
 assert.equal(await kcal(), "150");
-await p.screenshot({ path: "capturas/cantidad-fracciones.png" });
-// El + desde una fracción.
+await campo.blur();
+assert.equal(await campo.inputValue(), "0,75", "al salir se ve con coma");
+// Sin botones de fracción.
+assert.equal(await p.locator(".fracciones").count(), 0);
+await p.screenshot({ path: "capturas/cantidad-decimal.png" });
+// El + desde un decimal.
 await p.getByRole("button", { name: "Sumar", exact: true }).click();
 await p.waitForTimeout(700);
 assert.equal(await campo.inputValue(), "1");
-// En gramos no hay botones de fracción, y entra el decimal.
+// En gramos también entra el decimal.
 await p.getByLabel("Medida de Pechuga de pollo").selectOption("g");
 await p.waitForTimeout(300);
-assert.equal(await p.locator(".fracciones").count(), 0);
 await campo.fill("150,5");
 await p.waitForTimeout(700);
 assert.equal(await kcal(), "151");

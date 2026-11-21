@@ -56,7 +56,7 @@ if (await ver.count()) {
   await p.screenshot({ path: "capturas/buscador-combo.png" });
 } else console.log("(sin almuerzos anteriores en la prueba)");
 
-// 3. Buscar: primero los alimentos de la base, después tus recientes con veces; lo del grupo no sale. Productos con verificado y "lo cargaste".
+// 3. Buscar: primero tus recientes con veces, después los alimentos de la base; lo del grupo no sale. Productos con verificado y "lo cargaste".
 await p.getByLabel("Buscar alimento o producto").fill("yogur");
 await p.waitForTimeout(1500);
 const texto = (await p.locator(".buscador").innerText()).replace(/\s+/g, " ");
