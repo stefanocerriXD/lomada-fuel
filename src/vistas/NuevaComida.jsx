@@ -21,7 +21,7 @@ const diaDeLaCarga = (fecha) => {
   return corto.charAt(0).toUpperCase() + corto.slice(1);
 };
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
-import { conCantidad, conUnidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
+import { conCantidad, conUnidad, leerCantidad, mostrarCantidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
 import { Avatar, Hoja, Numero, vibrar } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
@@ -101,7 +101,14 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const [extrasQuitadas, setExtrasQuitadas] = useState([]);
   const [texto, setTexto] = useState(carga.buscar || "");
   // Una comida de un día que todavía no llegó: se deja planeada, sin foto (la foto es la del día) y sin avisar al grupo.
-  const futura = (carga.fecha || fechaLocal()) > fechaLocal();
+  const futura = (original?.fecha || carga.fecha || fechaLocal()) > fechaLocal();
+  // También de hoy, si ya está pesada pero todavía no se comió (SQL 062). Cuando se come, se le suma la foto
+  // con "Ya la comí" y recién ahí le llega el aviso al grupo.
+  const columnaPlaneada = comidas.some((c) => "planeada" in c);
+  const [planear, setPlanear] = useState(false);
+  const yaPlaneada = Boolean(original?.planeada);
+  const planeadaNueva = !original && (futura || planear);
+  const [comiendo, setComiendo] = useState(false);
   const [comboAbierto, setComboAbierto] = useState(null);
   const [panel, setPanel] = useState(null);
   const [importado, setImportado] = useState(null);
@@ -436,16 +443,20 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const soloFoto = !items.length && !ajuste && Boolean(vistaFoto);
 
   // Antes de publicar algo nuevo, avisa qué quedó sin completar y deja seguir igual.
-  function publicar() {
+  // "Ya la comí" (comi = true) publica una comida planeada: si le falta la foto, pregunta antes.
+  function publicar(comi = comiendo) {
+    setComiendo(comi);
     if (!original) {
-      const vacios = [!vistaFoto && !futura && "la foto de la comida", !items.length && !ajuste && !vistaFoto && "los alimentos", !descripcion.trim() && "el título"].filter(Boolean);
+      const vacios = [!vistaFoto && !planeadaNueva && "la foto de la comida", !items.length && !ajuste && !vistaFoto && "los alimentos", !descripcion.trim() && "el título"].filter(Boolean);
       if (vacios.length && !faltan) return setFaltan(vacios);
+    } else if (comi && !vistaFoto && !faltan) {
+      return setFaltan(["la foto de la comida"]);
     }
     setFaltan(null);
-    guardar();
+    guardar(comi);
   }
 
-  async function guardar() {
+  async function guardar(comi = false) {
     if (!items.length && !ajuste && !foto && !original?.foto_path) return setError("Agregá una comida o una foto.");
     setError("");
     setGuardando(true);
@@ -498,10 +509,20 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           postre_foto: rutaPostre || original.postre_foto || null,
           ...(carga.postre ? { postre_en: new Date().toISOString() } : {}),
         } : {}),
+        // Planeada: sin aviso hasta que se come. Al comerla, la hora se renueva (así aparece como recién subida
+        // y la base deja pasar el aviso, que solo sale para lo recién creado).
+        ...(columnaPlaneada || planeadaNueva ? { planeada: original ? yaPlaneada && !comi : planeadaNueva } : {}),
+        ...(comi && yaPlaneada ? { creado_en: new Date().toISOString() } : {}),
       };
-      const { error: errFila } = original
-        ? await supabase.from("comidas").update(fila).eq("id", id)
-        : await supabase.from("comidas").insert({ ...fila, id, usuario_id: usuario.id, fecha: carga.fecha || fechaLocal() });
+      const escribir = (f) => (original
+        ? supabase.from("comidas").update(f).eq("id", id)
+        : supabase.from("comidas").insert({ ...f, id, usuario_id: usuario.id, fecha: carga.fecha || fechaLocal() }));
+      let { error: errFila } = await escribir(fila);
+      // Sin el SQL 062 se guarda como antes (las de mañana igual quedan sin aviso).
+      if (errFila && /planeada/.test(errFila.message || "") && !planear) {
+        const { planeada: _sinColumna, ...sinPlaneada } = fila;
+        ({ error: errFila } = await escribir(sinPlaneada));
+      }
       if (errFila) throw errFila;
       if (rutaNueva && original?.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path]);
       if (extrasQuitadas.length && !original?.grupo_comida) await supabase.storage.from("fotos").remove(extrasQuitadas);
@@ -514,10 +535,11 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         }
       }
       await cargarComidas();
-      if (!original && !privada && !futura) avisarGrupo("comida", id);
+      // Al grupo le llega cuando se come: al subirla (aunque sea sin foto) o al tocar "Ya la comí" en una planeada.
+      if (!privada && ((!original && !planeadaNueva) || (comi && yaPlaneada))) avisarGrupo("comida", id);
       // Sumar postre también le avisa al grupo, con el nombre del postre.
       if (carga.postre && postreGuardable && !privada) avisarGrupo("postre", id);
-      onGuardar(!original);
+      onGuardar(planeadaNueva ? "planeada" : !original || (comi && yaPlaneada));
     } catch (err) {
       if (rutaNueva || subidas.length) await supabase.storage.from("fotos").remove([rutaNueva, ...subidas].filter(Boolean));
       setError(err.message || "No se pudo guardar");
@@ -784,11 +806,20 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           )}
 
           {futura && !carga.postre && (
-            <p className="nota comida-planeada"><CalendarClock size={15} aria-hidden="true" /> Comida planeada para {nombreDia(carga.fecha).toLowerCase()}. La foto se suma ese día; al grupo no le llega aviso.</p>
+            <p className="nota comida-planeada"><CalendarClock size={15} aria-hidden="true" /> Comida planeada para {nombreDia(original?.fecha || carga.fecha).toLowerCase()}. La foto se suma ese día; al grupo no le llega aviso hasta que la comas.</p>
+          )}
+          {yaPlaneada && !futura && !carga.postre && (
+            <p className="nota comida-planeada"><CalendarClock size={15} aria-hidden="true" /> La tenías planeada. Cuando la comas, sumale la foto y tocá Ya la comí: ahí le llega el aviso al grupo.</p>
+          )}
+          {columnaPlaneada && !original && !futura && !carga.postre && !vistaFoto && tipo !== "resumen" && (
+            <label className="interruptor planear-comida">
+              <input type="checkbox" checked={planear} onChange={(e) => setPlanear(e.target.checked)} />
+              <span>Todavía no la comí<small>Queda guardada sin foto y sin aviso. Cuando la comas, le sumás la foto.</small></span>
+            </label>
           )}
           {!carga.postre && (
             <div className="foto-y-nota">
-              {!futura && (
+              {!futura && !planear && (
                 <label className={vistaFoto ? "miniatura con-foto" : "miniatura"}>
                   <input type="file" accept="image/*" onChange={elegirFoto} aria-label="Foto de la comida" />
                   {vistaFoto ? <img src={vistaFoto} alt="Foto de la comida" /> : <Camera size={24} />}
@@ -910,7 +941,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
                   <p>Te falta {faltan.length > 1 ? `${faltan.slice(0, -1).join(", ")} y ${faltan[faltan.length - 1]}` : faltan[0]}. ¿Publicás igual?</p>
                   <div>
                     <button className="boton boton-secundario" onClick={() => setFaltan(null)}>Completar</button>
-                    <button className="boton" onClick={publicar} disabled={guardando}>Publicar igual</button>
+                    <button className="boton" onClick={() => publicar(comiendo)} disabled={guardando}>Publicar igual</button>
                   </div>
                 </motion.div>
               )}
@@ -920,9 +951,16 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
                 <strong><Numero valor={Math.round(total.kcal)} /> kcal</strong>
                 <span>P {Math.round(total.p)} · C {Math.round(total.c)} · G {Math.round(total.g)}</span>
               </div>
-              <button className="boton" onClick={publicar} disabled={guardando} aria-label={original ? "Guardar cambios" : "Publicar comida"}>
-                {guardando ? "Guardando…" : original ? "Guardar" : "Publicar"}
-              </button>
+              {yaPlaneada && !futura ? (
+                <div className="pie-botones">
+                  <button className="boton boton-secundario" onClick={() => publicar(false)} disabled={guardando} aria-label="Guardar cambios">Guardar</button>
+                  <button className="boton" onClick={() => publicar(true)} disabled={guardando}>{guardando ? "Guardando…" : "Ya la comí"}</button>
+                </div>
+              ) : (
+                <button className="boton" onClick={() => publicar(false)} disabled={guardando} aria-label={original ? "Guardar cambios" : planeadaNueva ? "Guardar comida planeada" : "Publicar comida"}>
+                  {guardando ? "Guardando…" : original || planeadaNueva ? "Guardar" : "Publicar"}
+                </button>
+              )}
             </div>
           </div>
         </>
@@ -944,15 +982,48 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
         <div className="medida">
           <div className="gramos">
             <button onClick={() => onCambiar(conCantidad(item, restar(item)))} aria-label="Restar"><Minus size={17} /></button>
-            <input type="number" min="0" step="any" inputMode="decimal" value={item.cantidad} onChange={(e) => onCambiar(conCantidad(item, Number(e.target.value)))} aria-label={`Cantidad de ${item.nombre}`} />
+            <CampoCantidad item={item} onCambiar={onCambiar} />
             <button onClick={() => onCambiar(conCantidad(item, sumar(item)))} aria-label="Sumar"><Plus size={17} /></button>
           </div>
           <select value={item.unidad.nombre} onChange={(e) => onCambiar(conUnidad(item, unidadesDe(item).find((u) => u.nombre === e.target.value)))} aria-label={`Medida de ${item.nombre}`}>
             {unidadesDe(item).map((u) => <option key={u.nombre} value={u.nombre}>{textoMedida(u)}</option>)}
           </select>
+          {item.unidad.g !== 1 && (
+            <div className="fracciones" role="group" aria-label={`Fracción de ${item.nombre}`}>
+              {[["¼", 0.25], ["½", 0.5], ["¾", 0.75]].map(([f, v]) => (
+                <button key={f} type="button" className={Math.abs(item.cantidad - v) < 0.001 ? "activo" : undefined} onClick={() => onCambiar(conCantidad(item, v))} aria-label={`${f} ${item.unidad.nombre}`}>{f}</button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </motion.div>
+  );
+}
+
+// La cantidad se escribe como texto: así entran "1,5", "1.5", "1/2" o "1 1/2" sin que el campo se los coma a mitad de camino.
+function CampoCantidad({ item, onCambiar }) {
+  const [texto, setTexto] = useState(() => mostrarCantidad(item.cantidad));
+  const [editando, setEditando] = useState(false);
+  // Si cambia desde afuera (los botones + y -, las fracciones, la medida), se muestra el valor nuevo.
+  useEffect(() => {
+    if (!editando || Math.abs((leerCantidad(texto) ?? -1) - item.cantidad) > 0.0001) setTexto(mostrarCantidad(item.cantidad));
+  }, [item.cantidad]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      value={texto}
+      onFocus={(e) => { setEditando(true); e.target.select(); }}
+      onBlur={() => { setEditando(false); setTexto(mostrarCantidad(item.cantidad)); }}
+      onChange={(e) => {
+        setTexto(e.target.value);
+        const valor = leerCantidad(e.target.value);
+        if (valor !== null) onCambiar(conCantidad(item, valor));
+      }}
+      aria-label={`Cantidad de ${item.nombre}`}
+    />
   );
 }
 
@@ -960,7 +1031,7 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
 function resumenAlimento(alimento) {
   const item = alimento.por100 ? prepararItem(alimento) : alimento;
   const m = macrosDeItem(item);
-  const medida = item.por100 ? (item.unidad?.g === 1 ? `${Math.round(item.gramos)} g` : `${item.cantidad} ${item.unidad?.nombre}`) : item.medida;
+  const medida = item.por100 ? (item.unidad?.g === 1 ? `${Math.round(item.gramos)} g` : `${mostrarCantidad(item.cantidad)} ${item.unidad?.nombre}`) : item.medida;
   return { medida, kcal: Math.round(m.kcal) };
 }
 
@@ -987,7 +1058,7 @@ function FilaHistorial({ uso, onElegir, delGrupo }) {
 function FilaResultado({ alimento, onElegir, uso }) {
   const inicial = prepararItem(alimento);
   const kcal = Math.round((alimento.por100.kcal * inicial.gramos) / 100);
-  const medida = inicial.unidad.g === 1 ? `${inicial.cantidad} g` : `${inicial.cantidad} ${inicial.unidad.nombre}`;
+  const medida = inicial.unidad.g === 1 ? `${inicial.cantidad} g` : `${mostrarCantidad(inicial.cantidad)} ${inicial.unidad.nombre}`;
   return (
     <li>
       <button onClick={() => onElegir(alimento)}>

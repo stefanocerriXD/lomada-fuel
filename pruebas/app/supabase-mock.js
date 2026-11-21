@@ -183,6 +183,11 @@ class Consulta {
   }
 }
 
+// SQL 062: comidas planeadas (y una de Nahuel que todavía no comió, que no se tiene que ver).
+if (window.__con062) {
+  db.comidas.forEach((x) => { x.planeada = false; });
+  db.comidas.push({ ...c("cp2", "u2", "cena", 0, 12, "Salmón planeado", 640, 40, 30, 35), planeada: true });
+}
 if (window.__con061) db.recetas_videos = window.__videos || [];
 if (window.__con054) db.productos = window.__productos || [];
 if (window.__con057) db.salud_exportadas = window.__exportadas || [];

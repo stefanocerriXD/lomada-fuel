@@ -1349,3 +1349,18 @@ console.log("backup: pruebas pasadas");
   await assert.rejects(db.query("set role anon").then(() => db.query("select * from recetas_videos")).finally(() => db.query("reset role")), /permission denied/);
   console.log("061: pruebas pasadas");
 }
+
+// ===== 062: comidas planeadas =====
+{
+  const s062 = fs.readFileSync(raiz + "062_comidas_planeadas.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s062), "062 en ASCII");
+  console.log((await db.exec(s062)).at(-1).rows[0].resultado);
+  await db.exec(s062);
+  const c = await rol(U[0], () => uno("insert into comidas (usuario_id, tipo, fecha, calorias, planeada) values ($1, 'cena', current_date, 500, true) returning id, planeada", [U[0]]));
+  assert.equal(c.planeada, true);
+  // Al comerla: deja de estar planeada y la hora se renueva (con eso pasa el aviso al grupo).
+  await rol(U[0], () => db.query("update comidas set planeada = false, creado_en = now() where id = $1", [c.id]));
+  assert.equal((await uno("select planeada from comidas where id = $1", [c.id])).planeada, false);
+  assert.equal((await uno("select count(*)::int n from comidas where planeada")).n, 0, "las de antes quedan como comidas");
+  console.log("062: pruebas pasadas");
+}

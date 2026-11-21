@@ -331,7 +331,7 @@ function Principal({ recuperando, onRecuperado }) {
   const alGuardar = useCallback(
     (nueva) => {
       setCarga(null);
-      avisar(nueva === "borrada" ? "Comida borrada" : nueva ? frase() : "Cambios guardados");
+      avisar(nueva === "borrada" ? "Comida borrada" : nueva === "planeada" ? "Guardada. Cuando la comas, sumale la foto" : nueva ? frase() : "Cambios guardados");
       if (nueva === true) {
         setFestejo((n) => n + 1);
         vibrar(25);

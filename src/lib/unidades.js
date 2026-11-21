@@ -108,8 +108,30 @@ export function prepararItem(alimento) {
   return { ...alimento, unidad, cantidad, gramos: Math.round(cantidad * unidad.g * 10) / 10 };
 }
 
+// Cantidades con decimales o fracciones: "1,5", "1.5", "1/2", "1 1/2", "½", "1½".
+const FRACCIONES = { "¼": "1/4", "½": "1/2", "¾": "3/4", "⅓": "1/3", "⅔": "2/3", "⅛": "1/8" };
+export function leerCantidad(texto) {
+  const t = String(texto ?? "").trim().replace(/[¼½¾⅓⅔⅛]/g, (f) => ` ${FRACCIONES[f]}`).replace(",", ".").replace(/\s+/g, " ").trim();
+  const m = t.match(/^(?:(\d+(?:\.\d*)?|\.\d+)(?:\s+(\d+)\s*\/\s*(\d+))?|(\d+)\s*\/\s*(\d+))$/);
+  if (!m) return null;
+  const valor = m[4] ? Number(m[4]) / Number(m[5]) : Number(m[1]) + (m[2] ? Number(m[2]) / Number(m[3]) : 0);
+  return Number.isFinite(valor) ? valor : null;
+}
+
+// Para mostrar: las fracciones comunes como fracción (1½), el resto con coma (0,3).
+const MOSTRAR = [[0.25, "¼"], [0.5, "½"], [0.75, "¾"], [1 / 3, "⅓"], [2 / 3, "⅔"], [0.125, "⅛"]];
+export function mostrarCantidad(n) {
+  const valor = Number(n) || 0;
+  const entero = Math.floor(valor + 1e-9);
+  const resto = valor - entero;
+  if (resto < 0.001) return String(entero);
+  const f = MOSTRAR.find(([x]) => Math.abs(resto - x) < 0.002);
+  if (f) return `${entero || ""}${f[1]}`;
+  return String(Math.round(valor * 100) / 100).replace(".", ",");
+}
+
 export function conCantidad(item, cantidad) {
-  const valor = Math.max(0, cantidad);
+  const valor = Math.max(0, Math.round(cantidad * 10000) / 10000);
   return { ...item, cantidad: valor, gramos: Math.round(valor * item.unidad.g * 10) / 10 };
 }
 

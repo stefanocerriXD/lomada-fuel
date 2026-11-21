@@ -1,5 +1,6 @@
 import { ChefHat, ChevronRight } from "lucide-react";
 import { macrosDeItem } from "../lib/macros.js";
+import { mostrarCantidad } from "../lib/unidades.js";
 import { useDatos } from "../lib/datos.jsx";
 import { irARecetas } from "../lib/navegar.js";
 
@@ -10,7 +11,7 @@ export function alimentosVisibles(alimentos = []) {
 }
 
 function medidaDe(a) {
-  if (a.unidad && a.unidad.g !== 1) return `${a.cantidad} ${a.unidad.nombre} (${Math.round(a.gramos)} g)`;
+  if (a.unidad && a.unidad.g !== 1) return `${mostrarCantidad(a.cantidad)} ${a.unidad.nombre} (${Math.round(a.gramos)} g)`;
   if (a.gramos) return `${Math.round(a.gramos)} g`;
   return a.medida || "";
 }

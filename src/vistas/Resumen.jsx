@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, BarChart3, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Flame, Martini, Moon, Plus, Share2, UserRound, Zap } from "lucide-react";
+import { Activity, BarChart3, CalendarClock, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Copy, Flame, Martini, Moon, Plus, Share2, UserRound, Zap } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -20,6 +20,7 @@ import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 import Visor from "../componentes/Visor.jsx";
 import CompartirInstagram from "../componentes/CompartirInstagram.jsx";
+import CopiarComidas, { copiables } from "../componentes/CopiarComidas.jsx";
 import { createPortal } from "react-dom";
 import { clink } from "../lib/sonidos.js";
 
@@ -53,10 +54,13 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
   useEffect(() => () => onDia?.(null), [onDia]);
   const [, setVasoRapido] = useState(0);
   const [compartirDia, setCompartirDia] = useState(false);
+  const [copiar, setCopiar] = useState(false);
 
   const delDia = useMemo(() => comidas.filter((c) => c.fecha === fecha), [comidas, fecha]);
   const fotosHoy = fotosDelDia(comidas, usuario.id, hoy);
   const mias = delDia.filter((c) => c.usuario_id === usuario.id);
+  // Las que cargaste antes de comerlas: a mano para sumarles la foto cuando las comés.
+  const planeadas = mias.filter((c) => c.planeada);
   // Hoy, la fiesta de esta noche (sigue siendo la de anoche hasta las 6); otro día, la de ese día.
   const nocheDeFiesta = fecha === hoy ? comidas.find((c) => c.usuario_id === usuario.id && c.tipo === "fiesta" && c.fecha === fechaDeLaNoche()) : mias.find((c) => c.tipo === "fiesta");
   // Esta noche (con lo que quedó en el celu sin señal) y el último trago, para sumar otro con un toque.
@@ -152,6 +156,26 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
         </ul>
       </section>
 
+      {planeadas.length > 0 && (
+        <section className="tarjeta planeadas" aria-label="Comidas planeadas">
+          <p className="planeadas-titulo"><CalendarClock size={16} aria-hidden="true" /> {planeadas.length === 1 ? "Planeada" : "Planeadas"}<small>{fecha > hoy ? "El grupo la ve cuando la comas" : "Cuando la comas, sumale la foto"}</small></p>
+          <ul>
+            {planeadas.map((c) => (
+              <li key={c.id}>
+                <span className="planeada-icono"><IconoComida tipo={c.tipo} size={20} /></span>
+                <span className="planeada-datos">
+                  <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
+                  <small>{tipoInfo(c.tipo).texto} · {Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal</small>
+                </span>
+                <button className={fecha > hoy ? "boton-chico" : "boton-chico acento"} onClick={() => onCargar({ comida: c })}>
+                  {fecha > hoy ? "Editar" : <><Camera size={14} aria-hidden="true" /> Ya la comí</>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {resumenDia && (
         <button className="tarjeta resumen-importado" onClick={() => onCargar({ comida: resumenDia })}>
           <span className="resumen-icono"><ClipboardList size={22} aria-hidden="true" /></span>
@@ -183,6 +207,12 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
           <ClipboardPaste size={22} />
           <span><strong>Importar el día</strong><small>Captura o texto</small></span>
         </motion.button>
+        {copiables(mias).length > 0 && (
+          <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => { vibrar(8); setCopiar(true); }}>
+            <Copy size={22} />
+            <span><strong>Copiar comidas</strong><small>Si las repetís otro día</small></span>
+          </motion.button>
+        )}
         {mias.some((c) => !esDeAppleSalud(c)) && (
           <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => { vibrar(8); setCompartirDia(true); }}>
             <Share2 size={22} />
@@ -204,6 +234,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
         </motion.ul>
       </section>
 
+      {copiar && <CopiarComidas abierta onCerrar={() => setCopiar(false)} comidas={mias} fecha={fecha} avisar={avisar} onListo={(d) => { setCopiar(false); setFecha(d); }} />}
       {compartirDia && <CompartirInstagram abierta onCerrar={() => setCompartirDia(false)} dia={diaParaCompartir} />}
 
       {fecha === hoy && !nocheDeFiesta && !vasosNoche.length && !invitacionFiesta && (
@@ -436,7 +467,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio }) {
                         )}
                         <span className="dia-por-comida-datos">
                           <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
-                          <small>{Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal · P {Math.round(c.proteinas || 0)} · C {Math.round(c.carbohidratos || 0)} · G {Math.round(c.grasas || 0)}</small>
+                          <small>{c.planeada ? "Planeada · " : ""}{Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal · P {Math.round(c.proteinas || 0)} · C {Math.round(c.carbohidratos || 0)} · G {Math.round(c.grasas || 0)}</small>
                         </span>
                       </div>
                     ))}

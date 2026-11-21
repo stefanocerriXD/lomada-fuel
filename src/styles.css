@@ -2724,3 +2724,35 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .nuevo-video textarea { width: 100%; font-size: 16px; }
 .lista-videos .boton-chico.peligro { color: var(--peligro); flex: none; }
 .salud-envio-falta span:last-child { color: var(--peligro); font-weight: 700; }
+
+/* Comidas planeadas: cargadas antes de comerlas, sin foto ni aviso hasta "Ya la comí" */
+.planear-comida span { display: flex; flex-direction: column; gap: 2px; }
+.planear-comida small { font-weight: 400; font-size: 0.8rem; color: var(--tinta-2); }
+.pie-botones { display: flex; gap: 8px; }
+.pie-botones .boton { padding: 0 16px; white-space: nowrap; }
+.planeadas { display: grid; gap: 6px; padding: 14px 16px; }
+.planeadas-titulo { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 700; }
+.planeadas-titulo small { margin-left: auto; font-weight: 400; font-size: 0.78rem; color: var(--tinta-2); text-align: right; }
+.planeadas ul { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.planeadas li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--borde); }
+.planeada-icono { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; border: 1.5px dashed var(--borde); color: var(--tinta-2); }
+.planeada-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.planeada-datos strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.planeada-datos small { color: var(--tinta-2); font-size: 0.78rem; }
+.planeadas .boton-chico { flex: none; display: inline-flex; align-items: center; gap: 5px; }
+.comida-planeada svg { flex: none; }
+
+/* Cantidad: fracciones con un toque (el teclado numérico del iPhone no tiene la barra) */
+.fracciones { grid-column: 1 / -1; display: flex; gap: 6px; }
+.fracciones button { min-width: 44px; min-height: 32px; padding: 0 10px; border-radius: 999px; background: var(--superficie-2); color: var(--tinta); font-size: 1rem; font-weight: 700; }
+.fracciones button.activo { background: var(--acento); color: var(--sobre-acento, #fff); }
+
+/* Copiar comidas a otro día */
+.copiar-comidas { display: grid; gap: 14px; }
+.copiar-lista { display: grid; margin: 0; padding: 0; list-style: none; }
+.copiar-lista li { border-bottom: 1px solid var(--borde); }
+.copiar-fila { display: flex; align-items: center; gap: 10px; padding: 9px 0; cursor: pointer; }
+.copiar-fila input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--acento); }
+.copiar-destino { display: grid; gap: 8px; }
+.copiar-destino > span { font-weight: 700; }
+.copiar-comidas .boton-grande { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }

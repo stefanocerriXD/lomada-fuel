@@ -101,10 +101,12 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       .order("creado_en", { ascending: false })
       .limit(800);
     if (error) throw error;
-    await firmarFotos(data);
-    setComidas(data);
-    return data;
-  }, [firmarFotos]);
+    // Las planeadas de los demás no se ven hasta que las comen (SQL 062).
+    const visibles = data.filter((c) => !c.planeada || c.usuario_id === usuario.id);
+    await firmarFotos(visibles);
+    setComidas(visibles);
+    return visibles;
+  }, [firmarFotos, usuario.id]);
 
   const traerComidasDe = useCallback(
     (id) => traerTodo(() => supabase.from("comidas").select("*").eq("usuario_id", id).order("fecha", { ascending: false }).order("id")),
@@ -112,10 +114,10 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   );
 
   const cargarHistorial = useCallback(async (id) => {
-    const data = await traerComidasDe(id);
+    const data = (await traerComidasDe(id)).filter((c) => !c.planeada || c.usuario_id === usuario.id);
     await firmarFotos(data);
     return data;
-  }, [firmarFotos, traerComidasDe]);
+  }, [firmarFotos, traerComidasDe, usuario.id]);
 
   // Los logros cuentan toda la historia, no solo los últimos días.
   const cargarLogros = useCallback(async () => {
@@ -283,9 +285,10 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   const cargarDia = useCallback(async (fecha) => {
     const { data, error } = await supabase.from("comidas").select("*").eq("fecha", fecha).limit(200);
     if (error) throw error;
-    await firmarFotos(data);
-    return data;
-  }, [firmarFotos]);
+    const visibles = data.filter((c) => !c.planeada || c.usuario_id === usuario.id);
+    await firmarFotos(visibles);
+    return visibles;
+  }, [firmarFotos, usuario.id]);
 
   const cargarComida = useCallback(async (id) => {
     const { data, error } = await supabase.from("comidas").select("*").eq("id", id).maybeSingle();
