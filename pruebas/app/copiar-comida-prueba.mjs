@@ -69,9 +69,9 @@ await p.waitForTimeout(800);
 const anteriores = p.locator(".comidas-anteriores");
 assert.match(await anteriores.innerText(), /Tus comidas anteriores[\s\S]*Milanesa con puré[\s\S]*Almuerzo · (Hoy|Mañana) · 780 kcal · 2 alimentos/i);
 await p.screenshot({ path: "capturas/buscador-comidas-anteriores.png" });
-// El orden: alimentos de la base, recientes, comidas anteriores.
+// El orden: recientes, alimentos de la base, comidas anteriores.
 const titulos = await p.locator(".buscador .titulo-lista").allInnerTexts();
-assert.deepEqual(titulos.slice(0, 3).map((t) => t.toLowerCase()), ["alimentos", "recientes", "tus comidas anteriores"]);
+assert.deepEqual(titulos.slice(0, 3).map((t) => t.toLowerCase()), ["recientes", "alimentos", "tus comidas anteriores"]);
 await anteriores.getByRole("button", { name: "Repetir Milanesa con puré" }).click();
 await p.waitForTimeout(500);
 assert.equal(await p.locator(".fila-item").count(), 2);

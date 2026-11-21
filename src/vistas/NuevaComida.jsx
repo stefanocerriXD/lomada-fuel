@@ -1025,24 +1025,17 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
           <select value={item.unidad.nombre} onChange={(e) => onCambiar(conUnidad(item, unidadesDe(item).find((u) => u.nombre === e.target.value)))} aria-label={`Medida de ${item.nombre}`}>
             {unidadesDe(item).map((u) => <option key={u.nombre} value={u.nombre}>{textoMedida(u)}</option>)}
           </select>
-          {item.unidad.g !== 1 && (
-            <div className="fracciones" role="group" aria-label={`Fracción de ${item.nombre}`}>
-              {[["¼", 0.25], ["½", 0.5], ["¾", 0.75]].map(([f, v]) => (
-                <button key={f} type="button" className={Math.abs(item.cantidad - v) < 0.001 ? "activo" : undefined} onClick={() => onCambiar(conCantidad(item, v))} aria-label={`${f} ${item.unidad.nombre}`}>{f}</button>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </motion.div>
   );
 }
 
-// La cantidad se escribe como texto: así entran "1,5", "1.5", "1/2" o "1 1/2" sin que el campo se los coma a mitad de camino.
+// La cantidad se escribe como texto: así entra "0,5" con coma sin que el campo se la coma a mitad de camino.
 function CampoCantidad({ item, onCambiar }) {
   const [texto, setTexto] = useState(() => mostrarCantidad(item.cantidad));
   const [editando, setEditando] = useState(false);
-  // Si cambia desde afuera (los botones + y -, las fracciones, la medida), se muestra el valor nuevo.
+  // Si cambia desde afuera (los botones + y - o la medida), se muestra el valor nuevo.
   useEffect(() => {
     if (!editando || Math.abs((leerCantidad(texto) ?? -1) - item.cantidad) > 0.0001) setTexto(mostrarCantidad(item.cantidad));
   }, [item.cantidad]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1119,7 +1112,7 @@ function FilaResultado({ alimento, onElegir, uso }) {
   );
 }
 
-// El orden al buscar: los alimentos solos de la base, tus recientes, tus comidas anteriores, recetas y marcas.
+// El orden al buscar: tus recientes, los alimentos solos de la base, tus comidas anteriores, recetas y marcas.
 export function Resultados({ texto, onElegir, propios, anteriores = null }) {
   const { extras, perfiles } = useDatos();
   const recetas = useMemo(
@@ -1187,20 +1180,20 @@ export function Resultados({ texto, onElegir, propios, anteriores = null }) {
 
   return (
     <div className="buscador">
-      {locales.length > 0 && (
-        <>
-          <h3 className="titulo-lista">Alimentos</h3>
-          <ul className="resultados">
-            {locales.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} uso={usoDe(a)} />)}
-          </ul>
-        </>
-      )}
-
       {tuyos.length > 0 && (
         <>
           <h3 className="titulo-lista">Recientes</h3>
           <ul className="resultados">
             {tuyos.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={onElegir} />)}
+          </ul>
+        </>
+      )}
+
+      {locales.length > 0 && (
+        <>
+          <h3 className="titulo-lista">Alimentos</h3>
+          <ul className="resultados">
+            {locales.map((a) => <FilaResultado key={a.id} alimento={a} onElegir={onElegir} uso={usoDe(a)} />)}
           </ul>
         </>
       )}
