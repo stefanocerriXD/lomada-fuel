@@ -140,3 +140,42 @@ export function aPor100({ base, porcionG, valores }) {
   if (por100.kcal > 950 || por100.p + por100.c + por100.g > 105) return null;
   return por100;
 }
+
+// Números escritos a mano: "2,5" o "2.5". Vacío o inválido = null.
+export function leerNumero(texto) {
+  const t = String(texto ?? "").trim().replace(",", ".");
+  if (!/^(\d+(\.\d*)?|\.\d+)$/.test(t)) return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Si faltan las calorías pero hay macros: 4 kcal por gramo de proteína y de carbo, 9 por gramo de grasa.
+export function kcalDeMacros({ p, c, g }) {
+  if (p == null && c == null && g == null) return null;
+  return Math.round((p || 0) * 4 + (c || 0) * 4 + (g || 0) * 9);
+}
+
+// Pasa un valor de una base a otra (por porción <-> cada 100 g). Sin la porción no se puede.
+export function convertirValor(valor, de, a, porcionG) {
+  if (valor == null) return null;
+  if (de === a) return valor;
+  if (!porcionG) return null;
+  const r = de === "100g" ? (valor * porcionG) / 100 : (valor * 100) / porcionG;
+  return Math.round(r * 10) / 10;
+}
+
+// Otra foto (por ejemplo el frente del envase) completa lo que la primera no trajo, sin pisar lo que ya está.
+export function completarCon(actual, nuevo) {
+  const porcionG = actual.porcionG || nuevo.porcionG || null;
+  const valores = { ...actual.valores };
+  const sumados = [];
+  for (const k of ["kcal", "p", "c", "g"]) {
+    if (valores[k] != null && valores[k] !== "") continue;
+    const v = convertirValor(nuevo.valores?.[k] ?? null, nuevo.base, actual.base, porcionG);
+    if (v != null) {
+      valores[k] = v;
+      sumados.push(k);
+    }
+  }
+  return { ...actual, porcionG, valores, nombre: actual.nombre || nuevo.nombre || "", marca: actual.marca || nuevo.marca || "", sumados };
+}
