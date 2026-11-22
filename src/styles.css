@@ -2748,3 +2748,5 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .pegar-comida .planeada-datos small { white-space: normal; }
 .pegar-comida .boton-chico { grid-column: 1 / -1; grid-row: 2; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; }
 .dia-por-comida-fila .copiar-comida { flex: none; margin-left: auto; color: var(--tinta-2); }
+.planeadas .boton-icono.chico { flex: none; color: var(--tinta-2); }
+.dia-por-comida-fila .copiar-comida + .copiar-comida { margin-left: 0; }
