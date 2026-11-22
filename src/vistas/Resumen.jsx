@@ -188,13 +188,25 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
             {planeadas.map((c) => (
               <li key={c.id}>
                 <span className="planeada-icono"><IconoComida tipo={c.tipo} size={20} /></span>
-                <span className="planeada-datos">
+                {/* Tocar la comida la abre para editarla (cantidades, tipo, alimentos). */}
+                <button type="button" className="planeada-datos" onClick={() => onCargar({ comida: c })} aria-label={`Abrir ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                   <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
                   <small>{tipoInfo(c.tipo).texto} · {Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal</small>
-                </span>
-                <button className={fecha > hoy ? "boton-chico" : "boton-chico acento"} onClick={() => onCargar({ comida: c })} aria-label={fecha > hoy ? `Editar ${c.descripcion || tipoInfo(c.tipo).texto}` : undefined}>
-                  {fecha > hoy ? <><Pencil size={14} aria-hidden="true" /> Editar</> : <><Camera size={14} aria-hidden="true" /> Ya la comí</>}
                 </button>
+                {fecha > hoy ? (
+                  <button className="boton-chico" onClick={() => onCargar({ comida: c })} aria-label={`Editar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                    <Pencil size={14} aria-hidden="true" /> Editar
+                  </button>
+                ) : (
+                  <>
+                    <button className="boton-icono chico" onClick={() => onCargar({ comida: c })} aria-label={`Editar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                      <Pencil size={15} />
+                    </button>
+                    <button className="boton-chico acento" onClick={() => onCargar({ comida: c })}>
+                      <Camera size={14} aria-hidden="true" /> Ya la comí
+                    </button>
+                  </>
+                )}
                 <button className={borrando === c.id ? "boton-chico peligro" : "boton-icono chico"} onClick={() => borrarPlaneada(c)} onBlur={() => setBorrando(null)} aria-label={borrando === c.id ? "Tocá de nuevo para borrar" : `Borrar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                   <Trash2 size={15} />{borrando === c.id ? " ¿Borrar?" : ""}
                 </button>

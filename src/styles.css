@@ -2885,3 +2885,9 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .chat-enviar input { height: 40px; min-height: 40px; padding: 0 14px; border: 1px solid var(--borde); border-radius: 20px; background: var(--superficie); box-shadow: none; font-size: 16px; }
 .chat-enviar .boton-enviar { width: 42px; height: 42px; border-radius: 50%; }
 .chat-enviar .boton-enviar.microfono { background: var(--acento); color: var(--sobre-acento); }
+button.planeada-datos { padding: 0; background: none; color: inherit; text-align: left; }
+.planeadas li { gap: 6px; }
+.planeadas .boton-chico { padding: 0 10px; }
+.planeadas .boton-icono.chico { width: 34px; height: 34px; }
+.planeadas-titulo { flex-wrap: wrap; row-gap: 2px; }
+.planeadas-titulo small { white-space: normal; }

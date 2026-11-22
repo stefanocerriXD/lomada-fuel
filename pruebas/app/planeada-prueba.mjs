@@ -70,6 +70,16 @@ assert.equal(avisos.filter((a) => a.tipo === "comida").length, 0, "no avisa al p
 const tarjeta = p.locator(".planeadas");
 await tarjeta.waitFor();
 assert.match(await tarjeta.innerText(), /Pollo de la noche[\s\S]*Ya la comí/);
+// Con el lápiz se edita (sumar una porción) sin marcarla como comida.
+await tarjeta.getByRole("button", { name: "Editar Pollo de la noche" }).click();
+await p.waitForTimeout(700);
+await p.getByRole("button", { name: "Sumar", exact: true }).click();
+await p.waitForTimeout(300);
+await p.locator(".pie-botones").getByRole("button", { name: "Guardar cambios" }).click();
+await p.waitForTimeout(900);
+const editada = await p.evaluate(() => window.__db.comidas.find((c) => c.descripcion === "Pollo de la noche"));
+assert.deepEqual([editada.planeada, editada.alimentos[0].cantidad], [true, 2], "sigue planeada, con 2 porciones");
+assert.equal(avisos.filter((a) => a.tipo === "comida").length, 0, "editarla no avisa");
 await tarjeta.scrollIntoViewIfNeeded();
 await tarjeta.screenshot({ path: "capturas/planeadas.png" });
 
