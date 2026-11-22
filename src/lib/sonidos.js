@@ -252,11 +252,58 @@ export function copiado() {
   nota(ctx, salida, { frecuencia: 2000, desde: t + 0.08, dura: 0.05 });
 }
 
-// El navegador solo deja sonar después de que la persona toca algo.
+// Las pestañas de abajo (Resumen, Grupo, Logros, Ajustes): un "tuk" suave de madera, cada una un poco más aguda.
+const TONOS_PESTANA = [523.25, 587.33, 659.25, 783.99];
+export function pestana(indice = 0) {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.14);
+  const frecuencia = TONOS_PESTANA[indice] || TONOS_PESTANA[0];
+  nota(ctx, salida, { frecuencia, hasta: frecuencia * 1.25, desde: t, dura: 0.07, tipo: "triangle" });
+  nota(ctx, salida, { frecuencia: frecuencia * 3, desde: t, dura: 0.025, volumen: 0.25 });
+}
+
+// Al entrar a la app: un acorde que se abre de abajo hacia arriba, cálido, con un brillito al final.
+export function bienvenida() {
+  const ctx = listo();
+  if (!ctx) return;
+  window.__bienvenidas = (window.__bienvenidas || 0) + 1; // para las pruebas
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.13);
+  // Sol - Do - Mi - Sol, escalonadas, y quedan sonando juntas.
+  [392, 523.25, 659.25, 783.99].forEach((frecuencia, i) => {
+    nota(ctx, salida, { frecuencia, desde: t + i * 0.07, dura: 1.1 - i * 0.1, volumen: 0.7 });
+    nota(ctx, salida, { frecuencia: frecuencia * 2, desde: t + i * 0.07, dura: 0.35, volumen: 0.12, tipo: "triangle" });
+  });
+  nota(ctx, salida, { frecuencia: 1567.98, desde: t + 0.36, dura: 0.6, volumen: 0.25 });
+  nota(ctx, salida, { frecuencia: 2093, desde: t + 0.46, dura: 0.5, volumen: 0.15 });
+}
+
+// Una vez por cada vez que se abre la app (no al volver de otra pestaña en el mismo rato).
+const CLAVE_BIENVENIDA = "lomada-bienvenida-sonada";
+function yaSonoLaBienvenida() {
+  try {
+    if (sessionStorage.getItem(CLAVE_BIENVENIDA)) return true;
+    sessionStorage.setItem(CLAVE_BIENVENIDA, "si");
+  } catch {
+    // Sin almacenamiento: suena igual una vez por carga.
+  }
+  return false;
+}
+
+// El navegador solo deja sonar después de que la persona toca algo: la bienvenida va con el primer toque.
 export function prepararSonidos() {
+  let primera = true;
   const destrabar = () => {
     const ctx = audio();
-    if (ctx?.state === "suspended") ctx.resume().catch(() => {});
+    const sonar = () => {
+      if (!primera) return;
+      primera = false;
+      if (!yaSonoLaBienvenida()) bienvenida();
+    };
+    if (ctx?.state === "suspended") ctx.resume().then(sonar).catch(() => {});
+    else sonar();
   };
   window.addEventListener("pointerdown", destrabar, { passive: true });
   return () => window.removeEventListener("pointerdown", destrabar);
