@@ -252,18 +252,6 @@ export function copiado() {
   nota(ctx, salida, { frecuencia: 2000, desde: t + 0.08, dura: 0.05 });
 }
 
-// Las pestañas de abajo (Resumen, Grupo, Logros, Ajustes): un "tuk" suave de madera, cada una un poco más aguda.
-const TONOS_PESTANA = [523.25, 587.33, 659.25, 783.99];
-export function pestana(indice = 0) {
-  const ctx = listo();
-  if (!ctx) return;
-  const t = ctx.currentTime;
-  const salida = mezcla(ctx, 0.14);
-  const frecuencia = TONOS_PESTANA[indice] || TONOS_PESTANA[0];
-  nota(ctx, salida, { frecuencia, hasta: frecuencia * 1.25, desde: t, dura: 0.07, tipo: "triangle" });
-  nota(ctx, salida, { frecuencia: frecuencia * 3, desde: t, dura: 0.025, volumen: 0.25 });
-}
-
 // Al entrar a la app: un acorde que se abre de abajo hacia arriba, cálido, con un brillito al final.
 export function bienvenida() {
   const ctx = listo();

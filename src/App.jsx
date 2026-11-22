@@ -31,7 +31,7 @@ const InformeSemanal = perezosa(() => import("./componentes/InformeSemanal.jsx")
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
 import Logo from "./componentes/Logo.jsx";
-import { alivio, campanita, cerrar, ding, pestana, pop, prepararSonidos } from "./lib/sonidos.js";
+import { alivio, campanita, cerrar, ding, pop, prepararSonidos } from "./lib/sonidos.js";
 import { FOTOS_POR_DIA, fotosDelDia } from "./lib/multas.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "./lib/grupos.js";
 import { fechaLocal } from "./lib/fechas.js";
@@ -459,7 +459,7 @@ function Principal({ recuperando, onRecuperado }) {
         </button>
         <nav aria-label="Menú principal">
           {VISTAS.map((v) => (
-            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => { pestana(VISTAS.indexOf(v)); irA(v.id); }} id="lateral" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
+            <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="lateral" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
           ))}
         </nav>
         <button className="perfil-lateral" onClick={() => abrirPerfil(yo.id)}>
@@ -503,7 +503,7 @@ function Principal({ recuperando, onRecuperado }) {
 
       <nav className="barra-inferior" aria-label="Menú principal">
         {VISTAS.slice(0, 2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => { pestana(VISTAS.indexOf(v)); irA(v.id); }} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
         ))}
         <motion.button
           className="boton-subir"
@@ -516,7 +516,7 @@ function Principal({ recuperando, onRecuperado }) {
           <Plus size={28} strokeWidth={2.6} />
         </motion.button>
         {VISTAS.slice(2).map((v) => (
-          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => { pestana(VISTAS.indexOf(v)); irA(v.id); }} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
+          <BotonVista key={v.id} datos={v} activa={vista === v.id} onClick={() => irA(v.id)} id="inferior" insignia={v.id === "grupo" ? sinLeer : 0} punto={v.id === "ajustes" && puntoAjustes} />
         ))}
       </nav>
 

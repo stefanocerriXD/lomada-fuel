@@ -40,12 +40,6 @@ await p.locator("[aria-label='Subir comida']").last().click(); await p.waitForTi
 console.log("pop:", (await notas()) - antes);
 assert.ok((await notas()) > antes, "suena el +");
 await p.keyboard.press("Escape"); await p.waitForTimeout(500);
-// Las pestañas de abajo suenan al tocarlas.
-for (const nombre of ["Grupo", "Logros", "Resumen"]) {
-  antes = await notas();
-  await p.locator(".barra-inferior").getByRole("button", { name: nombre }).click(); await p.waitForTimeout(400);
-  assert.ok((await notas()) > antes, `suena la pestaña ${nombre}`);
-}
 // Apagar en Ajustes
 await p.getByRole("button", { name: "Ajustes" }).last().click(); await p.waitForTimeout(500);
 await p.getByRole("button", { name: /Apariencia y sonidos/ }).click(); await p.waitForTimeout(400);
