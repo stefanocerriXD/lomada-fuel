@@ -1,43 +1,54 @@
 // Comidas típicas y alimentos básicos con valores de referencia aproximados por 100 g (cocidos, salvo que diga lo contrario).
 // Sirven para cargar rápido lo casero; cada plato real varía según la receta.
-// Formato: [nombre, kcal, proteínas, carbohidratos, grasas, medidas, otros términos de búsqueda]
+// Formato: [nombre, kcal, proteínas, carbohidratos, grasas, medidas, otros términos de búsqueda, estado]
+// Estado: "cocido" o "crudo" en carnes y pescados, para que se vea al buscar (lo crudo pesa distinto que lo cocido).
 // Medidas: "nombre gramos" separadas por "|". La primera es la que se propone; siempre se puede pasar a gramos.
 const FILAS = [
   // Carnes
-  ["Bife de chorizo", 250, 25, 0, 16, "bife 250|porción 150", "carne vaca"],
-  ["Bife de lomo", 200, 27, 0, 10, "bife 200|porción 150", "carne vaca"],
-  ["Bife de cuadril", 190, 28, 0, 8, "bife 200|porción 150", "carne vaca"],
-  ["Nalga a la plancha", 180, 29, 0, 7, "bife 150|porción 200", "carne vaca"],
-  ["Peceto al horno", 175, 29, 0, 6, "porción 150|feta 30", "carne vaca"],
-  ["Colita de cuadril", 210, 27, 0, 11, "porción 200", "carne vaca parrilla"],
-  ["Carne al horno", 220, 27, 0, 12, "porción 150", "carne vaca"],
-  ["Asado de tira", 300, 22, 0, 23, "porción 250|tira 120", "parrilla carne"],
-  ["Vacío a la parrilla", 235, 24, 0, 15, "porción 250", "asado carne"],
-  ["Entraña", 265, 22, 0, 19, "porción 200", "parrilla asado carne"],
-  ["Matambre a la parrilla", 290, 24, 0, 21, "porción 200", "asado carne"],
-  ["Matambre a la pizza", 260, 20, 4, 18, "porción 250", "carne"],
-  ["Carne picada común cocida", 250, 25, 0, 16, "porción 150", "carne"],
-  ["Carne picada magra cocida", 200, 27, 0, 10, "porción 150", "carne"],
-  ["Hamburguesa casera", 230, 20, 2, 16, "medallón 120", "carne"],
-  ["Medallón de carne congelado", 250, 16, 2, 20, "medallón 80", "hamburguesa paty"],
-  ["Albóndigas con salsa", 170, 11, 7, 11, "porción de 4 albóndigas 160|unidad 40", "carne"],
-  ["Bondiola de cerdo", 250, 24, 0, 17, "porción 200", "chancho cerdo"],
-  ["Carré de cerdo", 210, 27, 0, 11, "bife 180|porción 150", "chancho cerdo"],
-  ["Lomo de cerdo", 165, 28, 0, 5, "porción 150", "chancho cerdo"],
-  ["Costillitas de cerdo", 290, 24, 0, 21, "porción 250", "chancho cerdo"],
-  ["Pechuga de pollo grillada", 165, 31, 0, 3.6, "pechuga 200|porción 150", "suprema plancha"],
-  ["Pechuga de pollo cocida", 165, 31, 0, 3.6, "pechuga 200|porción 150", "suprema hervida"],
-  ["Muslo de pollo cocido", 200, 27, 0, 10, "unidad 120", "pata"],
-  ["Pata muslo al horno con piel", 230, 24, 0, 15, "unidad 250", "pollo"],
-  ["Pollo al horno con piel", 240, 27, 0, 14, "cuarto de pollo 300|porción 200", "spiedo"],
-  ["Alitas de pollo", 250, 23, 0, 17, "porción de 6 alitas 210|unidad 35"],
-  ["Nuggets de pollo", 290, 15, 16, 18, "porción de 6 unidades 108|unidad 18", "patitas bocaditos"],
-  ["Medallón de pollo rebozado", 230, 13, 17, 12, "unidad 80", "patita"],
-  ["Hígado a la plancha", 175, 27, 4, 5, "bife 120", "achuras"],
-  ["Mollejas", 300, 15, 0, 26, "porción 150", "achuras asado"],
-  ["Chinchulines", 300, 13, 0, 27, "porción 100", "achuras asado"],
-  ["Chorizo parrillero", 320, 15, 2, 28, "unidad 100", "asado"],
-  ["Morcilla", 350, 14, 4, 31, "unidad 90", "asado"],
+  ["Bife de chorizo", 250, 25, 0, 16, "bife 250|porción 150", "carne vaca", "cocido"],
+  ["Bife de lomo", 200, 27, 0, 10, "bife 200|porción 150", "carne vaca", "cocido"],
+  ["Bife de cuadril", 190, 28, 0, 8, "bife 200|porción 150", "carne vaca", "cocido"],
+  ["Nalga a la plancha", 180, 29, 0, 7, "bife 150|porción 200", "carne vaca", "cocido"],
+  ["Peceto al horno", 175, 29, 0, 6, "porción 150|feta 30", "carne vaca", "cocido"],
+  ["Colita de cuadril", 210, 27, 0, 11, "porción 200", "carne vaca parrilla", "cocido"],
+  ["Carne al horno", 220, 27, 0, 12, "porción 150", "carne vaca", "cocido"],
+  ["Asado de tira", 300, 22, 0, 23, "porción 250|tira 120", "parrilla carne", "cocido"],
+  ["Vacío a la parrilla", 235, 24, 0, 15, "porción 250", "asado carne", "cocido"],
+  ["Entraña", 265, 22, 0, 19, "porción 200", "parrilla asado carne", "cocido"],
+  ["Matambre a la parrilla", 290, 24, 0, 21, "porción 200", "asado carne", "cocido"],
+  ["Matambre a la pizza", 260, 20, 4, 18, "porción 250", "carne", "cocido"],
+  ["Carne picada común cocida", 250, 25, 0, 16, "porción 150", "carne", "cocido"],
+  ["Carne picada magra cocida", 200, 27, 0, 10, "porción 150", "carne", "cocido"],
+  ["Lomo crudo", 145, 21.5, 0, 6.5, "bife 250|porción 200", "bife de lomo carne vaca", "crudo"],
+  ["Bife de chorizo crudo", 185, 19, 0, 12, "bife 300|porción 200", "carne vaca", "crudo"],
+  ["Cuadril crudo", 140, 21, 0, 6, "bife 250|porción 200", "bife de cuadril carne vaca", "crudo"],
+  ["Nalga cruda", 133, 21.5, 0, 5, "bife 200|porción 250", "carne vaca", "crudo"],
+  ["Peceto crudo", 130, 21.5, 0, 4.5, "porción 200", "carne vaca", "crudo"],
+  ["Carne picada común cruda", 254, 17, 0, 20, "porción 200", "carne", "crudo"],
+  ["Carne picada magra cruda", 176, 20, 0, 10, "porción 200", "carne", "crudo"],
+  ["Hamburguesa casera", 230, 20, 2, 16, "medallón 120", "carne", "cocido"],
+  ["Medallón de carne congelado", 250, 16, 2, 20, "medallón 80", "hamburguesa paty", "crudo"],
+  ["Albóndigas con salsa", 170, 11, 7, 11, "porción de 4 albóndigas 160|unidad 40", "carne", "cocido"],
+  ["Bondiola de cerdo", 250, 24, 0, 17, "porción 200", "chancho cerdo", "cocido"],
+  ["Carré de cerdo", 210, 27, 0, 11, "bife 180|porción 150", "chancho cerdo", "cocido"],
+  ["Lomo de cerdo", 165, 28, 0, 5, "porción 150", "chancho cerdo", "cocido"],
+  ["Lomo de cerdo crudo", 120, 21, 0, 3.5, "porción 200", "chancho cerdo", "crudo"],
+  ["Costillitas de cerdo", 290, 24, 0, 21, "porción 250", "chancho cerdo", "cocido"],
+  ["Pechuga de pollo grillada", 165, 31, 0, 3.6, "pechuga 200|porción 150", "suprema plancha", "cocido"],
+  ["Pechuga de pollo cocida", 165, 31, 0, 3.6, "pechuga 200|porción 150", "suprema hervida", "cocido"],
+  ["Muslo de pollo cocido", 200, 27, 0, 10, "unidad 120", "pata", "cocido"],
+  ["Pechuga de pollo cruda", 120, 22.5, 0, 2.6, "pechuga 250|porción 200", "suprema", "crudo"],
+  ["Muslo de pollo crudo sin piel", 120, 20, 0, 4, "unidad 150", "pata", "crudo"],
+  ["Pata muslo al horno con piel", 230, 24, 0, 15, "unidad 250", "pollo", "cocido"],
+  ["Pollo al horno con piel", 240, 27, 0, 14, "cuarto de pollo 300|porción 200", "spiedo", "cocido"],
+  ["Alitas de pollo", 250, 23, 0, 17, "porción de 6 alitas 210|unidad 35", "", "cocido"],
+  ["Nuggets de pollo", 290, 15, 16, 18, "porción de 6 unidades 108|unidad 18", "patitas bocaditos", "cocido"],
+  ["Medallón de pollo rebozado", 230, 13, 17, 12, "unidad 80", "patita", "cocido"],
+  ["Hígado a la plancha", 175, 27, 4, 5, "bife 120", "achuras", "cocido"],
+  ["Mollejas", 300, 15, 0, 26, "porción 150", "achuras asado", "cocido"],
+  ["Chinchulines", 300, 13, 0, 27, "porción 100", "achuras asado", "cocido"],
+  ["Chorizo parrillero", 320, 15, 2, 28, "unidad 100", "asado", "cocido"],
+  ["Morcilla", 350, 14, 4, 31, "unidad 90", "asado", "cocido"],
   ["Salchicha", 280, 11, 3, 25, "unidad 50", "viena"],
   // Milanesas
   ["Milanesa de carne frita", 290, 19, 15, 17, "milanesa 150"],
@@ -49,15 +60,17 @@ const FILAS = [
   ["Milanesa de soja", 230, 14, 20, 11, "milanesa 100", "vegetariana"],
   ["Milanesa de berenjena", 180, 4, 18, 10, "milanesa 80", "vegetariana"],
   // Pescados y mariscos
-  ["Merluza cocida", 90, 18, 0, 1.5, "filet 150", "pescado"],
-  ["Merluza rebozada", 230, 14, 14, 13, "filet 150", "pescado frito"],
-  ["Salmón cocido", 208, 20, 0, 13, "porción 150", "pescado"],
-  ["Trucha cocida", 150, 21, 0, 7, "filet 150", "pescado"],
+  ["Merluza cocida", 90, 18, 0, 1.5, "filet 150", "pescado", "cocido"],
+  ["Merluza cruda", 80, 17, 0, 1, "filet 200", "pescado", "crudo"],
+  ["Merluza rebozada", 230, 14, 14, 13, "filet 150", "pescado frito", "cocido"],
+  ["Salmón cocido", 208, 20, 0, 13, "porción 150", "pescado", "cocido"],
+  ["Salmón crudo", 208, 20, 0, 13, "porción 200", "pescado", "crudo"],
+  ["Trucha cocida", 150, 21, 0, 7, "filet 150", "pescado", "cocido"],
   ["Atún al natural", 116, 26, 0, 1, "lata escurrida 120|porción 60", "pescado"],
   ["Atún en aceite", 200, 26, 0, 10, "lata escurrida 120|porción 60", "pescado"],
   ["Sardinas en lata", 208, 25, 0, 11, "lata 85", "pescado"],
-  ["Langostinos", 99, 24, 0.2, 0.3, "porción 120|unidad 15", "camarones mariscos"],
-  ["Rabas", 300, 13, 20, 18, "porción 150", "calamares romana"],
+  ["Langostinos", 99, 24, 0.2, 0.3, "porción 120|unidad 15", "camarones mariscos", "cocido"],
+  ["Rabas", 300, 13, 20, 18, "porción 150", "calamares romana", "cocido"],
   // Huevos
   ["Huevo", 143, 12.6, 0.7, 9.5, "unidad 50|unidad grande 60", "duro hervido"],
   ["Huevo frito", 196, 13.6, 0.8, 15, "unidad 50"],
@@ -391,7 +404,7 @@ function leerMedidas(texto) {
   });
 }
 
-const BASE = FILAS.map(([nombre, kcal, p, c, g, medidas, otros = ""]) => {
+const BASE = FILAS.map(([nombre, kcal, p, c, g, medidas, otros = "", estado]) => {
   const lista = leerMedidas(medidas);
   return {
     id: `ar-${normalizar(nombre).replace(/\W+/g, "-")}`,
@@ -402,6 +415,7 @@ const BASE = FILAS.map(([nombre, kcal, p, c, g, medidas, otros = ""]) => {
     medidas: lista,
     porcion: { nombre: `1 ${lista[0].nombre}`, g: lista[0].g },
     indice: normalizar(`${nombre} ${otros}`),
+    ...(estado ? { estado } : {}),
   };
 });
 
@@ -409,6 +423,8 @@ const POR_NOMBRE = new Map(BASE.map((a) => [normalizar(a.nombre), a]));
 
 // Las medidas propias de un alimento de la lista, buscado por su nombre exacto.
 export const medidasDe = (nombre) => POR_NOMBRE.get(normalizar(nombre))?.medidas;
+// Crudo o cocido, para lo que se cargó de la lista antes de que guardara el estado.
+export const estadoTipico = (nombre) => POR_NOMBRE.get(normalizar(nombre))?.estado || null;
 
 export function buscarTipicos(texto) {
   // "Kiwis" tiene que encontrar "Kiwi".
@@ -421,5 +437,7 @@ export function buscarTipicos(texto) {
   });
   // Primero lo que empieza con lo escrito y, entre esos, los nombres más cortos: "mate" antes que "mate cocido".
   const empieza = (a) => (a.indice.startsWith(partes[0]) ? 0 : 1);
-  return hallados.sort((a, b) => empieza(a) - empieza(b) || a.nombre.length - b.nombre.length).slice(0, 10);
+  // Lo crudo va después de lo cocido: el dictado y la IA toman el primero, y en una foto el plato ya está hecho.
+  const crudo = (a) => (a.estado === "crudo" ? 1 : 0);
+  return hallados.sort((a, b) => empieza(a) - empieza(b) || crudo(a) - crudo(b) || a.nombre.length - b.nombre.length).slice(0, 10);
 }

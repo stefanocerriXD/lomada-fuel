@@ -48,7 +48,7 @@ for (const [n] of ejemplos) {
   });
   console.log(n.padEnd(15), `${((Date.now() - t0) / 1000).toFixed(1)} s`, JSON.stringify(await filas()));
   await p.screenshot({ path: `capturas/s-importar-${n}.png` });
-  await p.getByRole("button", { name: "Cerrar" }).click();
+  await p.getByRole("button", { name: "Cerrar", exact: true }).click();
   await p.waitForTimeout(500);
 }
 
