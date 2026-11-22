@@ -202,6 +202,56 @@ export function tic() {
   nota(ctx, salida, { frecuencia: 1760, desde: t + 0.05, dura: 0.12, volumen: 0.35 });
 }
 
+// Llega un mensaje con el chat abierto: un "plop" de burbuja, suave, como en WhatsApp.
+export function recibido() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.2);
+  nota(ctx, salida, { frecuencia: 520, hasta: 980, desde: t, dura: 0.09 });
+  nota(ctx, salida, { frecuencia: 1240, desde: t + 0.06, dura: 0.1, volumen: 0.35 });
+}
+
+// Reaccionar (a una comida o a un mensaje): un "blip" chiquito que sube.
+export function reaccion() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.16);
+  nota(ctx, salida, { frecuencia: 880, hasta: 1760, desde: t, dura: 0.08, tipo: "triangle" });
+}
+
+// Borrar algo: un "fffp" de papel que se va para abajo.
+export function borrado() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.22);
+  const aire = ruido(ctx, 0.22);
+  const filtro = ctx.createBiquadFilter();
+  const vol = ctx.createGain();
+  filtro.type = "bandpass";
+  filtro.Q.value = 2;
+  filtro.frequency.setValueAtTime(3200, t);
+  filtro.frequency.exponentialRampToValueAtTime(500, t + 0.2);
+  vol.gain.setValueAtTime(0.0001, t);
+  vol.gain.exponentialRampToValueAtTime(1, t + 0.03);
+  vol.gain.exponentialRampToValueAtTime(0.0001, t + 0.21);
+  aire.connect(filtro).connect(vol).connect(salida);
+  aire.start(t);
+  nota(ctx, salida, { frecuencia: 300, hasta: 140, desde: t + 0.05, dura: 0.12, volumen: 0.4 });
+}
+
+// Copiar una comida: dos "clic" seguidos, como sacar una fotocopia.
+export function copiado() {
+  const ctx = listo();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const salida = mezcla(ctx, 0.18);
+  nota(ctx, salida, { frecuencia: 1500, desde: t, dura: 0.035 });
+  nota(ctx, salida, { frecuencia: 2000, desde: t + 0.08, dura: 0.05 });
+}
+
 // El navegador solo deja sonar después de que la persona toca algo.
 export function prepararSonidos() {
   const destrabar = () => {

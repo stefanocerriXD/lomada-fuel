@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { reaccion } from "./sonidos.js";
 import { fotosGuardadas, guardarFotos } from "./fotosGuardadas.js";
 import { supabase } from "./supabase.js";
 import { accionWhoop, avisarGrupo } from "./api.js";
@@ -213,6 +214,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   const alternarReaccionMensaje = useCallback(async (mensajeId, emoji) => {
     const fila = { mensaje_id: mensajeId, usuario_id: usuario.id, emoji };
     const tenia = reaccionesRef.current.some((r) => r.mensaje_id === mensajeId && r.usuario_id === usuario.id && r.emoji === emoji);
+    if (!tenia) reaccion();
     ponerReaccion({ ...fila, activa: !tenia });
     emitirChat("reaccion", { ...fila, activa: !tenia });
     const consulta = supabase.from("reacciones_mensajes");

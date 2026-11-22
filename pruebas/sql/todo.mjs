@@ -1364,3 +1364,24 @@ console.log("backup: pruebas pasadas");
   assert.equal((await uno("select count(*)::int n from comidas where planeada")).n, 0, "las de antes quedan como comidas");
   console.log("062: pruebas pasadas");
 }
+
+// ===== 064: la maldicion en el chat, una vez por semana =====
+{
+  const s064 = fs.readFileSync(raiz + "064_maldicion_semanal.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s064), "064 en ASCII");
+  console.log((await db.exec(s064)).at(-1).rows[0].resultado);
+  await db.exec(s064);
+  const { lunes, dom } = await uno("select to_char(date_trunc('week', current_date) - interval '7 days', 'YYYY-MM-DD') lunes, to_char(date_trunc('week', current_date) - interval '1 day', 'YYYY-MM-DD') dom");
+  await db.exec("delete from mensajes where bot_multas is not null; delete from multas; delete from bocha_evo; update miembros_grupo set unido_en = now() - interval '60 days'; update grupos set creado_en = now() - interval '60 days'");
+  // De lunes a sabado: la maldicion corre (hay multas) pero el bot no dice nada en el chat.
+  const multasAntes = (await uno("select count(*)::int n from multas")).n;
+  await db.query("select public.contar_multas($1)", [lunes]);
+  assert.ok((await uno("select count(*)::int n from multas")).n > multasAntes, "la maldicion sigue siendo diaria");
+  assert.equal((await uno("select count(*)::int n from mensajes where bot_multas is not null")).n, 0, "sin mensaje en dia de semana");
+  // El domingo: el resumen de la semana, con cuantas tuvo cada uno.
+  await db.query("select public.contar_multas($1)", [dom]);
+  const semana = (await filas("select texto from mensajes where bot_multas = $1", [dom])).map((r) => r.texto);
+  assert.ok(semana.length >= 1, "el domingo publica");
+  assert.ok(semana.some((x) => /Caconas de la semana[\s\S]*: 2 /.test(x)), semana.join(" | "));
+  console.log("064: pruebas pasadas");
+}
