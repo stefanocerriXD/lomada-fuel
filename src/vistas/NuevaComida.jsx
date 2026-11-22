@@ -23,6 +23,7 @@ const diaDeLaCarga = (fecha) => {
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
 import { conCantidad, conUnidad, leerCantidad, mostrarCantidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
+import { etiquetaEstado } from "../lib/estadoAlimento.js";
 import { Avatar, Hoja, Numero, vibrar } from "../componentes/Base.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import Lector from "../componentes/Lector.jsx";
@@ -1011,7 +1012,7 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
   return (
     <motion.div className="fila-item" layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
       <div className="fila-datos">
-        <strong>{item.nombre}</strong>
+        <strong>{item.nombre}{etiquetaEstado(item) && <EtiquetaEstado texto={etiquetaEstado(item)} />}</strong>
         <span>{item.medida && !item.por100 ? `${item.medida} · ` : ""}{Math.round(m.kcal)} kcal · P {Math.round(m.p)} · C {Math.round(m.c)} · G {Math.round(m.g)}{item.estimado ? " · estimado" : ""}{item.ia === "sugerencia" ? " · sugerido por la IA" : item.ia === "voz" ? " · dictado" : item.ia ? " · por la foto" : ""}</span>
       </div>
       <button className="boton-icono chico" onClick={onQuitar} aria-label={`Quitar ${item.nombre}`}><Trash2 size={16} /></button>
@@ -1057,6 +1058,11 @@ function CampoCantidad({ item, onCambiar }) {
   );
 }
 
+// "Crudo" o "Cocido" al lado del nombre: lo crudo pesa distinto que lo cocido.
+function EtiquetaEstado({ texto }) {
+  return <span className={`etiqueta-estado ${texto === "Crudo" ? "crudo" : "cocido"}`}>{texto}</span>;
+}
+
 // Medida y calorías de un alimento ya cargado, para mostrarlo en listas.
 function resumenAlimento(alimento) {
   const item = alimento.por100 ? prepararItem(alimento) : alimento;
@@ -1076,7 +1082,7 @@ function FilaHistorial({ uso, onElegir, delGrupo }) {
       <button onClick={() => onElegir(alimento)}>
         <span className="resultado-datos">
           <strong>{alimento.nombre}{alimento.marca ? <small className="resultado-marca"> · {alimento.marca}</small> : null}</strong>
-          <span>{medida ? `${medida} · ` : ""}{kcal} kcal</span>
+          <span>{etiquetaEstado(alimento) && <EtiquetaEstado texto={etiquetaEstado(alimento)} />}{medida ? `${medida} · ` : ""}{kcal} kcal</span>
           <span className="resultado-usos">{usos}</span>
         </span>
         <span className="resultado-mas" aria-hidden="true"><Plus size={18} /></span>
@@ -1094,7 +1100,7 @@ function FilaResultado({ alimento, onElegir, uso }) {
       <button onClick={() => onElegir(alimento)}>
         <span className="resultado-datos">
           <strong>{alimento.nombre}</strong>
-          <span>{alimento.marca ? `${alimento.marca} · ` : ""}{medida} · {kcal} kcal</span>
+          <span>{etiquetaEstado(alimento) && <EtiquetaEstado texto={etiquetaEstado(alimento)} />}{alimento.marca ? `${alimento.marca} · ` : ""}{medida} · {kcal} kcal</span>
           {(alimento.verificado || uso || alimento.usuarios >= 2) && (
             <span className="resultado-usos">
               {alimento.verificado && <span className="verificado"><BadgeCheck size={13} aria-hidden="true" /> Verificado</span>}

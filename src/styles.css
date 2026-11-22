@@ -2814,3 +2814,9 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .dia-por-comida-fila .borrar-comida { flex: none; display: inline-flex; align-items: center; gap: 4px; }
 .dia-por-comida-fila .copiar-comida + .borrar-comida { margin-left: 0; }
 .dia-por-comida-datos { min-width: 0; }
+
+/* Crudo o cocido, al lado del nombre del alimento */
+.etiqueta-estado { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-family: var(--cuerpo, inherit); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; vertical-align: 2px; white-space: nowrap; }
+.etiqueta-estado.cocido { background: var(--superficie-2); color: var(--tinta-2); }
+.etiqueta-estado.crudo { background: var(--acento-suave, var(--superficie-2)); color: var(--sobre-acento-suave, var(--tinta)); }
+.resultado-datos .etiqueta-estado { margin: 0 6px 0 0; vertical-align: 1px; }
