@@ -2,6 +2,8 @@
 // Los arreglos chicos y las correcciones no van acá. Lo más nuevo, arriba.
 // Antes de sumar una, se le consulta al dueño de la app: solo cosas funcionales o copadas.
 export const ACTUALIZACIONES = [
+  { id: "planear-comidas", fecha: "2026-11-21", emoji: "🗓️", titulo: "Planeá tus comidas", texto: "Cargá una comida antes de comerla: de mañana, o de hoy con «Todavía no la comí» en Más opciones. Queda sin foto y sin aviso; cuando la comés, tocás «Ya la comí», le sumás la foto y ahí le llega al grupo. Las editás o borrás desde el Resumen." },
+  { id: "copiar-comidas", fecha: "2026-11-21", emoji: "📋", titulo: "Copiá y pegá comidas", texto: "En el Resumen, abrí tu día en «El día de cada uno» y copiá cualquier comida. Andá a otro día y tocá «Pegar»: se abre con los mismos alimentos y cantidades. Y en el buscador, al escribir, aparecen tus comidas anteriores." },
   { id: "actividades-y-recordatorios", fecha: "2026-11-18", emoji: "⏰", titulo: "Tus actividades y recordatorios", texto: "En Ajustes › Registros diarios sumás fútbol, running, pádel o la actividad que escribas, y armás hasta 10 recordatorios a la hora que quieras, con sus días y su mensaje." },
   { id: "viaje-y-matchday", fecha: "2026-11-18", emoji: "✈️", titulo: "Tu viaje y tu Match Day", texto: "Cada uno arma su cuenta regresiva a su viaje y su día de partido en Ajustes › Viaje y Match Day. Los avisos llegan según lo tuyo." },
   { id: "compartir-dia", fecha: "2026-11-17", emoji: "🗓️", titulo: "Compartí tu día entero", texto: "En el Resumen, «Compartir mi día» arma una historia o publicación con todas las fotos del día, el total y los macros. Elegís entre tres plantillas: grilla, collage o ticket." },
