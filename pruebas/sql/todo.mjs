@@ -1418,3 +1418,22 @@ console.log("backup: pruebas pasadas");
   assert.ok(semana.some((x) => /Caconas de la semana[\s\S]*: 2 /.test(x)), semana.join(" | "));
   console.log("064: pruebas pasadas");
 }
+
+// ===== 065: fotos fijadas en el perfil =====
+{
+  const s065 = fs.readFileSync(raiz + "065_fotos_fijadas.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s065), "065 en ASCII");
+  console.log((await db.exec(s065)).at(-1).rows[0].resultado);
+  await db.exec(s065);
+  const otro = (await uno("select id from perfiles where id <> $1 limit 1", [U[0]])).id;
+  const ids = [];
+  for (let i = 0; i < 4; i++) ids.push((await rol(U[0], () => uno("insert into comidas (usuario_id, tipo, fecha, calorias, foto_path) values ($1, 'almuerzo', current_date, 500, $2) returning id", [U[0], `${U[0]}/f${i}.jpg`]))).id);
+  for (const id of ids.slice(0, 3)) await rol(U[0], () => db.query("update comidas set fijada_en = now() where id = $1", [id]));
+  await assert.rejects(rol(U[0], () => db.query("update comidas set fijada_en = now() where id = $1", [ids[3]])), /demasiadas_fijadas/, "hasta 3");
+  await rol(U[0], () => db.query("update comidas set fijada_en = null where id = $1", [ids[0]]));
+  await rol(U[0], () => db.query("update comidas set fijada_en = now() where id = $1", [ids[3]]));
+  await rol(otro, () => db.query("update comidas set fijada_en = null where id = $1", [ids[1]]));
+  assert.ok((await uno("select fijada_en from comidas where id = $1", [ids[1]])).fijada_en, "otro no la suelta");
+  await db.query("delete from comidas where id = any($1)", [ids]);
+  console.log("065: pruebas pasadas");
+}

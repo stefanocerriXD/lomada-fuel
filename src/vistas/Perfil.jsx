@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { IconoCorona, IconoGol, IconoResaca, IconoTrago } from "../componentes/IconosFiesta.jsx";
 import { abrirFestejo } from "../lib/fiestaEstado.js";
 import { AnimatePresence } from "motion/react";
-import { Award, Camera, Pencil, UtensilsCrossed } from "lucide-react";
+import { Award, Camera, Pencil, Pin, UtensilsCrossed } from "lucide-react";
+import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { esDeAppleSalud } from "../lib/importar.js";
 import { nombreDia } from "../lib/fechas.js";
@@ -34,6 +35,9 @@ export default function Perfil({ onEditar, onEditarComida, avisar }) {
   );
 }
 
+// Hasta 3 fotos fijadas arriba de todo en la galería del perfil (SQL 065).
+const MAX_FIJADAS = 3;
+
 function Contenido({ perfil, onEditar, onEditarComida, avisar }) {
   const { usuario, comidas, fotos, extras, cargarHistorial, perfiles, progreso, reacciones, castigo } = useDatos();
   const [abierto, setAbierto] = useState(null);
@@ -60,7 +64,24 @@ function Contenido({ perfil, onEditar, onEditarComida, avisar }) {
   const stats = useMemo(() => estadisticas(lista || []), [lista]);
   const dias = useMemo(() => porDia(lista || []), [lista]);
   const favoritas = useMemo(() => comidasFavoritas(lista || []), [lista]);
-  const conFoto = useMemo(() => (lista || []).filter((c) => c.foto_path && fotos[c.foto_path]), [lista, fotos]);
+  // Las fijadas primero (la última que fijaste, arriba de todo); después, las demás como venían.
+  const conFoto = useMemo(() => {
+    const todas = (lista || []).filter((c) => c.foto_path && fotos[c.foto_path]);
+    const fijadas = todas.filter((c) => c.fijada_en).sort((a, b) => (a.fijada_en < b.fijada_en ? 1 : -1));
+    return [...fijadas, ...todas.filter((c) => !c.fijada_en)];
+  }, [lista, fotos]);
+  const sePuedeFijar = propio && (lista || []).some((c) => "fijada_en" in c);
+  const cantidadFijadas = conFoto.filter((c) => c.fijada_en).length;
+
+  async function alternarFijada(c) {
+    if (!c.fijada_en && cantidadFijadas >= MAX_FIJADAS) return avisar?.(`Podés fijar hasta ${MAX_FIJADAS} fotos. Soltá una para fijar otra.`);
+    const fijada_en = c.fijada_en ? null : new Date().toISOString();
+    const { error: err } = await supabase.from("comidas").update({ fijada_en }).eq("id", c.id);
+    if (err) return avisar?.(/demasiadas_fijadas/.test(err.message || "") ? `Podés fijar hasta ${MAX_FIJADAS} fotos.` : "No se pudo fijar la foto");
+    vibrar(10);
+    setLista((prev) => prev.map((x) => (x.id === c.id ? { ...x, fijada_en } : x)));
+    avisar?.(fijada_en ? "Foto fijada arriba de tu perfil" : "Foto soltada");
+  }
   const niveles = useMemo(() => nivelesGuardados(extras.medallas.filter((m) => m.usuario_id === perfil.id).map((m) => m.codigo)), [extras.medallas, perfil.id]);
   const nivel = useMemo(() => nivelGeneral(niveles).nivel, [niveles]);
   const avance = useMemo(() => {
@@ -171,10 +192,17 @@ function Contenido({ perfil, onEditar, onEditarComida, avisar }) {
         conFoto.length ? (
           <ul className="galeria">
             {conFoto.map((c, i) => (
-              <li key={c.id}>
-                <button onClick={() => setVisor({ lista: conFoto, inicio: i })} aria-label={`Ver foto: ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+              <li key={c.id} className={c.fijada_en ? "fijada" : undefined}>
+                <button onClick={() => setVisor({ lista: conFoto, inicio: i })} aria-label={`Ver foto: ${c.descripcion || tipoInfo(c.tipo).texto}${c.fijada_en ? " (fijada)" : ""}`}>
                   <img src={fotos[c.foto_path]} alt="" loading="lazy" />
                 </button>
+                {sePuedeFijar ? (
+                  <button type="button" className={c.fijada_en ? "fijar activo" : "fijar"} onClick={() => alternarFijada(c)} aria-pressed={!!c.fijada_en} aria-label={c.fijada_en ? `Soltar la foto ${c.descripcion || tipoInfo(c.tipo).texto}` : `Fijar la foto ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                    <Pin size={14} fill={c.fijada_en ? "currentColor" : "none"} />
+                  </button>
+                ) : c.fijada_en ? (
+                  <span className="fijar activo" aria-hidden="true"><Pin size={14} fill="currentColor" /></span>
+                ) : null}
               </li>
             ))}
           </ul>
