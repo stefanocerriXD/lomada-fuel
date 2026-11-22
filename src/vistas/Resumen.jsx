@@ -66,13 +66,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
   async function borrarPlaneada(c) {
     if (borrando !== c.id) return setBorrando(c.id);
     setBorrando(null);
-    const { error } = await supabase.from("comidas").delete().eq("id", c.id);
-    if (error) return avisar("No se pudo borrar la comida");
-    const archivos = [c.foto_path, ...(c.fotos_extra || []), c.postre_foto].filter(Boolean);
-    if (archivos.length && !c.grupo_comida) await supabase.storage.from("fotos").remove(archivos);
-    await cargarComidas().catch(() => {});
-    vibrar(12);
-    avisar("Comida borrada");
+    await borrarComidaPropia(c, cargarComidas, avisar);
   }
   // La comida copiada (de cualquier día) se pega en el día que estás mirando: abre la carga con todo listo.
   const copiada = useComidaCopiada();
@@ -431,8 +425,26 @@ function TarjetaWhoop({ dia, comidas }) {
   );
 }
 
+// Borra una comida tuya (y sus fotos, salvo que sea grupal: esa foto la siguen usando los demás).
+async function borrarComidaPropia(c, cargarComidas, avisar) {
+  const { data, error } = await supabase.from("comidas").delete().eq("id", c.id).select("id");
+  // Sin permiso, la base responde sin error pero no borra nada.
+  if (error || data?.length === 0) return avisar("No se pudo borrar la comida");
+  const archivos = [c.foto_path, ...(c.fotos_extra || []), c.postre_foto].filter(Boolean);
+  if (archivos.length && !c.grupo_comida) await supabase.storage.from("fotos").remove(archivos);
+  await cargarComidas().catch(() => {});
+  vibrar(12);
+  avisar("Comida borrada");
+}
+
 function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar, onCargar }) {
-  const { abrirPerfil, castigo } = useDatos();
+  const { abrirPerfil, castigo, cargarComidas } = useDatos();
+  const [borrando, setBorrando] = useState(null);
+  function borrar(c) {
+    if (borrando !== c.id) return setBorrando(c.id);
+    setBorrando(null);
+    borrarComidaPropia(c, cargarComidas, avisar);
+  }
   const [abierta, setAbierta] = useState(false);
   const total = sumarComidas(comidas);
   const visibles = comidas.filter((c) => !esDeAppleSalud(c));
@@ -504,6 +516,11 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar, onCargar }) {
                         {propio && sePuedeCopiar(c) && (
                           <button type="button" className="boton-icono chico copiar-comida" onClick={() => { copiarComida(c); vibrar(10); avisar?.("Copiada. Pegala en el día que quieras"); }} aria-label={`Copiar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                             <Copy size={16} />
+                          </button>
+                        )}
+                        {propio && (
+                          <button type="button" className={borrando === c.id ? "boton-chico peligro borrar-comida" : "boton-icono chico copiar-comida"} onClick={() => borrar(c)} onBlur={() => setBorrando(null)} aria-label={borrando === c.id ? "Tocá de nuevo para borrar" : `Borrar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                            <Trash2 size={16} />{borrando === c.id ? " ¿Borrar?" : ""}
                           </button>
                         )}
                       </div>
