@@ -69,6 +69,14 @@ const mia = p.locator(".tarjeta-amigo").first();
 await mia.scrollIntoViewIfNeeded();
 await mia.locator(".amigo-cabecera").click();
 await p.waitForTimeout(400);
+// Y un tachito para borrarlas (con confirmación).
+await mia.screenshot({ path: "capturas/dia-editar-borrar.png" });
+await mia.getByRole("button", { name: "Borrar Tostadas con palta y café" }).click();
+assert.equal(await p.evaluate(() => window.__db.comidas.some((c) => c.id === "c1")), true, "el primer toque no borra");
+await mia.getByRole("button", { name: "Tocá de nuevo para borrar" }).click();
+await p.waitForTimeout(900);
+assert.equal(await p.evaluate(() => window.__db.comidas.some((c) => c.id === "c1")), false);
+assert.ok((await p.evaluate(() => window.__quitados || [])).includes("f1"), "se va su foto");
 await mia.getByRole("button", { name: "Editar Milanesa con puré" }).click();
 await p.waitForTimeout(700);
 assert.equal(await p.getByLabel("Nota de la comida").inputValue(), "Milanesa con puré");
