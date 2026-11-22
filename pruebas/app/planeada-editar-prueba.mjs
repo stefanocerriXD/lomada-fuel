@@ -52,6 +52,13 @@ await p.waitForTimeout(1000);
 const m1 = await p.evaluate(() => window.__db.comidas.find((c) => c.id === "m1"));
 assert.deepEqual([m1.tipo, m1.calorias, m1.alimentos[0].cantidad], ["cena", 400, 2]);
 
+// Desde la casilla de la cena (ahora planeada): se abre para editar, no una carga nueva.
+await p.getByRole("button", { name: "Editar Pollo de mañana (planeada)" }).click();
+await p.waitForTimeout(700);
+assert.equal(await p.getByRole("dialog", { name: "Editar comida" }).count(), 1);
+await p.getByRole("dialog").getByRole("button", { name: "Cerrar", exact: true }).click();
+await p.waitForTimeout(500);
+
 // Borrar desde el Resumen: pide confirmar.
 await tarjeta.getByRole("button", { name: "Borrar Yogur de mañana" }).click();
 assert.equal(await p.evaluate(() => window.__db.comidas.some((c) => c.id === "m2")), true, "el primer toque no borra");
