@@ -142,7 +142,7 @@ function Contenido({ perfil, onEditar, onEditarComida }) {
                         )}
                         <span className="perfil-comida-datos">
                           <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
-                          <small>{tipoInfo(c.tipo).texto} · {numero(c.calorias || 0)} kcal · P {numero(c.proteinas || 0)} · C {numero(c.carbohidratos || 0)} · G {numero(c.grasas || 0)}</small>
+                          <small>{c.planeada ? "Planeada · " : ""}{tipoInfo(c.tipo).texto} · {numero(c.calorias || 0)} kcal · P {numero(c.proteinas || 0)} · C {numero(c.carbohidratos || 0)} · G {numero(c.grasas || 0)}</small>
                         </span>
                         {propio && <button className="boton-icono chico" onClick={() => onEditarComida(c)} aria-label={`Editar ${c.descripcion || tipoInfo(c.tipo).texto}`}><Pencil size={15} /></button>}
                       </li>

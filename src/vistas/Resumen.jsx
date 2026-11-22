@@ -145,18 +145,20 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
           {TIPOS.map((t) => {
             const lista = mias.filter((c) => c.tipo === t.id);
             const kcal = Math.round(sumarComidas(lista).kcal);
+            // Si ya la tenés planeada, tocarla la abre para editarla (o para "Ya la comí").
+            const planeada = planeadas.find((c) => c.tipo === t.id);
             return (
               <li key={t.id}>
                 <motion.button
-                  className={lista.length ? "ranura llena" : "ranura"}
+                  className={planeada ? "ranura llena planeada" : lista.length ? "ranura llena" : "ranura"}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onCargar({ tipo: t.id, fecha })}
-                  aria-label={`Agregar ${t.texto.toLowerCase()}`}
+                  onClick={() => onCargar(planeada ? { comida: planeada } : { tipo: t.id, fecha })}
+                  aria-label={planeada ? `Editar ${planeada.descripcion || t.texto.toLowerCase()} (planeada)` : `Agregar ${t.texto.toLowerCase()}`}
                 >
                   <span className="ranura-icono"><IconoComida tipo={t.id} size={21} /></span>
                   <span className="ranura-nombre">{t.plural || t.texto}</span>
                   <span className="ranura-valor">
-                    {lista.length ? <><Check size={13} /> {kcal > 0 && kcal.toLocaleString("es-AR")}</> : <Plus size={15} />}
+                    {lista.length ? <>{planeada ? <CalendarClock size={13} aria-hidden="true" /> : <Check size={13} />} {kcal > 0 && kcal.toLocaleString("es-AR")}</> : <Plus size={15} />}
                   </span>
                 </motion.button>
               </li>
