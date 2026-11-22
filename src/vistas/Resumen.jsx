@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, BarChart3, CalendarClock, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Copy, Flame, Martini, Moon, Plus, Share2, UserRound, X, Zap } from "lucide-react";
+import { Activity, BarChart3, CalendarClock, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, ClipboardPaste, Copy, Flame, Martini, Moon, Pencil, Plus, Share2, Trash2, UserRound, X, Zap } from "lucide-react";
+import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { diaCorto, fechaLocal, nombreDia, saludo, ultimosDias } from "../lib/fechas.js";
 import { calcularPlan } from "../lib/cuerpo.js";
@@ -59,7 +60,20 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
   const fotosHoy = fotosDelDia(comidas, usuario.id, hoy);
   const mias = delDia.filter((c) => c.usuario_id === usuario.id);
   // Las que cargaste antes de comerlas: a mano para sumarles la foto cuando las comés.
-  const planeadas = mias.filter((c) => c.planeada);
+  // En un día que todavía no llegó, todas las tuyas están planeadas (también las cargadas antes del SQL 062).
+  const planeadas = mias.filter((c) => (c.planeada || fecha > hoy) && !["resumen", "fiesta"].includes(c.tipo) && !esDeAppleSalud(c));
+  const [borrando, setBorrando] = useState(null);
+  async function borrarPlaneada(c) {
+    if (borrando !== c.id) return setBorrando(c.id);
+    setBorrando(null);
+    const { error } = await supabase.from("comidas").delete().eq("id", c.id);
+    if (error) return avisar("No se pudo borrar la comida");
+    const archivos = [c.foto_path, ...(c.fotos_extra || []), c.postre_foto].filter(Boolean);
+    if (archivos.length && !c.grupo_comida) await supabase.storage.from("fotos").remove(archivos);
+    await cargarComidas().catch(() => {});
+    vibrar(12);
+    avisar("Comida borrada");
+  }
   // La comida copiada (de cualquier día) se pega en el día que estás mirando: abre la carga con todo listo.
   const copiada = useComidaCopiada();
   // Hoy, la fiesta de esta noche (sigue siendo la de anoche hasta las 6); otro día, la de ese día.
@@ -182,8 +196,11 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
                   <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
                   <small>{tipoInfo(c.tipo).texto} · {Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal</small>
                 </span>
-                <button className={fecha > hoy ? "boton-chico" : "boton-chico acento"} onClick={() => onCargar({ comida: c })}>
-                  {fecha > hoy ? "Editar" : <><Camera size={14} aria-hidden="true" /> Ya la comí</>}
+                <button className={fecha > hoy ? "boton-chico" : "boton-chico acento"} onClick={() => onCargar({ comida: c })} aria-label={fecha > hoy ? `Editar ${c.descripcion || tipoInfo(c.tipo).texto}` : undefined}>
+                  {fecha > hoy ? <><Pencil size={14} aria-hidden="true" /> Editar</> : <><Camera size={14} aria-hidden="true" /> Ya la comí</>}
+                </button>
+                <button className={borrando === c.id ? "boton-chico peligro" : "boton-icono chico"} onClick={() => borrarPlaneada(c)} onBlur={() => setBorrando(null)} aria-label={borrando === c.id ? "Tocá de nuevo para borrar" : `Borrar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                  <Trash2 size={15} />{borrando === c.id ? " ¿Borrar?" : ""}
                 </button>
               </li>
             ))}
@@ -238,7 +255,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
         <h2 className="titulo-seccion">El día de cada uno</h2>
         <motion.ul className="lista-amigos" initial="oculto" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
           {amigos.map(({ perfil, comidas: lista }) => (
-            <TarjetaAmigo key={perfil.id} perfil={perfil} comidas={lista} fotos={fotos} propio={perfil.id === usuario.id} avisar={avisar} />
+            <TarjetaAmigo key={perfil.id} perfil={perfil} comidas={lista} fotos={fotos} propio={perfil.id === usuario.id} avisar={avisar} onCargar={onCargar} />
           ))}
         </motion.ul>
       </section>
@@ -414,7 +431,7 @@ function TarjetaWhoop({ dia, comidas }) {
   );
 }
 
-function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar }) {
+function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar, onCargar }) {
   const { abrirPerfil, castigo } = useDatos();
   const [abierta, setAbierta] = useState(false);
   const total = sumarComidas(comidas);
@@ -478,6 +495,12 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar }) {
                           <small>{c.planeada ? "Planeada · " : ""}{Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal · P {Math.round(c.proteinas || 0)} · C {Math.round(c.carbohidratos || 0)} · G {Math.round(c.grasas || 0)}</small>
                         </span>
                         {/* Las tuyas se copian para pegarlas en otro día. */}
+                        {/* Las tuyas se editan desde acá (cantidades, tipo, foto o borrarla). */}
+                        {propio && c.tipo !== "fiesta" && (
+                          <button type="button" className="boton-icono chico copiar-comida" onClick={() => onCargar?.({ comida: c })} aria-label={`Editar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                            <Pencil size={16} />
+                          </button>
+                        )}
                         {propio && sePuedeCopiar(c) && (
                           <button type="button" className="boton-icono chico copiar-comida" onClick={() => { copiarComida(c); vibrar(10); avisar?.("Copiada. Pegala en el día que quieras"); }} aria-label={`Copiar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                             <Copy size={16} />

@@ -2809,3 +2809,5 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .editor-destacada-grilla.de-comidas button { position: relative; width: 100%; height: 100%; padding: 0; border-radius: 10px; overflow: hidden; }
 .editor-destacada-grilla.de-comidas button.elegida img { opacity: 0.6; }
 .marca-elegida { position: absolute; right: 5px; bottom: 5px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--acento); color: var(--sobre-acento); }
+.planeadas .boton-icono.chico { flex: none; color: var(--tinta-2); }
+.dia-por-comida-fila .copiar-comida + .copiar-comida { margin-left: 0; }
