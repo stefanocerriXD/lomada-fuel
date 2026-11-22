@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Camera, CameraOff, LoaderCircle, ScanText } from "lucide-react";
+import { Camera, CameraOff, ImagePlus, LoaderCircle, PenLine, ScanText } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { ia, reconocerFoto } from "../lib/api.js";
 import { leerTexto } from "../lib/ocr.js";
-import { aPor100, leerEtiqueta } from "../lib/etiqueta.js";
+import { aPor100, completarCon, kcalDeMacros, leerEtiqueta, leerNumero } from "../lib/etiqueta.js";
 import { buscarEnCatalogo, buscarProductoPropio, guardarProducto } from "../lib/productosPropios.js";
 import { vibrar } from "../componentes/Base.jsx";
 
@@ -202,7 +202,6 @@ export default function Escaner({ onAlimento, buscar }) {
     if (limpio) consultar(limpio);
   }
 
-  // Primero Gemini (lee tablas muy bien); sin clave o sin cupo, el lector de texto del celu.
   async function leerFoto(e) {
     const archivo = e.target.files[0];
     e.target.value = "";
@@ -211,25 +210,9 @@ export default function Escaner({ onAlimento, buscar }) {
     setEstado("");
     setEtiqueta(null);
     setLeyendo({ progreso: 0 });
-    let datos = null;
-    if (!ia.apagada) {
-      try {
-        const r = await reconocerFoto(archivo, "etiqueta");
-        if (r.esEtiqueta && r.valores.kcal > 0) datos = { ...r, origen: "ia" };
-      } catch {
-        // Se prueba con el lector del celu.
-      }
-    }
-    if (!datos) {
-      try {
-        const leido = leerEtiqueta(await leerTexto(archivo, (progreso) => setLeyendo({ progreso })));
-        if (leido.encontrados >= 2) datos = { ...leido, nombre: "", marca: "", origen: "texto" };
-      } catch {
-        // Queda para cargar a mano.
-      }
-    }
+    const datos = await leerDatosDeFoto(archivo, (progreso) => setLeyendo({ progreso }));
     setLeyendo(null);
-    setEtiqueta(datos || { base: "porcion", porcionG: null, valores: {}, nombre: "", marca: "", origen: "nada" });
+    setEtiqueta(datos || { ...VACIA, origen: "nada" });
   }
 
   const codigoDelProducto = faltante || null;
@@ -280,14 +263,24 @@ export default function Escaner({ onAlimento, buscar }) {
               Leyendo la tabla nutricional{leyendo.progreso > 0 ? ` · ${Math.round(leyendo.progreso * 100)}%` : "…"}
             </p>
           ) : faltante ? (
-            <label className="tarjeta accion etiqueta-accion destacada">
-              <input type="file" accept="image/*" onChange={leerFoto} aria-label="Foto de la tabla nutricional" />
-              <ScanText size={22} />
-              <span>
-                <strong>El código {faltante} no está en la base</strong>
-                <small>Sacale una foto a la tabla nutricional y lo cargamos solo. Queda guardado para la próxima.</small>
-              </span>
-            </label>
+            <div className="producto-nuevo">
+              <p className="producto-nuevo-titulo"><strong>El código {faltante} no está en la base</strong><small>Cargalo una vez y queda guardado para todos.</small></p>
+              <label className="tarjeta accion etiqueta-accion destacada">
+                <input type="file" accept="image/*" onChange={leerFoto} aria-label="Foto de la tabla nutricional" />
+                <ScanText size={22} />
+                <span>
+                  <strong>Foto de la tabla o del envase</strong>
+                  <small>Leemos los números solos. Si algo está en otra parte del paquete, después sumás otra foto.</small>
+                </span>
+              </label>
+              <button type="button" className="tarjeta accion" onClick={() => setEtiqueta({ ...VACIA, origen: "mano" })}>
+                <PenLine size={22} />
+                <span>
+                  <strong>Cargarlo a mano</strong>
+                  <small>Copiá los números del envase.</small>
+                </span>
+              </button>
+            </div>
           ) : (
             <label className="boton-texto etiqueta-enlace">
               <input type="file" accept="image/*" onChange={leerFoto} aria-label="Foto de la tabla nutricional" />
@@ -301,25 +294,78 @@ export default function Escaner({ onAlimento, buscar }) {
 }
 
 const CAMPOS = [["kcal", "Calorías"], ["p", "Proteínas (g)"], ["c", "Carbos (g)"], ["g", "Grasas (g)"]];
-const comoTexto = (v) => (v == null || v === "" ? "" : String(v));
+const comoTexto = (v) => (v == null || v === "" ? "" : String(v).replace(".", ","));
+const VACIA = { base: "100g", porcionG: null, valores: {}, nombre: "", marca: "" };
+const NOMBRES = { kcal: "calorías", p: "proteínas", c: "carbos", g: "grasas" };
+
+// Primero Gemini (lee tablas y datos sueltos del envase); sin clave o sin cupo, el lector de texto del celu.
+async function leerDatosDeFoto(archivo, alProgresar) {
+  if (!ia.apagada) {
+    try {
+      const r = await reconocerFoto(archivo, "etiqueta");
+      if (r.esEtiqueta && Object.values(r.valores || {}).some((v) => v != null && v > 0)) return { ...r, origen: "ia" };
+    } catch {
+      // Se prueba con el lector del celu.
+    }
+  }
+  try {
+    const leido = leerEtiqueta(await leerTexto(archivo, alProgresar));
+    if (leido.encontrados >= 1) return { ...leido, nombre: "", marca: "", origen: "texto" };
+  } catch {
+    // Queda para cargar a mano.
+  }
+  return null;
+}
 
 function FormEtiqueta({ inicial, codigo, onListo, onCancelar }) {
   const [nombre, setNombre] = useState(inicial.nombre || "");
   const [marca, setMarca] = useState(inicial.marca || "");
-  const [base, setBase] = useState(inicial.base || "porcion");
+  const [base, setBase] = useState(inicial.base || "100g");
   const [porcion, setPorcion] = useState(comoTexto(inicial.porcionG));
   const [v, setV] = useState(() => Object.fromEntries(CAMPOS.map(([k]) => [k, comoTexto(inicial.valores?.[k])])));
-  const [error, setError] = useState("");
+  const [origen, setOrigen] = useState(inicial.origen);
+  const [leyendo, setLeyendo] = useState(false);
+  const [aviso, setAviso] = useState("");
+  const [error, setError] = useState(null);
+
+  const porcionG = leerNumero(porcion);
+  const valores = Object.fromEntries(CAMPOS.map(([k]) => [k, leerNumero(v[k])]));
+  const kcalCalculadas = valores.kcal == null ? kcalDeMacros(valores) : null;
+  const kcal = valores.kcal ?? kcalCalculadas;
+  const por100 = kcal != null && (base === "100g" || porcionG) ? aPor100({ base, porcionG, valores: { ...valores, kcal } }) : null;
+  const porPorcion = por100 && porcionG ? Math.round((por100.kcal * porcionG) / 100) : null;
+
+  // Otra foto (el frente del envase, el costado): completa lo que falta sin pisar lo que ya está.
+  async function otraFoto(e) {
+    const archivo = e.target.files[0];
+    e.target.value = "";
+    if (!archivo) return;
+    setLeyendo(true);
+    setAviso("");
+    const nuevo = await leerDatosDeFoto(archivo, () => {});
+    setLeyendo(false);
+    if (!nuevo) return setAviso("No encontramos números en esa foto. Probá más cerca o completalo a mano.");
+    const actual = { base, porcionG, valores: Object.fromEntries(CAMPOS.map(([k]) => [k, v[k] === "" ? null : v[k]])), nombre, marca };
+    const r = completarCon(actual, nuevo);
+    if (!porcion && r.porcionG) setPorcion(comoTexto(r.porcionG));
+    setV((prev) => Object.fromEntries(CAMPOS.map(([k]) => [k, prev[k] !== "" ? prev[k] : comoTexto(r.valores[k])])));
+    if (!nombre && r.nombre) setNombre(r.nombre);
+    if (!marca && r.marca) setMarca(r.marca);
+    setOrigen((o) => (o === "mano" || o === "nada" ? nuevo.origen : o));
+    setAviso(r.sumados.length ? `Sumamos ${r.sumados.map((k) => NOMBRES[k]).join(", ")} de la otra foto.` : nuevo.base !== base && !porcionG ? "La otra foto trae los valores de otra forma (por porción o cada 100 g): poné de cuántos gramos es la porción y probá de nuevo." : "Esa foto no trajo nada que faltara.");
+  }
 
   function agregar(e) {
     e.preventDefault();
-    const porcionG = Number(porcion) || null;
-    if (base === "porcion" && !porcionG) return setError("Poné de cuántos gramos es la porción (figura arriba de la tabla).");
-    const por100 = aPor100({ base, porcionG, valores: v });
-    if (!por100) return setError("Los números no cierran: revisá que coincidan con la tabla y si son por porción o cada 100 g.");
+    if (!nombre.trim()) return setError({ campo: "nombre", texto: "Ponele un nombre al producto." });
+    const malos = CAMPOS.filter(([k]) => v[k].trim() !== "" && valores[k] == null);
+    if (malos.length) return setError({ campo: malos[0][0], texto: `Revisá ${NOMBRES[malos[0][0]]}: tiene que ser un número (con coma si tiene decimales).` });
+    if (kcal == null) return setError({ campo: "kcal", texto: "Poné al menos las calorías (o las macros, y las calculamos)." });
+    if (base === "porcion" && !porcionG) return setError({ campo: "porcion", texto: "Poné de cuántos gramos es la porción (figura arriba de la tabla), o elegí «Cada 100 g»." });
+    if (!por100) return setError({ campo: "kcal", texto: "Los números no cierran: revisá que coincidan con el envase y si son por porción o cada 100 g." });
     onListo({
       id: `etiqueta-${codigo || crypto.randomUUID()}`,
-      nombre: nombre.trim() || "Producto",
+      nombre: nombre.trim(),
       marca: marca.trim(),
       fuente: "etiqueta",
       por100,
@@ -328,34 +374,56 @@ function FormEtiqueta({ inicial, codigo, onListo, onCancelar }) {
     });
   }
 
-  const aviso = {
-    ia: "Lo leímos de la foto. Fijate que los números coincidan con la tabla.",
-    texto: "Lo leímos de la foto. Fijate que los números coincidan con la tabla: el lector a veces confunde algún número.",
-    nada: "No pudimos leer la tabla. Copiá los números acá o probá con una foto más cerca y derecha.",
-  }[inicial.origen];
+  const nota = {
+    ia: "Lo leímos de la foto. Fijate que los números coincidan con el envase.",
+    texto: "Lo leímos de la foto. Fijate que los números coincidan: el lector a veces confunde algún número.",
+    nada: "No pudimos leer la foto. Copiá los números acá, o sumá otra foto más cerca y derecha.",
+    mano: "Copiá los números del envase. Lo que no figure dejalo vacío.",
+  }[origen];
+  const marcar = (campo) => (error?.campo === campo ? "campo-error" : undefined);
 
   return (
-    <form className="form-etiqueta" onSubmit={agregar}>
-      <p className="nota">{aviso}</p>
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del producto" aria-label="Nombre del producto" required autoFocus={!nombre} />
+    <form className="form-etiqueta" onSubmit={agregar} noValidate>
+      <p className="nota">{nota}</p>
+      <input className={marcar("nombre")} value={nombre} onChange={(e) => { setNombre(e.target.value); setError(null); }} placeholder="Nombre del producto" aria-label="Nombre del producto" autoFocus={!nombre} />
       <input value={marca} onChange={(e) => setMarca(e.target.value)} placeholder="Marca (opcional)" aria-label="Marca" />
       <div className="base-etiqueta" role="radiogroup" aria-label="Los valores son">
-        <button type="button" role="radio" aria-checked={base === "porcion"} className={base === "porcion" ? "boton-chico activo" : "boton-chico"} onClick={() => setBase("porcion")}>Por porción</button>
-        <button type="button" role="radio" aria-checked={base === "100g"} className={base === "100g" ? "boton-chico activo" : "boton-chico"} onClick={() => setBase("100g")}>Cada 100 g</button>
+        <button type="button" role="radio" aria-checked={base === "100g"} className={base === "100g" ? "boton-chico activo" : "boton-chico"} onClick={() => { setBase("100g"); setError(null); }}>Cada 100 g</button>
+        <button type="button" role="radio" aria-checked={base === "porcion"} className={base === "porcion" ? "boton-chico activo" : "boton-chico"} onClick={() => { setBase("porcion"); setError(null); }}>Por porción</button>
       </div>
       <label className="porcion-etiqueta">
         <span>Porción (g o ml){base === "100g" ? " · opcional" : ""}</span>
-        <input type="number" min="0" step="any" inputMode="decimal" value={porcion} onChange={(e) => setPorcion(e.target.value)} />
+        <input className={marcar("porcion")} type="text" inputMode="decimal" value={porcion} onChange={(e) => { setPorcion(e.target.value); setError(null); }} placeholder="Ej: 30" />
       </label>
       <div className="ajuste-macros">
         {CAMPOS.map(([k, texto]) => (
           <label key={k}>
             <span>{texto}</span>
-            <input type="number" min="0" step="any" inputMode="decimal" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} required={k === "kcal"} />
+            <input
+              className={marcar(k)}
+              type="text"
+              inputMode="decimal"
+              value={v[k]}
+              onChange={(e) => { setV({ ...v, [k]: e.target.value }); setError(null); }}
+              placeholder={k === "kcal" && kcalCalculadas != null ? `${kcalCalculadas} (calc.)` : "–"}
+              aria-label={texto}
+            />
           </label>
         ))}
       </div>
-      {error && <p className="error" role="alert">{error}</p>}
+      <label className={leyendo ? "boton-texto etiqueta-enlace ocupado" : "boton-texto etiqueta-enlace"}>
+        <input type="file" accept="image/*" onChange={otraFoto} disabled={leyendo} aria-label="Sumar otra foto del envase" />
+        {leyendo ? <><LoaderCircle size={15} className="girando" /> Leyendo la otra foto…</> : <><ImagePlus size={15} /> ¿Falta algún dato? Sumá otra foto del envase</>}
+      </label>
+      {aviso && <p className="nota" role="status">{aviso}</p>}
+      {por100 && (
+        <p className="etiqueta-resumen" role="status">
+          Queda: <strong>{por100.kcal} kcal</strong> cada 100 g · P {comoTexto(por100.p)} · C {comoTexto(por100.c)} · G {comoTexto(por100.g)}
+          {porPorcion != null ? <> · <strong>{porPorcion} kcal</strong> la porción de {String(porcionG).replace(".", ",")} g</> : null}
+          {kcalCalculadas != null ? <small> Las calorías las calculamos con las macros.</small> : null}
+        </p>
+      )}
+      {error && <p className="error" role="alert">{error.texto}</p>}
       <div className="form-etiqueta-botones">
         <button type="button" className="boton boton-secundario" onClick={onCancelar}>Volver</button>
         <button type="submit" className="boton">Agregar</button>

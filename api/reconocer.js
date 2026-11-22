@@ -22,13 +22,14 @@ const PEDIDO_TEXTO = `Sos nutricionista en Argentina. Una persona describió en 
 - "titulo": cómo llamaría la comida ("Empanadas con ensalada").
 - Si lo que dijo no es comida, es_comida=false y la lista vacía.`;
 
-const PEDIDO_ETIQUETA = `Es la foto de la tabla de información nutricional de un producto envasado (puede estar en español, inglés o portugués).
-Copiá los números TAL CUAL están impresos, sin estimar:
-- Si hay una columna "100 g" o "100 ml", usá esa y base="100g". Si solo está por porción, base="porcion".
-- "porcion_g": los gramos o ml de una porción, si figura (si no, 0).
+const PEDIDO_ETIQUETA = `Es la foto de un producto envasado: la tabla de información nutricional, o el frente del envase con datos sueltos ("20 g de proteína por porción", "Solo 90 kcal"). Puede estar en español, inglés o portugués.
+Copiá los números TAL CUAL están impresos, sin estimar ni calcular:
+- Si hay una columna "100 g" o "100 ml", usá esa y base="100g". Si solo está por porción (o el dato dice "por porción", "por barra", "por unidad"), base="porcion".
+- "porcion_g": los gramos o ml de una porción (o de la barra o unidad), si figura; si no, -1.
 - kcal: el valor energético en kcal (si solo está en kJ, dividí por 4,184). Grasas = grasas totales. Carbohidratos = totales.
+- Lo que NO figure en la foto va en -1 (no pongas 0 si no está escrito).
 - "nombre" y "marca": solo si se leen en la foto; si no, vacío.
-- Si la foto no muestra una tabla nutricional, es_etiqueta=false.`;
+- Si la foto no muestra ningún dato nutricional, es_etiqueta=false.`;
 
 const ESQUEMA_ETIQUETA = {
   type: "OBJECT",
@@ -61,6 +62,11 @@ const num = (v, max) => {
   return Number.isFinite(n) && n >= 0 && n <= max ? n : 0;
 };
 const texto = (v) => String(v || "").replace(/\s+/g, " ").trim().slice(0, 60);
+// En la etiqueta, lo que no figura (-1) vuelve vacío: así no se confunde con un 0 de verdad.
+const numOpcional = (v, max) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= max ? n : null;
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
@@ -107,8 +113,8 @@ export default async function handler(req, res) {
       nombre: texto(e.nombre),
       marca: texto(e.marca),
       base: e.base === "100g" ? "100g" : "porcion",
-      porcionG: num(e.porcion_g, 2000) || null,
-      valores: { kcal: num(e.kcal, 5000), p: num(e.proteinas, 500), c: num(e.carbohidratos, 500), g: num(e.grasas, 500) },
+      porcionG: numOpcional(e.porcion_g, 2000) || null,
+      valores: { kcal: numOpcional(e.kcal, 5000), p: numOpcional(e.proteinas, 500), c: numOpcional(e.carbohidratos, 500), g: numOpcional(e.grasas, 500) },
     });
   }
   const { es_comida: esComida, titulo, alimentos } = r.respuesta;

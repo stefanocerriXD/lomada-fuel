@@ -22,7 +22,10 @@ async function abrir(reconocer) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   await ctx.route(/\/api\//, (r) => r.fulfill({ json: { disponible: false, conectado: false, resultados: [] } }));
   await ctx.route(/\/api\/alimentos\?codigo=/, (r) => r.fulfill({ json: { alimento: null } }));
-  await ctx.route(/\/api\/reconocer/, (r) => r.fulfill(reconocer));
+  // Varias respuestas: una por foto, en orden.
+  const respuestas = [].concat(reconocer);
+  let vez = 0;
+  await ctx.route(/\/api\/reconocer/, (r) => r.fulfill(respuestas[Math.min(vez++, respuestas.length - 1)]));
   await ctx.addInitScript(() => localStorage.setItem("comidas-bienvenida", "vista"));
   const p = await ctx.newPage();
   p.on("pageerror", (e) => errores.push(e.message));
@@ -42,7 +45,7 @@ await p.getByLabel("Número de código de barras").fill("7790000000017");
 await p.getByRole("button", { name: "Buscar" }).click();
 const faltante = p.locator(".etiqueta-accion");
 await faltante.waitFor();
-assert.match(await faltante.innerText(), /7790000000017 no está en la base/);
+assert.match(await p.locator(".producto-nuevo").innerText(), /7790000000017 no está en la base/);
 await p.screenshot({ path: "capturas/etiqueta-falta.png" });
 await faltante.locator("input").setInputFiles("archivos/etiqueta.png");
 await p.locator(".leyendo-etiqueta").waitFor();
@@ -51,7 +54,7 @@ const valor = (n) => p.getByLabel(n, { exact: true }).inputValue();
 console.log("leído:", await valor("Calorías"), await valor("Proteínas (g)"), await valor("Carbos (g)"), await valor("Grasas (g)"), "porción", await p.locator(".porcion-etiqueta input").inputValue());
 assert.equal(await valor("Calorías"), "120");
 assert.equal(await valor("Carbos (g)"), "21");
-assert.equal(await valor("Proteínas (g)"), "2.4");
+assert.equal(await valor("Proteínas (g)"), "2,4");
 assert.equal(await valor("Grasas (g)"), "3");
 assert.equal(await p.locator(".porcion-etiqueta input").inputValue(), "30");
 assert.equal(await p.getByRole("radio", { name: "Por porción" }).getAttribute("aria-checked"), "true");
@@ -95,12 +98,56 @@ await ctx.close();
 ({ ctx, p } = await abrir({ json: { esEtiqueta: false, base: "porcion", porcionG: null, valores: { kcal: 0, p: 0, c: 0, g: 0 } } }));
 await p.getByLabel("Foto de la tabla nutricional").setInputFiles("archivos/foto-original.jpg");
 await p.locator(".form-etiqueta").waitFor({ timeout: 120000 });
-assert.match(await p.locator(".form-etiqueta .nota").innerText(), /No pudimos leer la tabla/);
+assert.match(await p.locator(".form-etiqueta .nota").first().innerText(), /No pudimos leer la foto/);
 await p.getByRole("radio", { name: "Por porción" }).click();
 await p.getByLabel("Nombre del producto").fill("Barrita");
 await p.getByLabel("Calorías", { exact: true }).fill("90");
 await p.getByRole("button", { name: "Agregar", exact: true }).click();
 assert.match(await p.locator(".form-etiqueta .error").innerText(), /cuántos gramos es la porción/);
+await ctx.close();
+
+// 4) Código que no está → "Cargarlo a mano": números con coma, sin calorías (se calculan con las macros).
+({ ctx, p } = await abrir({ status: 503, json: { error: "no" } }));
+await p.getByLabel("Número de código de barras").fill("7790000000031");
+await p.getByRole("button", { name: "Buscar" }).click();
+await p.locator(".producto-nuevo").waitFor();
+await p.screenshot({ path: "capturas/etiqueta-dos-caminos.png" });
+await p.getByRole("button", { name: /Cargarlo a mano/ }).click();
+await p.locator(".form-etiqueta").waitFor();
+await p.getByRole("button", { name: "Agregar", exact: true }).click();
+assert.match(await p.locator(".form-etiqueta .error").innerText(), /Ponele un nombre/, "avisa qué falta en vez de trabarse");
+await p.getByLabel("Nombre del producto").fill("Barrita proteica");
+await p.getByRole("radio", { name: "Por porción" }).click();
+await p.getByLabel("Porción (g o ml)").fill("45");
+await p.getByLabel("Proteínas (g)", { exact: true }).fill("20");
+await p.getByLabel("Carbos (g)", { exact: true }).fill("15,5");
+await p.getByLabel("Grasas (g)", { exact: true }).fill("7");
+assert.match(await p.locator(".etiqueta-resumen").innerText(), /205 kcal la porción de 45 g[\s\S]*calculamos con las macros/);
+await p.screenshot({ path: "capturas/etiqueta-a-mano.png" });
+await p.getByRole("button", { name: "Agregar", exact: true }).click();
+await p.waitForTimeout(500);
+assert.match(await p.locator(".fila-item").first().innerText(), /Barrita proteica[\s\S]*205 kcal/);
+await ctx.close();
+
+// 5) La tabla no trae la proteína y el frente del envase sí: "Sumá otra foto" la completa sin pisar lo demás.
+({ ctx, p } = await abrir([
+  { json: { esEtiqueta: true, nombre: "Yogur bebible", marca: "", base: "porcion", porcionG: 200, valores: { kcal: 150, p: null, c: 22, g: 3 } } },
+  { json: { esEtiqueta: true, nombre: "", marca: "Marca Y", base: "porcion", porcionG: null, valores: { kcal: null, p: 12, c: null, g: null } } },
+]));
+await p.getByLabel("Número de código de barras").fill("7790000000048");
+await p.getByRole("button", { name: "Buscar" }).click();
+await p.locator(".etiqueta-accion input").setInputFiles("archivos/etiqueta.png");
+await p.locator(".form-etiqueta").waitFor();
+assert.equal(await valor("Proteínas (g)"), "", "lo que no figura queda vacío, no en 0");
+await p.getByLabel("Sumar otra foto del envase").setInputFiles("archivos/foto-original.jpg");
+await p.waitForTimeout(1200);
+assert.equal(await valor("Proteínas (g)"), "12");
+assert.equal(await valor("Calorías"), "150", "no pisa lo que ya estaba");
+assert.equal(await p.getByLabel("Marca").inputValue(), "Marca Y");
+assert.match(await p.locator(".form-etiqueta [role=status]").first().innerText(), /Sumamos proteínas/);
+await p.getByRole("button", { name: "Agregar", exact: true }).click();
+await p.waitForTimeout(500);
+assert.match(await p.locator(".fila-item").first().innerText(), /Yogur bebible[\s\S]*150 kcal/);
 await ctx.close();
 
 assert.deepEqual(errores, []);

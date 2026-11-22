@@ -2820,3 +2820,14 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .etiqueta-estado.cocido { background: var(--superficie-2); color: var(--tinta-2); }
 .etiqueta-estado.crudo { background: var(--acento-suave, var(--superficie-2)); color: var(--sobre-acento-suave, var(--tinta)); }
 .resultado-datos .etiqueta-estado { margin: 0 6px 0 0; vertical-align: 1px; }
+
+/* Producto nuevo (código que no está): foto o a mano, y el formulario con vista previa */
+.producto-nuevo { display: grid; gap: 10px; }
+.producto-nuevo-titulo { display: grid; gap: 2px; margin: 0; }
+.producto-nuevo-titulo small { color: var(--tinta-2); }
+.producto-nuevo .tarjeta.accion { text-align: left; }
+.form-etiqueta .campo-error { outline: 2px solid var(--peligro, #c62828); outline-offset: 1px; }
+.etiqueta-resumen { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--superficie-2); font-size: 0.86rem; line-height: 1.45; }
+.etiqueta-resumen small { display: block; color: var(--tinta-2); }
+.etiqueta-enlace.ocupado { opacity: 0.7; }
+.girando { animation: girar-marco 0.9s linear infinite; }
