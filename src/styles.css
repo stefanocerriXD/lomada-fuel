@@ -2831,3 +2831,19 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .etiqueta-resumen small { display: block; color: var(--tinta-2); }
 .etiqueta-enlace.ocupado { opacity: 0.7; }
 .girando { animation: girar-marco 0.9s linear infinite; }
+
+/* Informe: cada macro contra su meta (cuánto faltó o cuánto te pasaste) */
+.hp-macro-estado, .informe-macro-estado { font-weight: 800; }
+.hp-macro.justo .hp-macro-estado { color: #7be0a0; }
+.hp-macro.falta .hp-macro-estado { color: #ffd27a; }
+.hp-macro.pasado .hp-macro-estado { color: #ff9a8a; }
+.hp-macro.pasado .hp-macro-barra { box-shadow: inset 0 0 0 2px #ff9a8a; }
+.informe-macro-barra { height: 6px; margin: 4px 0 2px; overflow: hidden; border-radius: 6px; background: var(--borde); }
+.informe-macro-barra i { display: block; height: 100%; border-radius: 6px; }
+.informe-macro.macro-p .informe-macro-barra i { background: #3f7fd9; }
+.informe-macro.macro-c .informe-macro-barra i { background: #d99a1e; }
+.informe-macro.macro-g .informe-macro-barra i { background: #c04aa0; }
+.informe-macro.justo .informe-macro-estado { color: var(--exito, #1e8a4c); }
+.informe-macro.falta .informe-macro-estado { color: var(--aviso, #b26a00); }
+.informe-macro.pasado .informe-macro-estado { color: var(--peligro, #c62828); }
+.informe-macro.pasado .informe-macro-barra { box-shadow: inset 0 0 0 1.5px var(--peligro, #c62828); }
