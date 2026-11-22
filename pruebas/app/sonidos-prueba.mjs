@@ -14,9 +14,17 @@ await ctx.addInitScript(() => {
 const p = await ctx.newPage();
 p.on("pageerror", (e) => errores.push(e.message));
 await p.goto("http://localhost:5199"); await p.waitForTimeout(1600);
-await p.mouse.click(5, 300); // primer toque: destraba
-await p.waitForTimeout(200);
+await p.mouse.click(5, 300); // primer toque: destraba y suena la bienvenida
+await p.waitForTimeout(300);
 const notas = () => p.evaluate(() => window.__notas);
+const bienvenidas = () => p.evaluate(() => window.__bienvenidas || 0);
+assert.equal(await bienvenidas(), 1, "suena la bienvenida con el primer toque");
+await p.mouse.click(5, 300);
+await p.waitForTimeout(300);
+assert.equal(await bienvenidas(), 1, "solo una vez");
+await p.reload(); await p.waitForTimeout(1600);
+await p.mouse.click(5, 300); await p.waitForTimeout(300);
+assert.equal(await bienvenidas(), 0, "al recargar en la misma sesión no se repite");
 const tarjeta = p.locator(".registros-dia");
 await tarjeta.scrollIntoViewIfNeeded();
 let antes = await notas();
@@ -32,6 +40,12 @@ await p.locator("[aria-label='Subir comida']").last().click(); await p.waitForTi
 console.log("pop:", (await notas()) - antes);
 assert.ok((await notas()) > antes, "suena el +");
 await p.keyboard.press("Escape"); await p.waitForTimeout(500);
+// Las pestañas de abajo suenan al tocarlas.
+for (const nombre of ["Grupo", "Logros", "Resumen"]) {
+  antes = await notas();
+  await p.locator(".barra-inferior").getByRole("button", { name: nombre }).click(); await p.waitForTimeout(400);
+  assert.ok((await notas()) > antes, `suena la pestaña ${nombre}`);
+}
 // Apagar en Ajustes
 await p.getByRole("button", { name: "Ajustes" }).last().click(); await p.waitForTimeout(500);
 await p.getByRole("button", { name: /Apariencia y sonidos/ }).click(); await p.waitForTimeout(400);
