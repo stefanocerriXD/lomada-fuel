@@ -2830,3 +2830,9 @@ button.planeada-datos { padding: 0; background: none; color: inherit; text-align
 .planeadas .boton-icono.chico { width: 34px; height: 34px; }
 .planeadas-titulo { flex-wrap: wrap; row-gap: 2px; }
 .planeadas-titulo small { white-space: normal; }
+
+/* Fotos fijadas en el perfil: arriba de todo, con el pin a la vista */
+.galeria li { position: relative; }
+.galeria .fijar { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgb(0 0 0 / 45%); color: #fff; opacity: 0.85; }
+.galeria .fijar.activo { background: var(--acento); color: var(--sobre-acento); opacity: 1; }
+.galeria li.fijada > button:first-child { box-shadow: inset 0 0 0 2px var(--acento); }

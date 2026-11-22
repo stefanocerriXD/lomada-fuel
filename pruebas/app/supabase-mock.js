@@ -183,6 +183,8 @@ class Consulta {
   }
 }
 
+// SQL 065: fotos fijadas en el perfil.
+if (window.__con065) db.comidas.forEach((x) => { x.fijada_en = (window.__fijadas || {})[x.id] || null; });
 // SQL 062: comidas planeadas (y una de Nahuel que todavía no comió, que no se tiene que ver).
 if (window.__con062) {
   db.comidas.forEach((x) => { x.planeada = false; });
