@@ -2,7 +2,7 @@ import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import { marcaDelNombre } from "../lib/multas.js";
 import { MarcaFiesta } from "../componentes/MarcaFiesta.jsx";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Award, Ban, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, X } from "lucide-react";
+import { Ban, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
@@ -16,9 +16,8 @@ import Grabador, { extensionAudio } from "../componentes/Grabador.jsx";
 import IconoComida from "../componentes/IconoComida.jsx";
 import VerReceta, { useReceta } from "../componentes/VerReceta.jsx";
 import { totalesDeReceta } from "../lib/recetasPropias.js";
-import { nombreDeCodigo } from "../lib/medallas.js";
 import ImagenZoom from "../componentes/ImagenZoom.jsx";
-import { fiu } from "../lib/sonidos.js";
+import { fiu, recibido } from "../lib/sonidos.js";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
@@ -260,18 +259,6 @@ function RecetaEnChat({ id, onVer }) {
   );
 }
 
-// Los logros desde el nivel 2 aparecen en el chat como una línea chica. Solo los ganados desde que existe esto.
-const LOGROS_EN_CHAT_DESDE = "2026-11-11";
-function LineaLogro({ logro, perfil, onPerfil }) {
-  const nivel = logro.codigo.split(":")[1];
-  return (
-    <motion.button type="button" className="chat-logro" onClick={() => onPerfil(logro.usuario_id)} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-      <Award size={14} aria-hidden="true" />
-      <span><b>{perfil.nombre}</b> llegó a <em>{nombreDeCodigo(logro.codigo)}</em> · nivel {nivel}</span>
-    </motion.button>
-  );
-}
-
 // Memorizado: escribir o recibir algo no redibuja todos los mensajes, solo los que cambian.
 const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perfil, perfiles, foto, yoId, reacciones, onVerReacciones, onPerfil, onAcciones, onResponder, onZoom, onVerReceta }) {
   const { marcado, eventos } = useToqueLargo(() => !m.eliminado_en && onAcciones(m));
@@ -286,12 +273,12 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
       {dia && <p className="chat-dia"><span>{nombreDia(dia)}</span></p>}
       <motion.div
         id={`m-${m.id}`}
-        className={`${propio ? "chat-fila propia" : "chat-fila"}${m.pendiente ? " pendiente" : ""}`}
+        className={`${propio ? "chat-fila propia" : "chat-fila"}${inicio ? " inicio" : ""}${m.pendiente ? " pendiente" : ""}`}
         initial={{ opacity: 0, y: 10, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.16 }}
       >
-        {!propio && (fin ? <button className="chat-avatar" onClick={() => onPerfil(m.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}><Avatar perfil={perfil} tam={30} /></button> : <span className="chat-hueco" />)}
+        {!propio && (fin ? <button className="chat-avatar" onClick={() => onPerfil(m.usuario_id)} aria-label={`Ver perfil de ${perfil?.nombre || "Amigo"}`}><Avatar perfil={perfil} tam={28} /></button> : <span className="chat-hueco" />)}
         <div className="chat-columna">
           <motion.span className="deslizar-responder" style={{ opacity: flecha, scale: flecha }} aria-hidden="true"><Reply size={18} /></motion.span>
           <motion.div
@@ -462,14 +449,8 @@ function VerReacciones({ ver, onCerrar }) {
 export default function Chat({ avisar }) {
   const {
     castigo, usuario, perfiles, fotos, mensajes, mensajesListos: cargado, agregarMensaje, quitarMensaje, emitirChat, respuesta, responder, recetaAlChat, mandarRecetaAlChat,
-    lecturas, lecturasListas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, abrirPerfil, extras,
+    lecturas, lecturasListas, marcarLeido, firmarRutas, avisarActividad, reaccionesMensajes, abrirPerfil,
   } = useDatos();
-  const logrosChat = useMemo(
-    () => (extras.medallas || [])
-      .filter((m) => m.ganada_en && m.ganada_en >= LOGROS_EN_CHAT_DESDE && Number(String(m.codigo).split(":")[1]) >= 2 && perfiles[m.usuario_id] && nombreDeCodigo(m.codigo))
-      .sort((a, b) => (a.ganada_en < b.ganada_en ? -1 : 1)),
-    [extras.medallas, perfiles],
-  );
   const reaccionesPorMensaje = useMemo(() => {
     const mapa = {};
     for (const r of reaccionesMensajes) (mapa[r.mensaje_id] ||= []).push(r);
@@ -491,6 +472,14 @@ export default function Chat({ avisar }) {
 
   const linea = mensajes.slice(-MAXIMO_EN_PANTALLA);
   const ultimo = linea[linea.length - 1];
+  // Un mensaje nuevo de otro mientras mirás el chat: suena la burbuja (lo que ya estaba al entrar, no).
+  const ultimoAjeno = useRef(undefined);
+  useEffect(() => {
+    if (!cargado) return;
+    const ajeno = [...linea].reverse().find((m) => m.usuario_id && m.usuario_id !== usuario.id);
+    if (ultimoAjeno.current !== undefined && ajeno && ajeno.id !== ultimoAjeno.current) recibido();
+    ultimoAjeno.current = ajeno?.id || null;
+  }, [cargado, linea, usuario.id]);
 
   // Al entrar, el chat retoma donde lo dejaste: en el primer mensaje que no leíste. Si leíste todo, abajo de todo.
   // undefined = todavía no se sabe; null = nada sin leer.
@@ -534,7 +523,7 @@ export default function Chat({ avisar }) {
     }
     // Lo nuevo baja la lista si estabas abajo o si lo mandaste vos; si estás leyendo más arriba, no te mueve.
     if (abajo.current || ultimo?.usuario_id === usuario.id) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [linea.length, logrosChat.length, corte]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [linea.length, corte]); // eslint-disable-line react-hooks/exhaustive-deps
   const alDesplazar = useCallback(() => {
     const el = lista.current;
     if (el) abajo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
@@ -741,18 +730,15 @@ export default function Chat({ avisar }) {
           const nuevoDia = !previo || fechaLocal(new Date(previo.creado_en)) !== dia;
           const separador = nuevoDia && <p className="chat-dia"><span>{nombreDia(dia)}</span></p>;
           const fotoDe = m.adjunto_path ? fotos[m.adjunto_path] : undefined;
-          // Los logros que se ganaron entre este mensaje y el siguiente.
-          const logros = logrosChat.filter((l) => l.ganada_en >= m.creado_en && (!siguiente || l.ganada_en < siguiente.creado_en));
-          const conLogros = (elemento) => (
+          const conCorte = (elemento) => (
             <Fragment key={m.id}>
               {corte?.id === m.id && <p className="chat-no-leidos"><span>{corte.n === 1 ? "1 mensaje sin leer" : `${corte.n} mensajes sin leer`}</span></p>}
               {elemento}
-              {logros.map((l) => <LineaLogro key={`${l.usuario_id}-${l.codigo}`} logro={l} perfil={perfiles[l.usuario_id]} onPerfil={abrirPerfil} />)}
             </Fragment>
           );
 
           if (!m.usuario_id) {
-            return conLogros(
+            return conCorte(
               <div className="chat-grupo">
                 {separador}
                 <motion.article id={`m-${m.id}`} className="burbuja-bot" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
@@ -768,7 +754,7 @@ export default function Chat({ avisar }) {
           }
 
           const mismoAutor = (x) => x && x.usuario_id === m.usuario_id;
-          return conLogros(
+          return conCorte(
             <Mensaje
               m={m}
               propio={m.usuario_id === usuario.id}

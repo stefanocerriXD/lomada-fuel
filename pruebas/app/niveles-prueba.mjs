@@ -58,17 +58,14 @@ await p.waitForTimeout(400);
 if (await p.locator(".visor-foto").count()) await p.getByRole("button", { name: /Cerrar/ }).first().click();
 await p.waitForTimeout(400);
 
-// Logros en el chat
+// Los logros ya no aparecen en el chat.
 await p.getByRole("button", { name: "Grupo", exact: true }).locator("visible=true").first().click();
-const linea = p.locator(".chat-logro");
-await linea.first().waitFor();
-const textos = await linea.allInnerTexts();
-console.log(textos);
-assert.equal(textos.length, 1, "solo desde el nivel 2 y solo lo nuevo");
-assert.ok(/Juan llegó a .+ · nivel 2/.test(textos[0].replace(/\s+/g, " ")));
-await p.waitForTimeout(400);
+await p.locator(".chat-mensajes").waitFor();
+await p.waitForTimeout(600);
+assert.equal(await p.locator(".chat-logro").count(), 0, "sin logros en el chat");
+assert.doesNotMatch(await p.locator(".chat-mensajes").innerText(), /llegó a .+ · nivel/);
 await p.locator(".chat-mensajes").screenshot({ path: "capturas/nv-chat.png" });
 
 assert.deepEqual(errores, []);
 await b.close();
-console.log("marcos, logros en el chat y día por comida: pruebas pasadas");
+console.log("marcos, chat sin logros y día por comida: pruebas pasadas");

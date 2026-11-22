@@ -23,7 +23,7 @@ import Progreso from "./Progreso.jsx";
 import Visor from "../componentes/Visor.jsx";
 import CompartirInstagram from "../componentes/CompartirInstagram.jsx";
 import { createPortal } from "react-dom";
-import { clink } from "../lib/sonidos.js";
+import { borrado, clink, copiado } from "../lib/sonidos.js";
 
 export default function Resumen({ onCargar, onImportar, onEditarCuerpo, onFiesta, onDia, avisar }) {
   const [modo, setModo] = useState("dia");
@@ -436,6 +436,7 @@ async function borrarComidaPropia(c, cargarComidas, avisar) {
   if (archivos.length && !c.grupo_comida) await supabase.storage.from("fotos").remove(archivos);
   await cargarComidas().catch(() => {});
   vibrar(12);
+  borrado();
   avisar("Comida borrada");
 }
 
@@ -516,7 +517,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar, onCargar }) {
                           </button>
                         )}
                         {propio && sePuedeCopiar(c) && (
-                          <button type="button" className="boton-icono chico copiar-comida" onClick={() => { copiarComida(c); vibrar(10); avisar?.("Copiada. Pegala en el día que quieras"); }} aria-label={`Copiar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
+                          <button type="button" className="boton-icono chico copiar-comida" onClick={() => { copiarComida(c); vibrar(10); copiado(); avisar?.("Copiada. Pegala en el día que quieras"); }} aria-label={`Copiar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                             <Copy size={16} />
                           </button>
                         )}

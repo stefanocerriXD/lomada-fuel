@@ -1822,10 +1822,6 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .marcos-flecha { color: var(--tinta-3); }
 
 /* Logros en el chat */
-.chat-logro { display: flex; align-items: center; justify-content: center; gap: 6px; align-self: center; max-width: 92%; min-height: 36px; margin: 2px auto; padding: 4px 12px; border-radius: 99px; background: color-mix(in srgb, #e0a800 12%, transparent); color: var(--tinta-2); font-family: Georgia, "Times New Roman", serif; font-size: 0.8rem; font-style: italic; text-align: center; }
-.chat-logro svg { flex: none; color: #b07d00; }
-.chat-logro b { font-family: var(--titulo); font-style: normal; font-weight: 700; color: var(--tinta); }
-.chat-logro em { font-weight: 700; color: var(--tinta); }
 
 /* El día de cada uno, por comida */
 .dia-por-comida { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
@@ -2847,3 +2843,45 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .informe-macro.falta .informe-macro-estado { color: var(--aviso, #b26a00); }
 .informe-macro.pasado .informe-macro-estado { color: var(--peligro, #c62828); }
 .informe-macro.pasado .informe-macro-barra { box-shadow: inset 0 0 0 1.5px var(--peligro, #c62828); }
+
+/* Chat como WhatsApp: burbujas chicas con colita, hora en la misma línea, letra de 16 px y la barra de abajo finita */
+:root { --wa-propia: #d9fdd3; --wa-tinta-propia: #111b21; --wa-otra: #ffffff; --wa-hora: #667781; --wa-hora-propia: #667781; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema]) { --wa-propia: #005c4b; --wa-tinta-propia: #e9edef; --wa-otra: #202c33; --wa-hora: #8696a0; --wa-hora-propia: rgb(233 237 239 / 60%); }
+}
+:root[data-tema="oscuro"], :root[data-tema="negro"] { --wa-propia: #005c4b; --wa-tinta-propia: #e9edef; --wa-otra: #202c33; --wa-hora: #8696a0; --wa-hora-propia: rgb(233 237 239 / 60%); }
+:root[data-tema="negro"] { --wa-otra: #1f1f1f; }
+
+.chat-mensajes { gap: 2px; padding: 4px 9px 4px 2px; }
+.chat-fila { gap: 6px; max-width: 90%; }
+.chat-fila.inicio { margin-top: 7px; }
+.chat-hueco { width: 28px; }
+.chat-avatar { width: 30px; height: 30px; margin: 0 -1px; }
+.burbuja { position: relative; padding: 6px 8px 7px 9px; border-radius: 8px; background: var(--wa-otra); color: var(--tinta); font-size: 16px; line-height: 1.32; box-shadow: 0 1px 0.5px rgb(11 20 26 / 13%); }
+.propia .burbuja { border-radius: 8px; background: var(--wa-propia); color: var(--wa-tinta-propia); }
+.burbuja p { margin: 0; }
+.burbuja .autor { display: block; margin-bottom: 2px; font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+.burbuja time { display: block; margin-top: 2px; color: var(--wa-hora); font-size: 11px; line-height: 1; text-align: right; white-space: nowrap; }
+.propia .burbuja time { color: var(--wa-hora-propia); opacity: 1; }
+/* La hora va en el renglón del texto (abajo a la derecha), con un hueco reservado para que no se pise. */
+.burbuja:has(> p + time) > p:last-of-type::after { content: ""; display: inline-block; width: 44px; height: 1px; }
+.burbuja:has(> p + time) > time { position: absolute; right: 8px; bottom: 5px; margin: 0; }
+/* La colita, solo en el primer mensaje de cada tanda. */
+.chat-fila.inicio .burbuja:not(.burbuja-sticker):not(.eliminada) { border-top-left-radius: 0; }
+.chat-fila.inicio.propia .burbuja:not(.burbuja-sticker):not(.eliminada) { border-top-left-radius: 8px; border-top-right-radius: 0; }
+.chat-fila.inicio .burbuja:not(.burbuja-sticker):not(.eliminada)::before { content: ""; position: absolute; top: 0; left: -8px; width: 8px; height: 13px; background: inherit; clip-path: polygon(100% 0, 0 0, 100% 100%); }
+.chat-fila.inicio.propia .burbuja:not(.burbuja-sticker):not(.eliminada)::before { left: auto; right: -8px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.chat-fila.propia .burbuja-cita { background: rgb(0 0 0 / 7%); border-left-color: #06cf9c; }
+.burbuja-cita { background: rgb(0 0 0 / 5%); }
+.chat-dia { margin: 10px 0 4px; }
+.chat-dia span { padding: 5px 12px; border-radius: 8px; background: var(--wa-otra); box-shadow: 0 1px 0.5px rgb(11 20 26 / 13%); font-size: 12.5px; font-weight: 500; text-transform: none; }
+.visto { margin: 2px 4px 1px; font-size: 11px; }
+/* Reacciones chiquitas, colgando de la burbuja. */
+.reacciones-mensaje { margin: -5px 8px 2px; gap: 3px; }
+.reacciones-mensaje button { min-width: 0; min-height: 26px; padding: 0 7px; border: 1px solid var(--borde); box-shadow: none; font-size: 14px; }
+/* La barra de abajo: íconos sin caja, campo redondeado y el botón redondo. */
+.chat-enviar { align-items: center; gap: 4px; }
+.chat-enviar .boton-icono { width: 38px; height: 38px; background: transparent; box-shadow: none; color: var(--tinta-2); }
+.chat-enviar input { height: 40px; min-height: 40px; padding: 0 14px; border: 1px solid var(--borde); border-radius: 20px; background: var(--superficie); box-shadow: none; font-size: 16px; }
+.chat-enviar .boton-enviar { width: 42px; height: 42px; border-radius: 50%; }
+.chat-enviar .boton-enviar.microfono { background: var(--acento); color: var(--sobre-acento); }

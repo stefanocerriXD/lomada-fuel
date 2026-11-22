@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { borrado, reaccion } from "../lib/sonidos.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Lock, Maximize2, PenLine, Pencil, Reply, Share2, SmilePlus, Star, Trash2, Users } from "lucide-react";
@@ -56,7 +57,7 @@ export function Reacciones({ comidaId, avisar }) {
                 className={mias.has(e) ? "mia" : undefined}
                 aria-pressed={mias.has(e)}
                 aria-label={`Reaccionar con ${e}`}
-                onClick={() => { alternarReaccion(comidaId, e); vibrar(8); setEligiendo(false); }}
+                onClick={() => { if (!mias.has(e)) reaccion(); alternarReaccion(comidaId, e); vibrar(8); setEligiendo(false); }}
               >
                 {e}
               </motion.button>
@@ -153,6 +154,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
     // La foto de una comida grupal la siguen usando los demás.
     if ((comida.foto_path || comida.postre_foto) && !comida.grupo_comida) await supabase.storage.from("fotos").remove([comida.foto_path, ...(comida.fotos_extra || []), comida.postre_foto].filter(Boolean));
     await cargarComidas();
+    borrado();
     avisar("Comida borrada");
   }
 
