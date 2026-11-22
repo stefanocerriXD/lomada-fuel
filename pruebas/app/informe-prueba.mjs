@@ -3,12 +3,20 @@ import { chromium } from "playwright-core";
 const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
 
+// Cada macro contra su meta: cuánto faltó, cuánto se pasó, o en la meta (±5 %).
+const { contraMeta } = await import("../../src/lib/metaMacro.js");
+assert.deepEqual(contraMeta(150, 180), { estado: "falta", texto: "Faltaron 30 g de 180 g", lleno: 83, meta: 180 });
+assert.deepEqual(contraMeta(90, 70), { estado: "pasado", texto: "Te pasaste 20 g (meta 70 g)", lleno: 100, meta: 70 });
+assert.equal(contraMeta(178, 180).estado, "justo");
+assert.equal(contraMeta(100, null), null, "sin plan, sin meta");
+
 // Corre el reloj a una fecha sin frenar las animaciones.
-async function abrir(fecha, ruta = "/") {
+async function abrir(fecha, ruta = "/", flags = {}) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, timezoneId: "America/Argentina/Buenos_Aires" });
   await ctx.route(/\/api\//, (r) => r.fulfill({ json: { disponible: false, conectado: false, resultados: [] } }));
-  await ctx.addInitScript((destino) => {
+  await ctx.addInitScript(({ destino, flags }) => {
     localStorage.setItem("comidas-bienvenida", "vista");
+    Object.assign(window, flags);
     const Real = Date;
     const corrimiento = new Real(destino).getTime() - Real.now();
     class Corrido extends Real {
@@ -16,7 +24,7 @@ async function abrir(fecha, ruta = "/") {
       static now() { return Real.now() + corrimiento; }
     }
     window.Date = Corrido;
-  }, fecha);
+  }, { destino: fecha, flags });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => errores.push(e.message));
   await p.goto(`http://localhost:5199${ruta}`);
@@ -89,6 +97,21 @@ assert.equal(await p.locator(".cartel-informe").count(), 0);
 await p.reload();
 await p.waitForTimeout(1500);
 assert.equal(await p.locator(".cartel-informe").count(), 0);
+await ctx.close();
+
+// 4) Con plan: en la historia, cada macro dice cuánto faltó o cuánto te pasaste de la meta.
+({ ctx, p } = await abrir("2026-11-15T20:30:00-03:00", "/?vista=informe", { __plan: true }));
+const conPlan = p.getByRole("dialog", { name: "Tu informe semanal" });
+await conPlan.waitFor({ timeout: 8000 });
+for (let n = 0; n < 12 && !(await conPlan.getByText("Tus macros por día").count()); n += 1) {
+  const caja = await conPlan.boundingBox();
+  await p.mouse.click(caja.x + caja.width * 0.8, caja.y + caja.height / 2);
+  await p.waitForTimeout(700);
+}
+await p.waitForTimeout(1200);
+const textoMacros = await conPlan.innerText();
+assert.match(textoMacros, /Proteínas[\s\S]*(Faltaron|Te pasaste|En la meta)[\s\S]*Carbos[\s\S]*(Faltaron|Te pasaste|En la meta)[\s\S]*Grasas[\s\S]*(Faltaron|Te pasaste|En la meta)/);
+await p.screenshot({ path: "capturas/informe-macros-meta.png" });
 await ctx.close();
 
 // 3) Un miércoles no hay cartel.

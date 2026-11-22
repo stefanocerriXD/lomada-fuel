@@ -35,7 +35,8 @@ export function useInforme(activo) {
   return useMemo(() => {
     if (!activo) return null;
     const plan = salud ? calcularPlan(salud) : null;
-    return armarInforme({ comidas, usuarioId: usuario.id, meta: yo.meta_calorias, metaProteina: plan?.proteinas || null, agua: extras.agua, perfiles });
+    const metasMacros = plan ? { p: plan.proteinas, c: plan.carbohidratos, g: plan.grasas } : null;
+    return armarInforme({ comidas, usuarioId: usuario.id, meta: yo.meta_calorias, metaProteina: plan?.proteinas || null, metasMacros, agua: extras.agua, perfiles });
   }, [activo, comidas, usuario.id, yo.meta_calorias, salud, extras.agua, perfiles]);
 }
 

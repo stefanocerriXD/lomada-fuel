@@ -5,6 +5,7 @@ import { ArrowDownRight, ArrowUpRight, Award, ChevronRight, Droplets, Flame, Lis
 import { useDatos } from "../lib/datos.jsx";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { armarInforme, semanaDelInforme } from "../lib/informe.js";
+import { contraMeta } from "../lib/metaMacro.js";
 import { fechaLocal, nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
 import { Hoja, Numero, vibrar } from "./Base.jsx";
@@ -244,20 +245,24 @@ function Pantalla({ id, i, nombre, onCerrar, onLista }) {
     );
   }
   if (id === "macros") {
-    const filas = [["Proteínas", "p", i.actual.p, i.metaProteina], ["Carbos", "c", i.actual.c], ["Grasas", "g", i.actual.g]];
+    const filas = [["Proteínas", "p", i.actual.p], ["Carbos", "c", i.actual.c], ["Grasas", "g", i.actual.g]];
     return (
       <div className="hp">
         <motion.p className="hp-chico" {...aparecer(0)}>Tus macros por día</motion.p>
         <motion.h2 className="hp-titulo chico" {...aparecer(1)}>{i.metaProteina ? (i.actual.p >= i.metaProteina * 0.95 ? "La proteína, al día 💪" : "Te faltó un poco de proteína") : "Así repartiste las calorías"}</motion.h2>
         <div className="hp-macros">
-          {filas.map(([texto, k, valor, meta], n) => (
-            <motion.div key={k} className={`hp-macro macro-${k}`} {...aparecer(2 + n)}>
-              <span>{texto}</span>
-              <strong><Contador valor={valor} /> g</strong>
-              <div className="hp-macro-barra"><motion.i initial={{ width: 0 }} animate={{ width: `${i.reparto[k]}%` }} transition={{ delay: 0.5 + n * 0.12, duration: 0.9, ease: [0.16, 1, 0.3, 1] }} /></div>
-              <small>{i.reparto[k]}% de las kcal{meta ? ` · meta ${meta} g` : ""}</small>
-            </motion.div>
-          ))}
+          {filas.map(([texto, k, valor], n) => {
+            // Con meta: la barra se llena hasta la meta y dice cuánto faltó o cuánto te pasaste. Sin plan, el reparto de las kcal.
+            const c = contraMeta(valor, i.metas?.[k]);
+            return (
+              <motion.div key={k} className={`hp-macro macro-${k}${c ? ` ${c.estado}` : ""}`} {...aparecer(2 + n)}>
+                <span>{texto}</span>
+                <strong><Contador valor={valor} /> g</strong>
+                <div className="hp-macro-barra"><motion.i initial={{ width: 0 }} animate={{ width: `${c ? c.lleno : i.reparto[k]}%` }} transition={{ delay: 0.5 + n * 0.12, duration: 0.9, ease: [0.16, 1, 0.3, 1] }} /></div>
+                <small>{c ? <><b className="hp-macro-estado">{c.texto}</b> · {i.reparto[k]}% de las kcal</> : `${i.reparto[k]}% de las kcal`}</small>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     );
@@ -369,14 +374,18 @@ function Contenido({ informe: i }) {
       </section>
 
       <section className="informe-macros">
-        {[["Proteínas", "p", i.actual.p, i.previo.p, i.metaProteina], ["Carbos", "c", i.actual.c, i.previo.c], ["Grasas", "g", i.actual.g, i.previo.g]].map(([nombre, k, valor, antes, meta]) => (
-          <div key={k} className={`informe-macro macro-${k}`}>
+        {[["Proteínas", "p", i.actual.p, i.previo.p], ["Carbos", "c", i.actual.c, i.previo.c], ["Grasas", "g", i.actual.g, i.previo.g]].map(([nombre, k, valor, antes]) => {
+          const c = contraMeta(valor, i.metas?.[k]);
+          return (
+          <div key={k} className={`informe-macro macro-${k}${c ? ` ${c.estado}` : ""}`}>
             <span>{nombre}</span>
             <strong>{valor} g</strong>
-            <small>{i.reparto[k]}% de las kcal{meta ? ` · meta ${meta} g` : ""}</small>
+            {c && <div className="informe-macro-barra" aria-hidden="true"><i style={{ width: `${c.lleno}%` }} /></div>}
+            <small>{c ? <b className="informe-macro-estado">{c.texto}</b> : `${i.reparto[k]}% de las kcal`}</small>
             {i.previo.dias ? <small className="informe-cambio">{valor - antes >= 0 ? "+" : "−"}{Math.abs(valor - antes)} g</small> : null}
           </div>
-        ))}
+          );
+        })}
       </section>
 
       {(i.bien.length > 0 || i.mejorar.length > 0) && (

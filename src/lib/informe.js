@@ -34,7 +34,7 @@ function resumenDe(porDia) {
   return { dias: cargados.length, kcal: Math.round(suma("kcal") / n), p: Math.round(suma("p") / n), c: Math.round(suma("c") / n), g: Math.round(suma("g") / n) };
 }
 
-export function armarInforme({ comidas, usuarioId, meta, metaProteina, agua = [], perfiles = {}, hoy = fechaLocal() }) {
+export function armarInforme({ comidas, usuarioId, meta, metaProteina, metasMacros = null, agua = [], perfiles = {}, hoy = fechaLocal() }) {
   const { desde, hasta } = semanaDelInforme(hoy);
   const fechas = dias(desde);
   const anteriores = dias(mover(desde, -7));
@@ -116,6 +116,8 @@ export function armarInforme({ comidas, usuarioId, meta, metaProteina, agua = []
     previo,
     meta,
     metaProteina,
+    // Las metas de cada macro (del plan): con eso cada barra dice cuánto faltó o cuánto te pasaste.
+    metas: metasMacros || (metaProteina ? { p: metaProteina } : {}),
     enMeta,
     pasados,
     mejorDia,
