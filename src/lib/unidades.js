@@ -121,6 +121,21 @@ export function mostrarCantidad(n) {
   return String(Math.round((Number(n) || 0) * 100) / 100).replace(".", ",");
 }
 
+// Lo importado sin peso (MyFitnessPal manda "1 porción" o "1 taza" con sus calorías, pero no los gramos):
+// se cuenta por porciones. 1 porción = los valores que vinieron; 0,5 o 2 porciones los multiplican.
+// No se puede pasar a gramos (no sabemos cuánto pesa), así que la única medida es la porción.
+export function comoPorciones(a) {
+  if (!a || a.por100 || a.fuente === "foto") return a;
+  const v = { kcal: Number(a.kcal) || 0, p: Number(a.p) || 0, c: Number(a.c) || 0, g: Number(a.g) || 0 };
+  if (!v.kcal && !v.p && !v.c && !v.g) return a;
+  const medida = String(a.medida || "").trim();
+  const nombre = !medida || /^1\s*porci[oó]n$/i.test(medida) || /cargad/i.test(medida) ? "porción" : `porción (${medida})`;
+  return { ...a, por100: v, unidad: { nombre, g: 100 }, cantidad: 1, gramos: 100, porPorcion: true };
+}
+
+// Para cargar un alimento en una comida: con valores cada 100 g, listo para ajustar; sin peso, por porciones.
+export const paraCargar = (a) => (a.por100 ? prepararItem(a) : comoPorciones(a));
+
 export function conCantidad(item, cantidad) {
   const valor = Math.max(0, Math.round(cantidad * 10000) / 10000);
   return { ...item, cantidad: valor, gramos: Math.round(valor * item.unidad.g * 10) / 10 };
