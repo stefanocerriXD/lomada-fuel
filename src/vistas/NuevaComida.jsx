@@ -21,7 +21,7 @@ const diaDeLaCarga = (fecha) => {
   return corto.charAt(0).toUpperCase() + corto.slice(1);
 };
 import { macrosDeItem, sumarItems, TIPOS, tipoInfo } from "../lib/macros.js";
-import { conCantidad, conUnidad, leerCantidad, mostrarCantidad, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
+import { conCantidad, conUnidad, leerCantidad, mostrarCantidad, paraCargar, prepararItem, restar, sumar, textoMedida, unidadesDe } from "../lib/unidades.js";
 import { buscarTipicos } from "../data/alimentos-ar.js";
 import { etiquetaEstado } from "../lib/estadoAlimento.js";
 import { Avatar, Hoja, Numero, vibrar } from "../componentes/Base.jsx";
@@ -83,11 +83,11 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   const [descripcion, setDescripcion] = useState(original?.descripcion || carga.receta?.descripcion || carga.copia?.descripcion || "");
   const [items, setItems] = useState(() => {
     // Una comida copiada en Resumen (y pegada en este día): sus alimentos con las mismas cantidades.
-    if (!original && carga.copia) return carga.copia.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() }));
+    if (!original && carga.copia) return carga.copia.alimentos.map((a) => ({ ...paraCargar(a), id: crypto.randomUUID() }));
     if (!original) return (carga.receta?.items || []).map((i) => ({ ...prepararItem(i), id: crypto.randomUUID() }));
     // Lo que se había cargado como colación y resultó ser el postre pasa adentro de esta comida.
     const delPostre = (carga.extra?.items || []).map((a) => ({ ...a, id: crypto.randomUUID(), postre: true }));
-    if (original.alimentos?.length) return [...original.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: a.id || crypto.randomUUID() })), ...delPostre];
+    if (original.alimentos?.length) return [...original.alimentos.map((a) => ({ ...paraCargar(a), id: a.id || crypto.randomUUID() })), ...delPostre];
     if (delPostre.length && !original.calorias) return delPostre;
     if (delPostre.length) return [{ id: "base", nombre: original.descripcion || "Comida", fuente: "manual", kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas }, ...delPostre];
     return [{ id: "base", nombre: original.descripcion || "Comida", fuente: "manual", kcal: original.calorias, p: original.proteinas, c: original.carbohidratos, g: original.grasas }];
@@ -210,7 +210,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     sumarAlCatalogo(alimento);
     // Lo que viene sin valores por 100 g (importado o a mano) se repite tal cual.
     // En modo postre, lo que se suma queda marcado como postre de esa comida.
-    setItems((prev) => [...prev, { ...(alimento.por100 ? prepararItem(alimento) : alimento), id: crypto.randomUUID(), ...(carga.postre ? { postre: true } : {}) }]);
+    setItems((prev) => [...prev, { ...paraCargar(alimento), id: crypto.randomUUID(), ...(carga.postre ? { postre: true } : {}) }]);
     setTexto("");
     setPanel(null);
     setImportado(null);
@@ -220,7 +220,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   }
 
   function usarFavorita(favorita) {
-    setItems((prev) => [...prev, ...favorita.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() }))]);
+    setItems((prev) => [...prev, ...favorita.alimentos.map((a) => ({ ...paraCargar(a), id: crypto.randomUUID() }))]);
     setDescripcion((d) => d || favorita.nombre);
     setError("");
     vibrar(8);
@@ -252,7 +252,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
     }
     let nuevos = fila.alimentos.map((a) => {
       const item = itemImportado(a);
-      return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID(), salud_id: saludId, detalle_salud: true };
+      return { ...paraCargar(item), id: crypto.randomUUID(), salud_id: saludId, detalle_salud: true };
     });
     // Lo que la app tuvo que estimar se ajusta para que cada total (kcal, P, C, G) dé exacto lo que mandó Salud.
     const claves = { kcal: "kcal", p: "p", c: "c", g: "g" };
@@ -319,7 +319,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         const nuevos = fila.alimentos
           .map((a) => {
             const item = itemImportado(a);
-            return { ...(item.por100 ? prepararItem(item) : item), id: crypto.randomUUID(), ...(carga.postre ? { postre: true } : {}) };
+            return { ...paraCargar(item), id: crypto.randomUUID(), ...(carga.postre ? { postre: true } : {}) };
           })
           .filter((a) => !ya.has(firma(a)));
         return [...prev, ...nuevos];
@@ -357,7 +357,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
   // Repite una comida anterior completa, con sus cantidades.
   function usarCombo(combo) {
-    setItems(combo.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() })));
+    setItems(combo.alimentos.map((a) => ({ ...paraCargar(a), id: crypto.randomUUID() })));
     setDescripcion((d) => d || combo.nombre);
     setError("");
     vibrar(10);
@@ -365,7 +365,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
 
   // Desde el buscador: se suma a lo que ya estaba cargado.
   function sumarCombo(combo) {
-    setItems((prev) => [...prev, ...combo.alimentos.map((a) => ({ ...(a.por100 ? prepararItem(a) : a), id: crypto.randomUUID() }))]);
+    setItems((prev) => [...prev, ...combo.alimentos.map((a) => ({ ...paraCargar(a), id: crypto.randomUUID() }))]);
     setDescripcion((d) => d || combo.nombre);
     setError("");
     vibrar(10);
@@ -1042,9 +1042,13 @@ export function FilaItem({ item, onCambiar, onQuitar }) {
             <CampoCantidad item={item} onCambiar={onCambiar} />
             <button onClick={() => onCambiar(conCantidad(item, sumar(item)))} aria-label="Sumar"><Plus size={17} /></button>
           </div>
-          <select value={item.unidad.nombre} onChange={(e) => onCambiar(conUnidad(item, unidadesDe(item).find((u) => u.nombre === e.target.value)))} aria-label={`Medida de ${item.nombre}`}>
-            {unidadesDe(item).map((u) => <option key={u.nombre} value={u.nombre}>{textoMedida(u)}</option>)}
-          </select>
+          {item.porPorcion ? (
+            <span className="medida-porcion" aria-label={`Medida de ${item.nombre}`}>{item.unidad.nombre}<small>sin peso conocido</small></span>
+          ) : (
+            <select value={item.unidad.nombre} onChange={(e) => onCambiar(conUnidad(item, unidadesDe(item).find((u) => u.nombre === e.target.value)))} aria-label={`Medida de ${item.nombre}`}>
+              {unidadesDe(item).map((u) => <option key={u.nombre} value={u.nombre}>{textoMedida(u)}</option>)}
+            </select>
+          )}
         </div>
       )}
     </motion.div>
@@ -1092,7 +1096,9 @@ function resumenAlimento(alimento) {
 
 function FilaHistorial({ uso, onElegir, delGrupo }) {
   const { alimento, veces, ultima } = uso;
-  const { medida, kcal } = resumenAlimento(alimento);
+  const { medida: medidaBase, kcal } = resumenAlimento(alimento);
+  const sinPeso = !alimento.por100 || alimento.porPorcion;
+  const medida = sinPeso ? ["importado, sin peso", medidaBase].filter(Boolean).join(" · ") : medidaBase;
   const usos = delGrupo
     ? `${veces} ${veces === 1 ? "vez" : "veces"} en el grupo`
     : `${veces === 1 ? "1 vez" : `${veces} veces`}${ultima ? ` · ${haceTanto(ultima)}` : ""}`;
@@ -1147,7 +1153,12 @@ export function Resultados({ texto, onElegir, propios, anteriores = null }) {
     ],
     [extras.recetas, extras.recetasGrupo, perfiles, texto],
   );
-  const tuyos = useMemo(() => buscarEnHistorial(propios, texto), [propios, texto]);
+  // Lo importado sin peso (no se puede ajustar en gramos) va al final de tus recientes.
+  const tuyos = useMemo(() => {
+    const lista = buscarEnHistorial(propios, texto);
+    const sinPeso = (h) => !h.alimento.por100 || h.alimento.porPorcion;
+    return [...lista.filter((h) => !sinPeso(h)), ...lista.filter(sinPeso)];
+  }, [propios, texto]);
   const usados = useMemo(() => vecesPorAlimento(propios), [propios]);
   const usoDe = (a) => usados.get(claveAlimento(a)) || (a.marca ? null : usados.get(claveAlimento({ nombre: a.nombre })));
   // De la lista propia (comidas caseras), pocas: lo que más se busca son marcas.

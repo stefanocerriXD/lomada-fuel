@@ -11,6 +11,7 @@ export function alimentosVisibles(alimentos = []) {
 }
 
 function medidaDe(a) {
+  if (a.porPorcion) return `${mostrarCantidad(a.cantidad)} ${a.unidad.nombre}`;
   if (a.unidad && a.unidad.g !== 1) return `${mostrarCantidad(a.cantidad)} ${a.unidad.nombre} (${Math.round(a.gramos)} g)`;
   if (a.gramos) return `${Math.round(a.gramos)} g`;
   return a.medida || "";
