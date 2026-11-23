@@ -538,6 +538,11 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         ({ error: errFila } = await escribir(sinPlaneada));
       }
       if (errFila) throw errFila;
+      // El aviso al grupo sale apenas se guarda (antes de limpiar fotos viejas o recargar la lista): llega al momento.
+      // Al grupo le llega cuando se come: al subirla (aunque sea sin foto) o al tocar "Ya la comí" en una planeada.
+      if (!privada && ((!original && !planeadaNueva) || (comi && yaPlaneada))) avisarGrupo("comida", id);
+      // Sumar postre también le avisa al grupo, con el nombre del postre.
+      if (carga.postre && postreGuardable && !privada) avisarGrupo("postre", id);
       if (rutaNueva && original?.foto_path && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.foto_path]);
       if (extrasQuitadas.length && !original?.grupo_comida) await supabase.storage.from("fotos").remove(extrasQuitadas);
       if (rutaPostre && original?.postre_foto && !original.grupo_comida) await supabase.storage.from("fotos").remove([original.postre_foto]);
@@ -549,10 +554,6 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         }
       }
       await cargarComidas();
-      // Al grupo le llega cuando se come: al subirla (aunque sea sin foto) o al tocar "Ya la comí" en una planeada.
-      if (!privada && ((!original && !planeadaNueva) || (comi && yaPlaneada))) avisarGrupo("comida", id);
-      // Sumar postre también le avisa al grupo, con el nombre del postre.
-      if (carga.postre && postreGuardable && !privada) avisarGrupo("postre", id);
       onGuardar(planeadaNueva ? "planeada" : !original || (comi && yaPlaneada));
     } catch (err) {
       if (rutaNueva || subidas.length) await supabase.storage.from("fotos").remove([rutaNueva, ...subidas].filter(Boolean));

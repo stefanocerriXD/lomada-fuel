@@ -8,7 +8,11 @@ export async function enviarAvisos(aviso, origen) {
   const { destinos, ...contenido } = aviso;
   const resultados = await Promise.allSettled(
     destinos.map((d) =>
-      webpush.sendNotification({ endpoint: d.endpoint, keys: { p256dh: d.p256dh, auth: d.auth } }, JSON.stringify({ ...contenido, ...(d.titulo ? { titulo: d.titulo } : {}), ...(d.cuerpo ? { cuerpo: d.cuerpo } : {}) }), { TTL: 3600 }),
+      webpush.sendNotification({ endpoint: d.endpoint, keys: { p256dh: d.p256dh, auth: d.auth } }, JSON.stringify({ ...contenido, ...(d.titulo ? { titulo: d.titulo } : {}), ...(d.cuerpo ? { cuerpo: d.cuerpo } : {}) }), {
+        TTL: 3600,
+        // Alta: el celular la muestra al momento (con "normal", iOS y Android las juntan y las entregan tarde para ahorrar batería).
+        urgency: "high",
+      }),
     ),
   );
   return {
