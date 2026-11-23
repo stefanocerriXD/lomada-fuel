@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BadgeCheck, BookmarkPlus, CalendarClock, ChevronDown, HeartPulse, Camera, ClipboardPaste, ListChecks, LoaderCircle, Martini, Mic, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X } from "lucide-react";
+import { BadgeCheck, BookmarkPlus, CalendarClock, ChevronDown, HeartPulse, Camera, ClipboardPaste, ListChecks, LoaderCircle, Martini, Mic, Minus, PenLine, Plus, ScanBarcode, Search, Sparkles, Star, Trash2, Undo2, Users, X, Share2 } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { avisarGrupo, buscarAlimentos, buscarCodigo, ia, reconocerFoto, reconocerTexto } from "../lib/api.js";
@@ -29,6 +29,7 @@ import IconoComida from "../componentes/IconoComida.jsx";
 import Lector from "../componentes/Lector.jsx";
 import Escaner from "./Escaner.jsx";
 import EditorReceta from "../componentes/EditorReceta.jsx";
+import CompartirInstagram from "../componentes/CompartirInstagram.jsx";
 import { createPortal } from "react-dom";
 import { filaParaSalud } from "../lib/capturasSalud.js";
 
@@ -49,6 +50,7 @@ export default function NuevaComida({ carga, onCerrar, onGuardar, onImportarDia,
 function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisar }) {
   // Lo que se está cargando se puede guardar como receta propia (un budín, el desayuno de siempre).
   const [recetaNueva, setRecetaNueva] = useState(null);
+  const [instagram, setInstagram] = useState(false);
   const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones, grupo, misGrupos } = useDatos();
   // En varios grupos: dónde se publica según el ajuste de cada uno, o eligiendo acá.
   const variosGrupos = misGrupos.length > 1;
@@ -839,6 +841,23 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
             </div>
           )}
 
+          {original?.tipo === "fiesta" && (
+            <button type="button" className="boton boton-secundario compartir-noche" onClick={() => setInstagram(true)}>
+              <Share2 size={18} /> Compartir la noche en Instagram
+            </button>
+          )}
+          {instagram && original && (
+            <CompartirInstagram
+              abierta
+              onCerrar={() => setInstagram(false)}
+              fiesta={{
+                fotos: [vistaFoto, ...fotosExtra.map((x) => x.vista)].filter(Boolean),
+                vasos: items,
+                kcal: Math.round(total.kcal),
+                fecha: original.fecha,
+              }}
+            />
+          )}
           {futura && !carga.postre && (
             <p className="nota comida-planeada"><CalendarClock size={15} aria-hidden="true" /> Comida planeada para {nombreDia(original?.fecha || carga.fecha).toLowerCase()}. La foto se suma ese día; al grupo no le llega aviso hasta que la comas.</p>
           )}

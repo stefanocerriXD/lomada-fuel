@@ -65,6 +65,51 @@ assert.match(t, /Noche de fiesta/);
 assert.doesNotMatch(t, /gol/i);
 await hoja.screenshot({ path: "capturas/fiesta-ig-sin-vasos.png" });
 
+await hoja.getByRole("button", { name: "Cerrar", exact: true }).click();
+await p.waitForTimeout(600);
+
+// Los otros caminos: editar la noche, el Resumen (al lado de Modo fiesta y en "El día de cada uno") y el Modo fiesta.
+const abreLaHoja = async (nombre) => {
+  const h = p.getByRole("dialog", { name: "Compartir tu noche" });
+  await h.waitFor({ timeout: 5000 });
+  await h.locator(".compartir-ig-vista img").waitFor({ timeout: 8000 });
+  await h.getByRole("button", { name: "Cerrar", exact: true }).click();
+  await p.waitForTimeout(600);
+  console.log("desde", nombre, "ok");
+};
+// Editar.
+await tarjeta.getByRole("button", { name: /Editar/ }).click();
+await p.waitForTimeout(800);
+await p.getByRole("button", { name: "Compartir la noche en Instagram" }).click();
+await abreLaHoja("editar");
+await p.keyboard.press("Escape");
+await p.waitForTimeout(600);
+// Resumen.
+await p.goto("http://localhost:5199/");
+await p.waitForTimeout(1800);
+const enResumen = p.locator(".fiesta-fila").getByRole("button", { name: "Compartir la noche en Instagram" });
+if (await enResumen.count()) {
+  await enResumen.click();
+  await abreLaHoja("resumen");
+}
+const mia = p.locator(".tarjeta-amigo").first();
+await mia.scrollIntoViewIfNeeded();
+await mia.locator(".amigo-cabecera").click();
+await p.waitForTimeout(500);
+await mia.getByRole("button", { name: "Compartir la noche en Instagram" }).click();
+await abreLaHoja("el día de cada uno");
+// Modo fiesta: arriba de todo.
+if (await p.locator(".fiesta-fila .fiesta-accion").count()) {
+  await p.locator(".fiesta-fila .fiesta-accion").click();
+  await p.waitForTimeout(800);
+  const boton = p.locator(".fiesta").getByRole("button", { name: /Compartir la noche en Instagram/ });
+  const caja = await boton.boundingBox();
+  assert.ok(caja && caja.y < 500, "arriba, sin tener que bajar");
+  await p.screenshot({ path: "capturas/fiesta-ig-boton.png" });
+  await boton.click();
+  await abreLaHoja("modo fiesta");
+}
+
 await b.close();
 assert.deepEqual(errores, []);
 console.log("fiesta en Instagram: pasaron");
