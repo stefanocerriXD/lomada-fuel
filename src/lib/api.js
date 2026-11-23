@@ -25,6 +25,8 @@ export async function avisarGrupo(tipo, id, nombre) {
       method: "POST",
       headers: { "content-type": "application/json", ...(await encabezados()) },
       body: JSON.stringify({ tipo, id, nombre }),
+      // Si quien publica cierra la app enseguida, el pedido igual termina y el aviso sale.
+      keepalive: true,
     });
   } catch {
     // Sin conexión no hay aviso.
