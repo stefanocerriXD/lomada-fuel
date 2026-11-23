@@ -116,6 +116,11 @@ if (window.__fiestas) {
     { ...c("fz2", "u3", "fiesta", 2, 23, "Fiesta: 1 vaso", 150, 0, 10, 0), gol: false, alimentos: [vaso("Aperol spritz", 150, 12)] },
   );
 }
+// Tu noche de fiesta de hoy, con 3 fotos y gol (para compartir en Instagram).
+if (window.__miFiesta) {
+  const vaso = (nombre, kcal, alcohol) => ({ nombre, fuente: "trago", ml: 300, medida: "300 ml", kcal, p: 0, c: 10, g: 0, alcohol });
+  db.comidas.push({ ...c("fz9", "u1", "fiesta", 0, 23, "Fiesta: 3 vasos", 530, 0, 30, 0, "f5"), fotos_extra: ["f2", "f1"], gol: true, alimentos: [vaso("Fernet con coca", 190, 24), vaso("Fernet con coca", 190, 24), vaso("Gin tonic", 150, 20)] });
+}
 // Calavera: dos semanas seguidas sin fotos.
 if (window.__calavera) for (let n = 1; n <= 14; n++) db.multas.push({ usuario_id: window.__calavera, fecha: hoy(n), fotos: 0 });
 if (window.__calavera) db.comidas.filter((x) => x.usuario_id === window.__calavera && x.fecha === hoy(0)).forEach((x) => { x.foto_path = null; });

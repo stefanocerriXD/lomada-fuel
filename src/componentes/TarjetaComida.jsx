@@ -258,7 +258,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
         {propia && (
           <div className="comida-acciones">
             <button className="boton-texto" onClick={onEditar}><Pencil size={15} /> Editar</button>
-            {!soloFoto && !esFiesta && comida.tipo !== "resumen" && (
+            {((!soloFoto && comida.tipo !== "resumen") || esFiesta) && (
               <button className="boton-texto" onClick={() => setInstagram(true)}><Share2 size={15} /> Instagram</button>
             )}
             {extras.disponible && !soloFoto && (
@@ -276,7 +276,9 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           </div>
         )}
       </div>
-      {instagram && <CompartirInstagram abierta onCerrar={() => setInstagram(false)} comida={comida} foto={fotoPrincipal} />}
+      {instagram && (esFiesta
+        ? <CompartirInstagram abierta onCerrar={() => setInstagram(false)} fiesta={{ fotos: srcs.filter(Boolean), vasos: alimentosDe(comida), kcal: comida.calorias || 0, fecha: comida.fecha }} />
+        : <CompartirInstagram abierta onCerrar={() => setInstagram(false)} comida={comida} foto={fotoPrincipal} />)}
     </motion.article>
   );
 }

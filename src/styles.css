@@ -2897,3 +2897,11 @@ button.planeada-datos { padding: 0; background: none; color: inherit; text-align
 .galeria .fijar { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgb(0 0 0 / 45%); color: #fff; opacity: 0.85; }
 .galeria .fijar.activo { background: var(--acento); color: var(--sobre-acento); opacity: 1; }
 .galeria li.fijada > button:first-child { box-shadow: inset 0 0 0 2px var(--acento); }
+
+/* Compartir la noche: elegir la foto */
+.elegir-foto-noche { display: flex; gap: 8px; overflow-x: auto; padding: 2px; }
+.elegir-foto-noche button { flex: none; width: 64px; height: 64px; padding: 0; border-radius: 12px; overflow: hidden; opacity: 0.6; box-shadow: 0 0 0 2px transparent; }
+.elegir-foto-noche button.activo { opacity: 1; box-shadow: 0 0 0 3px var(--acento); }
+.elegir-foto-noche img { width: 100%; height: 100%; object-fit: cover; }
+.compartir-noche { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.interruptor-detalle { display: block; font-weight: 400; font-size: 0.8rem; color: var(--tinta-2); }

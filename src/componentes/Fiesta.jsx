@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Camera, FlaskConical, Minus, Plus, Search, X } from "lucide-react";
+import { Camera, FlaskConical, Minus, Plus, Search, X, Share2 } from "lucide-react";
 import { comprimirImagen } from "../lib/imagen.js";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
@@ -12,6 +12,7 @@ import { Avatar, Hoja, vibrar } from "./Base.jsx";
 import { IconoGol } from "./IconosFiesta.jsx";
 import { clink } from "../lib/sonidos.js";
 
+import CompartirInstagram from "./CompartirInstagram.jsx";
 import { CLAVE_TRAGO, MAX_FOTOS_NOCHE, escribir, fechaDeLaNoche, guardarNoche, nocheActual, numero, sincronizarNoche, sumarVasos, ultimoTrago } from "../lib/noche.js";
 
 export default function Fiesta({ abierta, onCerrar, avisar }) {
@@ -28,6 +29,7 @@ function Contador({ avisar }) {
   // Al abrir: lo de esta noche (del celu si quedó sin subir) y el último trago, listo para sumar otro.
   const inicio = useMemo(() => nocheActual(usuario.id, comidas, fecha), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [vasos, setVasos] = useState(inicio.vasos);
+  const [instagram, setInstagram] = useState(false);
   const [gol, setGol] = useState(inicio.gol);
   // Las fotos de la noche: rutas guardadas y su vista (la primera es la principal).
   const [fotosNoche, setFotosNoche] = useState(() => [inicio.foto_path, ...(inicio.fotos_extra || [])].filter(Boolean).map((ruta) => ({ ruta, vista: fotos[ruta] })));
@@ -352,6 +354,15 @@ function Contador({ avisar }) {
           )}
         </div>
       </div>
+
+      {(vasos.length > 0 || fotosNoche.length > 0) && (
+        <button type="button" className="boton boton-secundario compartir-noche" onClick={() => setInstagram(true)}>
+          <Share2 size={18} /> Compartir la noche en Instagram
+        </button>
+      )}
+      {instagram && (
+        <CompartirInstagram abierta onCerrar={() => setInstagram(false)} fiesta={{ fotos: fotosNoche.map((f) => f.vista).filter(Boolean), vasos, kcal: vasos.reduce((t, v) => t + (v.kcal || 0), 0), fecha: inicio.fecha }} />
+      )}
 
       <p className="nota">Cada vaso se guarda al toque y suma al total del día: cerrá y volvé a abrir cuando quieras, sigue con tu trago. Después de medianoche cuenta para la noche que empezó.</p>
     </div>

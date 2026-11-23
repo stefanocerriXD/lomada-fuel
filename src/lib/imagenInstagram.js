@@ -294,12 +294,12 @@ function chipsMacros(ctx, total, x, y) {
 }
 
 // La etiqueta naranja "MI DÍA · MAR 17 NOV". Devuelve su ancho.
-function pastilla(ctx, texto, x, y, derecha = false) {
+function pastilla(ctx, texto, x, y, derecha = false, color = ACENTO) {
   ctx.font = "700 22px Poppins, sans-serif";
   const ancho = ctx.measureText(texto).width + 40;
   const alto = 44;
   const x0 = derecha ? x - ancho : x;
-  ctx.fillStyle = ACENTO;
+  ctx.fillStyle = color;
   redondeado(ctx, x0, y, ancho, alto, alto / 2);
   ctx.fill();
   ctx.fillStyle = "#fff";
@@ -680,4 +680,110 @@ export async function armarImagenDia({ comidas, fotos, fecha, total, meta, forma
   const blob = await new Promise((ok) => lienzo.toBlob(ok, "image/jpeg", 0.92));
   if (!blob) throw new Error("No se pudo armar la imagen");
   return new File([blob], `lomada-fuel-${fecha}-dia-${plantilla}-${formato}.jpg`, { type: "image/jpeg" });
+}
+
+// ---------- Modo fiesta: una foto de la noche o todas, con los vasos que tomaste (si querés). Nunca el gol. ----------
+
+const FIESTA = "#b04cff";
+
+function fondoFiesta(ctx, W, H) {
+  const fondo = ctx.createRadialGradient(W * 0.8, H * 0.1, 40, W * 0.5, H * 0.4, H);
+  fondo.addColorStop(0, "#ff3d9a");
+  fondo.addColorStop(0.35, "#5b1f9e");
+  fondo.addColorStop(1, "#0d0618");
+  ctx.fillStyle = fondo;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// "3 × Fernet con coca": los tragos agrupados, del más tomado al menos.
+export function tragosAgrupados(vasos) {
+  const grupos = new Map();
+  for (const v of vasos || []) {
+    const nombre = String(v.nombre || "Trago").trim();
+    grupos.set(nombre, (grupos.get(nombre) || 0) + 1);
+  }
+  return [...grupos.entries()].sort((a, b) => b[1] - a[1]).map(([nombre, n]) => ({ nombre, n }));
+}
+
+// fotos: las URLs de las fotos de la noche. modo "una" (la de `indice`) o "todas" (collage).
+export async function armarImagenFiesta({ fotos = [], vasos = [], kcal = 0, fecha, formato = "historia", modo = "una", indice = 0, conVasos = true }) {
+  const { ancho: W, alto: H } = FORMATOS[formato];
+  const historia = formato === "historia";
+  const margen = 64;
+  await Promise.all(["600", "700", "800"].map((p) => document.fonts?.load?.(`${p} 40px Poppins`)).filter(Boolean)).catch(() => {});
+  const elegidas = modo === "todas" ? fotos.slice(0, historia ? 9 : 6) : fotos.slice(indice, indice + 1);
+  const sobran = modo === "todas" ? Math.max(0, fotos.length - elegidas.length) : 0;
+  const imagenes = (await Promise.all(elegidas.map(async (url) => ({ img: await cargarFoto(url) })))).filter((f) => f.img);
+
+  const lienzo = document.createElement("canvas");
+  lienzo.width = W;
+  lienzo.height = H;
+  const ctx = lienzo.getContext("2d");
+  fondoFiesta(ctx, W, H);
+  if (imagenes.length === 1) dibujarCubriendo(ctx, imagenes[0].img, 0, 0, W, H);
+  else if (imagenes.length > 1) grillaFotos(ctx, imagenes, sobran, formato, { x: 0, y: 0, w: W, h: H }, { hueco: 8, radio: 0, etiquetas: false });
+
+  // Sombras para que se lea arriba y abajo.
+  const desde = H * (historia ? 0.5 : 0.4);
+  const sombra = ctx.createLinearGradient(0, desde, 0, H);
+  sombra.addColorStop(0, "rgba(13,6,24,0)");
+  sombra.addColorStop(0.45, "rgba(13,6,24,0.55)");
+  sombra.addColorStop(1, "rgba(13,6,24,0.92)");
+  ctx.fillStyle = sombra;
+  ctx.fillRect(0, desde, W, H - desde);
+  const arribaAlto = historia ? 380 : 220;
+  const sombraArriba = ctx.createLinearGradient(0, 0, 0, arribaAlto);
+  sombraArriba.addColorStop(0, "rgba(0,0,0,0.45)");
+  sombraArriba.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = sombraArriba;
+  ctx.fillRect(0, 0, W, arribaAlto);
+
+  ctx.shadowColor = "rgba(0,0,0,0.35)";
+  ctx.shadowBlur = 12;
+  marca(ctx, margen, historia ? 160 : 56);
+
+  // De abajo hacia arriba: pie, los tragos, los vasos grandes y la etiqueta.
+  ctx.textBaseline = "alphabetic";
+  let y = H - (historia ? 230 : 60);
+  ctx.font = "600 24px Poppins, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.fillText("Registrado en la app Lomada Fuel", margen, y);
+
+  if (conVasos && vasos.length) {
+    const lista = tragosAgrupados(vasos);
+    const mostrar = lista.slice(0, 3);
+    const resto = lista.length - mostrar.length;
+    ctx.font = "700 34px Poppins, sans-serif";
+    ctx.fillStyle = "#fff";
+    y -= 30;
+    const lineas = [...mostrar.map((t) => `${t.n} × ${t.nombre}`), ...(resto > 0 ? [`y ${resto} ${resto === 1 ? "trago más" : "tragos más"}`] : [])];
+    lineas.reverse().forEach((l) => {
+      y -= 50;
+      let texto = l;
+      while (texto.length > 4 && ctx.measureText(texto).width > W - margen * 2) texto = `${texto.slice(0, -2).trimEnd()}…`;
+      ctx.fillText(texto, margen, y + 36);
+    });
+    y -= 34;
+    ctx.font = "800 112px Poppins, sans-serif";
+    ctx.fillStyle = "#fff";
+    const numero = String(vasos.length);
+    ctx.fillText(numero, margen - 3, y);
+    const anchoNumero = ctx.measureText(numero).width;
+    ctx.font = "700 40px Poppins, sans-serif";
+    ctx.fillStyle = "#ff8ad8";
+    ctx.fillText(`${vasos.length === 1 ? "vaso" : "vasos"}${kcal > 0 ? ` · ${numeroAr(kcal)} kcal` : ""}`, margen + anchoNumero + 16, y);
+    y -= 112 * 0.74 + 40;
+  } else {
+    y -= 40;
+    ctx.font = "800 84px Poppins, sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Noche de fiesta", margen - 3, y);
+    y -= 84 * 0.74 + 40;
+  }
+  ctx.shadowBlur = 0;
+  pastilla(ctx, `MODO FIESTA · ${fechaLinda(fecha).toUpperCase()}`, margen, y - 44, false, FIESTA);
+
+  const blob = await new Promise((ok) => lienzo.toBlob(ok, "image/jpeg", 0.92));
+  if (!blob) throw new Error("No se pudo armar la imagen");
+  return new File([blob], `lomada-fuel-${fecha || "noche"}-fiesta-${modo}-${formato}.jpg`, { type: "image/jpeg" });
 }

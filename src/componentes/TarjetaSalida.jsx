@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { motion } from "motion/react";
-import { Reply } from "lucide-react";
+import { Reply, Share2 } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
 import { marcaDelNombre } from "../lib/multas.js";
@@ -7,6 +8,7 @@ import { Avatar } from "./Base.jsx";
 import { MarcaFiesta } from "./MarcaFiesta.jsx";
 import { IconoGol } from "./IconosFiesta.jsx";
 import { CarruselFotos, Reacciones } from "./TarjetaComida.jsx";
+import CompartirInstagram from "./CompartirInstagram.jsx";
 
 const vasosDe = (c) => (Array.isArray(c.alimentos) ? c.alimentos : []);
 const numero = (n) => Math.round(n).toLocaleString("es-AR");
@@ -41,6 +43,9 @@ export default function TarjetaSalida({ miembros, onZoom, avisar }) {
     ? <span className="cartel-gol si"><IconoGol tam={18} /> {goles === 1 ? "¡HUBO GOL!" : `${goles} GOLES`}</span>
     : marcados ? <span className="cartel-gol no"><IconoGol tam={18} apagado /> SIN GOL</span> : null;
   const totalVasos = miembros.reduce((t, c) => t + vasosDe(c).length, 0);
+  // Tu noche para Instagram: las fotos de todos y tus vasos.
+  const mia = miembros.find(propia);
+  const [instagram, setInstagram] = useState(false);
   const totalKcal = miembros.reduce((t, c) => t + (c.calorias || 0), 0);
 
   return (
@@ -81,8 +86,12 @@ export default function TarjetaSalida({ miembros, onZoom, avisar }) {
         <div className="comida-interacciones">
           <Reacciones comidaId={principal.id} avisar={avisar} />
           <button className="boton-texto" onClick={() => responder(principal)} aria-label="Responder en el chat"><Reply size={15} /> Responder</button>
+          {mia && <button className="boton-texto" onClick={() => setInstagram(true)}><Share2 size={15} /> Instagram</button>}
         </div>
       </div>
+      {instagram && mia && (
+        <CompartirInstagram abierta onCerrar={() => setInstagram(false)} fiesta={{ fotos: fotosSalida.map((f) => f.src).filter(Boolean), vasos: vasosDe(mia), kcal: mia.calorias || 0, fecha: mia.fecha }} />
+      )}
     </motion.article>
   );
 }
