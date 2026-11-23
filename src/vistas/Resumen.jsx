@@ -21,7 +21,7 @@ import CartelMejoras from "../componentes/CartelMejoras.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 import Visor from "../componentes/Visor.jsx";
-import CompartirInstagram from "../componentes/CompartirInstagram.jsx";
+import CompartirInstagram, { fiestaParaInstagram } from "../componentes/CompartirInstagram.jsx";
 import { createPortal } from "react-dom";
 import { borrado, clink, copiado } from "../lib/sonidos.js";
 
@@ -55,6 +55,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
   useEffect(() => () => onDia?.(null), [onDia]);
   const [, setVasoRapido] = useState(0);
   const [compartirDia, setCompartirDia] = useState(false);
+  const [compartirNoche, setCompartirNoche] = useState(null);
 
   const delDia = useMemo(() => comidas.filter((c) => c.fecha === fecha), [comidas, fecha]);
   const fotosHoy = fotosDelDia(comidas, usuario.id, hoy);
@@ -241,6 +242,12 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
                 <small>{tragoRapido.nombre}</small>
               </motion.button>
             )}
+            {(vasosNoche.length > 0 || nocheDeFiesta?.foto_path) && (
+              <motion.button className="fiesta-compartir" whileTap={{ scale: 0.9 }} onClick={() => setCompartirNoche(nocheDeFiesta ? fiestaParaInstagram(nocheDeFiesta, fotos) : { fotos: [], vasos: vasosNoche, kcal: vasosNoche.reduce((t, v) => t + (v.kcal || 0), 0), fecha })} aria-label="Compartir la noche en Instagram">
+                <Share2 size={20} />
+                <small>Instagram</small>
+              </motion.button>
+            )}
           </div>
         )}
         <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => onImportar(fecha)}>
@@ -268,6 +275,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
         </motion.ul>
       </section>
 
+      {compartirNoche && <CompartirInstagram abierta onCerrar={() => setCompartirNoche(null)} fiesta={compartirNoche} />}
       {compartirDia && <CompartirInstagram abierta onCerrar={() => setCompartirDia(false)} dia={diaParaCompartir} />}
 
       {fecha === hoy && !nocheDeFiesta && !vasosNoche.length && !invitacionFiesta && (
@@ -455,6 +463,7 @@ async function borrarComidaPropia(c, cargarComidas, avisar) {
 function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar, onCargar }) {
   const { abrirPerfil, castigo, cargarComidas } = useDatos();
   const [borrando, setBorrando] = useState(null);
+  const [noche, setNoche] = useState(null);
   function borrar(c) {
     if (borrando !== c.id) return setBorrando(c.id);
     setBorrando(null);
@@ -528,6 +537,11 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar, onCargar }) {
                             <Pencil size={16} />
                           </button>
                         )}
+                        {propio && c.tipo === "fiesta" && (
+                          <button type="button" className="boton-icono chico copiar-comida" onClick={() => setNoche(c)} aria-label="Compartir la noche en Instagram">
+                            <Share2 size={16} />
+                          </button>
+                        )}
                         {propio && sePuedeCopiar(c) && (
                           <button type="button" className="boton-icono chico copiar-comida" onClick={() => { copiarComida(c); vibrar(10); copiado(); avisar?.("Copiada. Pegala en el día que quieras"); }} aria-label={`Copiar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                             <Copy size={16} />
@@ -545,6 +559,7 @@ function TarjetaAmigo({ perfil, comidas, fotos, propio, avisar, onCargar }) {
               </ul>
               <button className="boton-texto" onClick={() => abrirPerfil(perfil.id)}><UserRound size={15} /> Ver perfil</button>
               {visor !== null && createPortal(<Visor lista={fotosDelDia} inicio={visor} onCerrar={() => setVisor(null)} />, document.body)}
+              {noche && <CompartirInstagram abierta onCerrar={() => setNoche(null)} fiesta={fiestaParaInstagram(noche, fotos)} />}
             </div>
           </motion.div>
         )}

@@ -200,6 +200,11 @@ function Contador({ avisar }) {
         <strong>{vasos.length} {vasos.length === 1 ? "vaso" : "vasos"}</strong>
         <small>{numero(totales.kcal)} kcal · C {numero(totales.c)} g · {numero(totales.alcohol)} g de alcohol</small>
       </div>
+      {(vasos.length > 0 || fotosNoche.length > 0) && (
+        <button type="button" className="boton boton-secundario compartir-noche" onClick={() => setInstagram(true)}>
+          <Share2 size={18} /> Compartir la noche en Instagram
+        </button>
+      )}
       {invitacion && (
         <div className="salida-invitacion">
           <Avatar perfil={perfiles[invitacion.usuario_id]} tam={36} />
@@ -355,11 +360,6 @@ function Contador({ avisar }) {
         </div>
       </div>
 
-      {(vasos.length > 0 || fotosNoche.length > 0) && (
-        <button type="button" className="boton boton-secundario compartir-noche" onClick={() => setInstagram(true)}>
-          <Share2 size={18} /> Compartir la noche en Instagram
-        </button>
-      )}
       {instagram && (
         <CompartirInstagram abierta onCerrar={() => setInstagram(false)} fiesta={{ fotos: fotosNoche.map((f) => f.vista).filter(Boolean), vasos, kcal: vasos.reduce((t, v) => t + (v.kcal || 0), 0), fecha: inicio.fecha }} />
       )}

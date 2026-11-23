@@ -15,6 +15,14 @@ const plantillaGuardada = () => {
   }
 };
 
+// Una noche de fiesta guardada (la comida de tipo fiesta) lista para la imagen.
+export const fiestaParaInstagram = (c, fotos) => ({
+  fotos: [c.foto_path, ...(c.fotos_extra || [])].map((r) => r && fotos[r]).filter(Boolean),
+  vasos: Array.isArray(c.alimentos) ? c.alimentos : [],
+  kcal: c.calorias || 0,
+  fecha: c.fecha,
+});
+
 const puedeCompartir = (archivo) => {
   try {
     return Boolean(navigator.canShare?.({ files: [archivo] }));
