@@ -105,6 +105,7 @@ export function Avatar({ perfil, tam = 40 }) {
     >
       <span className="avatar-letra">{(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}</span>
       {deco && marco === "zafiro" && <span className="avatar-orbita" />}
+      {deco && marco === "rayo" && <span className="avatar-rayos"><i /><i /></span>}
       {deco && ["galaxia", "mitico", "nebulosa", "supernova"].includes(marco) && <span className="avatar-estrellas" />}
       {deco && ["legendario", "mitico"].includes(marco) && <span className="avatar-corona">👑</span>}
       {deco && ["inmortal", "olimpo"].includes(marco) && <span className="avatar-halo" />}
