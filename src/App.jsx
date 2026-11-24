@@ -177,7 +177,7 @@ function ConGrupo({ usuario, children }) {
 function Cargando() {
   return (
     <div className="pantalla-centro pantalla-carga" role="status" aria-label="Cargando">
-      <span className="carga-logo" aria-hidden="true"><Logo tam={96} /></span>
+      <span className="carga-logo" aria-hidden="true"><Logo tam={104} /></span>
     </div>
   );
 }
