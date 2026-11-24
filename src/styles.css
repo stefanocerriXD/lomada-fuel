@@ -2854,6 +2854,13 @@ button.planeada-datos { padding: 0; background: none; color: inherit; text-align
 .planeadas .boton-icono.chico { width: 34px; height: 34px; }
 .planeadas-titulo { flex-wrap: wrap; row-gap: 2px; }
 .planeadas-titulo small { white-space: normal; }
+/* Con un nombre largo, la grilla se estiraba al ancho del texto y cortaba "Ya la comí": el nombre se achica con "…". */
+.planeadas > ul, .planeadas li, .pegar-comida { min-width: 0; }
+/* Si el nombre no entra junto a los botones, los botones bajan a otra línea (a la derecha) y el nombre se lee entero. */
+.planeadas li { flex-wrap: wrap; row-gap: 4px; }
+.planeadas li > .planeada-datos { flex: 1 1 150px; }
+.planeada-acciones { flex: none; display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.planeadas .planeada-datos small { white-space: nowrap; }
 
 /* Fotos fijadas en el perfil: arriba de todo, con el pin a la vista */
 .galeria li { position: relative; }

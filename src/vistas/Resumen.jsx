@@ -194,6 +194,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
                   <strong>{c.descripcion || tipoInfo(c.tipo).texto}</strong>
                   <small>{tipoInfo(c.tipo).texto} · {Math.round(c.calorias || 0).toLocaleString("es-AR")} kcal</small>
                 </button>
+                <span className="planeada-acciones">
                 {fecha > hoy ? (
                   <button className="boton-chico" onClick={() => onCargar({ comida: c })} aria-label={`Editar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                     <Pencil size={14} aria-hidden="true" /> Editar
@@ -211,6 +212,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
                 <button className={borrando === c.id ? "boton-chico peligro" : "boton-icono chico"} onClick={() => borrarPlaneada(c)} onBlur={() => setBorrando(null)} aria-label={borrando === c.id ? "Tocá de nuevo para borrar" : `Borrar ${c.descripcion || tipoInfo(c.tipo).texto}`}>
                   <Trash2 size={15} />{borrando === c.id ? " ¿Borrar?" : ""}
                 </button>
+                </span>
               </li>
             ))}
           </ul>
