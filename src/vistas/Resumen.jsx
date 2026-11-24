@@ -71,7 +71,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
   }
   // La comida copiada (de cualquier día) se pega en el día que estás mirando: abre la carga con todo listo.
   const copiada = useComidaCopiada();
-  // Hoy, la fiesta de esta noche (sigue siendo la de anoche hasta las 6); otro día, la de ese día.
+  // Hoy, la fiesta de esta noche (sigue siendo la de anoche hasta el mediodía); otro día, la de ese día.
   const nocheDeFiesta = fecha === hoy ? comidas.find((c) => c.usuario_id === usuario.id && c.tipo === "fiesta" && c.fecha === fechaDeLaNoche()) : mias.find((c) => c.tipo === "fiesta");
   // Esta noche (con lo que quedó en el celu sin señal) y el último trago, para sumar otro con un toque.
   const estaNoche = fecha === hoy ? nocheActual(usuario.id, comidas) : null;

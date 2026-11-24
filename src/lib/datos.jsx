@@ -614,6 +614,13 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     return cantidades({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, perfiles, salud: salud || null, pesos, victorias, registros: registrosLogros });
   }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, salud, usuario.id, registrosLogros]);
 
+  // El modo fiesta depende de la hora (se va a las 20 del día siguiente): se vuelve a mirar cada 5 minutos.
+  const [reloj, setReloj] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setReloj((n) => n + 1), 5 * 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
+
   // La caca de cada uno se ve al lado del nombre en toda la app.
   // Cada perfil lleva su nivel general (el avatar se pone más lindo al subir) y, si le toca, la caca.
   const perfilesConCaca = useMemo(() => {
@@ -628,7 +635,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
         calavera: conCalavera({ usuarioId: id, multas: extras.multas, comidas }),
       } : {}),
     }]));
-  }, [perfiles, extras, comidas]);
+  }, [perfiles, extras, comidas, reloj]); // eslint-disable-line react-hooks/exhaustive-deps
   const castigo = useMemo(() => {
     const base = extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, calavera: false, diario: false, activo: false };
     if (grupo.conBocha) return { ...base, soloTexto: base.diario };

@@ -3,9 +3,10 @@ import { supabase } from "./supabase.js";
 import { fechaLocal, haceDias } from "./fechas.js";
 import { vasoDe } from "../data/tragos.js";
 
-// La noche sigue siendo la misma hasta las 6 de la mañana.
+// La noche sigue siendo la misma hasta el mediodía: el vaso de las 7 de la mañana es de la noche anterior.
+export const HORA_FIN_NOCHE = 12;
 export function fechaDeLaNoche(d = new Date()) {
-  return d.getHours() < 6 ? haceDias(1, d) : fechaLocal(d);
+  return d.getHours() < HORA_FIN_NOCHE ? haceDias(1, d) : fechaLocal(d);
 }
 export const esDeNoche = (d = new Date()) => d.getHours() >= 20 || d.getHours() < 6;
 

@@ -2,6 +2,22 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
 const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
+
+// La regla, con horas fijas: viernes a la noche, el sábado a la mañana sigue la fiesta; de 12 a 20 la resaca; después nada.
+{
+  const { estadoDeFiesta } = await import("../../src/lib/fiestaEstado.js");
+  const vaso = { nombre: "Fernet", kcal: 190 };
+  const viernes = "2026-11-20";
+  const comidas = [{ usuario_id: "u", tipo: "fiesta", fecha: viernes, gol: true, alimentos: [vaso, vaso, vaso] }];
+  const en = (fecha, h) => new Date(`${fecha}T${String(h).padStart(2, "0")}:30:00`);
+  assert.equal(estadoDeFiesta("u", comidas, en(viernes, 23))?.modo, "fiesta");
+  assert.equal(estadoDeFiesta("u", comidas, en("2026-11-21", 7))?.modo, "fiesta", "a las 7 de la mañana sigue la noche");
+  assert.equal(estadoDeFiesta("u", comidas, en("2026-11-21", 13))?.modo, "resaca");
+  assert.equal(estadoDeFiesta("u", comidas, en("2026-11-21", 19))?.modo, "resaca");
+  assert.equal(estadoDeFiesta("u", comidas, en("2026-11-21", 20)), null, "a las 20 se va");
+  assert.equal(estadoDeFiesta("u", comidas, en("2026-11-22", 10)), null, "el domingo nada");
+  assert.equal(estadoDeFiesta("u", comidas, en("2026-11-22", 14)), null);
+}
 const avisos = [];
 
 async function abrir(hora, banderas) {
@@ -22,8 +38,17 @@ async function abrir(hora, banderas) {
   return { ctx, p };
 }
 
+// 0) A las 21 del día después ya no queda nada (ni resaca ni gol).
+let { ctx, p } = await abrir(21, { __fiestas: true });
+// El vaso de las 7 de la mañana del sábado es de la noche del viernes (al cargarlo en el modo fiesta).
+assert.equal(await p.evaluate(async () => (await import("/src/lib/noche.js")).fechaDeLaNoche(new Date("2026-11-21T07:30:00"))), "2026-11-20");
+assert.equal(await p.evaluate(async () => (await import("/src/lib/noche.js")).fechaDeLaNoche(new Date("2026-11-21T13:00:00"))), "2026-11-21");
+assert.equal(await p.locator(".tarjeta-amigo", { hasText: "Nahuel" }).locator(".marca-fiesta").count(), 0, "a las 20 se va");
+assert.equal(await p.locator(".avatar-gol").count(), 0);
+await ctx.close();
+
 // 1) Al otro día: Nahuel hizo gol (resaca, corona y pelota); Juan salió hace dos noches: nada.
-let { ctx, p } = await abrir(14, { __fiestas: true });
+({ ctx, p } = await abrir(14, { __fiestas: true }));
 const nahuel = p.locator(".tarjeta-amigo", { hasText: "Nahuel" });
 assert.match(await nahuel.locator(".amigo-datos strong").innerText(), /Nahuel[\s\S]*Gol[\s\S]*Resaca/);
 assert.equal(await nahuel.locator(".avatar-gol").count(), 1, "corona en el avatar");

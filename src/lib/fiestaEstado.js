@@ -1,12 +1,16 @@
-// El modo fiesta al lado del nombre: 🍸 mientras sale, y al otro día 🥴 (resaca), con 👑⚽ si hubo gol.
+// El modo fiesta al lado del nombre: 🍸 mientras sale (hasta el mediodía siguiente), y el día después,
+// de 12 a 20, 🥴 (resaca) con 👑⚽ si hubo gol. A las 20 del día siguiente se va todo.
 import { fechaLocal, haceDias } from "./fechas.js";
 
 export const EVENTO_FESTEJO = "lomada:festejo";
 // Con menos de 3 vasos no hay resaca (si hubo gol, al otro día se ve igual la corona).
 export const VASOS_RESACA = 3;
 
-// La noche sigue siendo la misma hasta las 6 de la mañana.
-const nocheDe = (ahora) => (ahora.getHours() < 6 ? haceDias(1, ahora) : fechaLocal(ahora));
+// La noche sigue siendo la misma hasta el mediodía (igual que al cargar los vasos, en noche.js).
+const FIN_NOCHE = 12;
+// El día después, la marca de resaca o de gol se ve hasta las 20.
+export const FIN_RESACA = 20;
+const nocheDe = (ahora) => (ahora.getHours() < FIN_NOCHE ? haceDias(1, ahora) : fechaLocal(ahora));
 
 export function estadoDeFiesta(usuarioId, comidas, ahora = new Date()) {
   const noche = nocheDe(ahora);
@@ -15,6 +19,9 @@ export function estadoDeFiesta(usuarioId, comidas, ahora = new Date()) {
   const suyas = comidas.filter((c) => c.usuario_id === usuarioId && c.tipo === "fiesta" && vasos(c) > 0);
   const hoy = suyas.find((c) => c.fecha === noche);
   if (hoy) return { modo: "fiesta", gol: hoy.gol === true, vasos: vasos(hoy), comidaId: hoy.id };
+  // Antes del mediodía la noche de ayer sigue siendo "esta noche" (arriba); después de las 20, ya no hay nada.
+  const hora = ahora.getHours();
+  if (hora < FIN_NOCHE || hora >= FIN_RESACA) return null;
   const ayer = suyas.find((c) => c.fecha === anterior);
   if (!ayer) return null;
   const resaca = vasos(ayer) >= VASOS_RESACA;
