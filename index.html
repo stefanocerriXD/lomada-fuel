@@ -33,12 +33,12 @@
     <style>
       #splash { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: var(--splash-fondo, #f2f6ef); transition: opacity 0.4s ease, visibility 0.4s ease; }
       #splash.fuera { opacity: 0; visibility: hidden; pointer-events: none; }
-      #splash svg { overflow: visible; animation: splash-entra 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+      #splash svg { overflow: visible; animation: splash-entra 0.25s ease-out both; }
       /* Al abrir: los cubiertos entran de los costados y el plato gira de corrido, sin pausas. */
       #splash .splash-tenedor { animation: splash-izquierda 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
       #splash .splash-cuchillo { animation: splash-derecha 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
       #splash .splash-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.1s linear infinite; }
-      @keyframes splash-entra { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
+      @keyframes splash-entra { from { opacity: 0; } to { opacity: 1; } }
       @keyframes splash-izquierda { from { opacity: 0; transform: translateX(46px); } }
       @keyframes splash-derecha { from { opacity: 0; transform: translateX(-46px); } }
       @keyframes splash-gira { to { transform: rotate(360deg); } }
