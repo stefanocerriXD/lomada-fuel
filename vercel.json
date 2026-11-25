@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/reconocer.js": { "maxDuration": 60 },
+    "api/sugerir.js": { "maxDuration": 60 },
+    "api/captura.js": { "maxDuration": 60 }
+  }
+}

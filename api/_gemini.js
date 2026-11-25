@@ -3,7 +3,10 @@
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
 // Google da de baja modelos: si uno no está, se prueba el siguiente. Cada modelo tiene su propio cupo diario.
 // Al final va Gemma (también gratis, con mucho más cupo por día; no tiene modo JSON, así que se le pide en el texto).
-const MODELOS = [process.env.GEMINI_MODELO, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemma-3-27b-it"].filter(Boolean);
+const MODELOS = [process.env.GEMINI_MODELO, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-lite-latest", "gemma-3-27b-it", "gemma-3-12b-it"].filter(Boolean);
+// Cuánto se espera en total (la función de Vercel tiene 60 s) y como mucho por modelo.
+const TIEMPO_TOTAL = 50000;
+const TIEMPO_MODELO = 20000;
 
 export const hayGemini = () => Boolean(process.env.GEMINI_API_KEY);
 
@@ -34,9 +37,10 @@ function leerJson(texto) {
   }
 }
 
-async function una(modelo, partes, esquema, temperatura) {
+async function una(modelo, partes, esquema, temperatura, espera = TIEMPO_MODELO) {
   const gemma = modelo.startsWith("gemma");
-  const config = { temperature: temperatura, maxOutputTokens: 4096 };
+  // El razonamiento de los modelos nuevos gasta de este mismo tope: con 4096 la respuesta a veces salía cortada.
+  const config = { temperature: temperatura, maxOutputTokens: 8192 };
   if (gemma) {
     partes = [...partes, { text: `Respondé SOLO con un objeto JSON válido, sin texto antes ni después, que siga este esquema: ${JSON.stringify(esquema)}` }];
   } else {
@@ -45,20 +49,24 @@ async function una(modelo, partes, esquema, temperatura) {
   }
   // En los 2.5 se apaga el razonamiento: responde más rápido y alcanza para esto.
   if (modelo.includes("2.5")) config.thinkingConfig = { thinkingBudget: 0 };
+  // En los Gemini 3, lo mínimo de razonamiento (no se puede apagar del todo).
+  else if (modelo.startsWith("gemini-3")) config.thinkingConfig = { thinkingLevel: "low" };
   const resp = await fetch(`${API}/${modelo}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
     body: JSON.stringify({ contents: [{ role: "user", parts: partes }], generationConfig: config }),
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(espera),
   });
   if (resp.status === 429) return { estado: 429, limite: await tipoDeLimite(resp) };
   if (!resp.ok) return { estado: resp.status };
   const datos = await resp.json();
-  const texto = (datos.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
+  const candidato = datos.candidates?.[0];
+  // Partes "thought" son el razonamiento: no van en la respuesta.
+  const texto = (candidato?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || "").join("");
   try {
     return { estado: 200, respuesta: leerJson(texto) };
   } catch {
-    return { estado: 502 };
+    return { estado: 502, motivo: candidato?.finishReason || "sin_json" };
   }
 }
 
@@ -99,35 +107,53 @@ async function avisarSinCupo() {
 }
 
 // Devuelve { respuesta } o { error, estado } listo para mandar al teléfono.
-export async function preguntarGemini({ partes, esquema, temperatura = 0.2 }) {
-  let sinCupo = false;
-  let porMinuto = false;
-  for (const modelo of MODELOS) {
-    let r;
+export async function preguntarGemini({ partes, esquema, temperatura = 0.2, modelos = MODELOS, total = TIEMPO_TOTAL, pausa = 3000 }) {
+  const inicio = Date.now();
+  const quedan = () => total - (Date.now() - inicio);
+  // Qué le pasó a cada modelo: queda en los registros de Vercel para ver por qué falló.
+  const motivos = [];
+  const porMinuto = [];
+  const probar = async (modelo) => {
+    if (quedan() < 5000) return null;
     try {
-      r = await una(modelo, partes, esquema, temperatura);
+      const r = await una(modelo, partes, esquema, temperatura, Math.min(TIEMPO_MODELO, quedan() - 1000));
+      if (r.estado === 429 && r.limite === "minuto") porMinuto.push(modelo);
+      motivos.push(`${modelo}:${r.estado}${r.limite ? `-${r.limite}` : ""}${r.motivo ? `-${r.motivo}` : ""}`);
+      return r;
     } catch {
-      continue; // Tardó demasiado: se prueba con otro.
+      motivos.push(`${modelo}:demora`);
+      return null; // Tardó demasiado: se prueba con otro.
     }
-    if (r.estado === 429) {
-      if (r.limite === "minuto") porMinuto = true;
-      else sinCupo = true;
-      continue;
-    }
-    if (r.estado === 200) return { respuesta: r.respuesta || {} };
-    // Modelo dado de baja o respuesta rota: el siguiente.
+  };
+  for (const modelo of modelos) {
+    const r = await probar(modelo);
+    if (r?.estado === 200) return { respuesta: r.respuesta || {} };
+    // Sin cupo, dado de baja o respuesta rota: el siguiente.
   }
+  // Los que estaban saturados por el minuto se liberan en segundos: una vuelta más, si hay tiempo.
+  if (porMinuto.length && quedan() > pausa + 5000) {
+    await new Promise((listo) => setTimeout(listo, pausa));
+    for (const modelo of porMinuto.splice(0)) {
+      const r = await probar(modelo);
+      if (r?.estado === 200) return { respuesta: r.respuesta || {} };
+    }
+  }
+  console.warn("IA sin respuesta:", motivos.join(" "));
+  const sinCupoDelDia = (m) => m.endsWith(":429-dia");
   // Si algún modelo solo estaba saturado por el minuto, todavía queda cupo: no se avisa.
-  if (porMinuto) return { estado: 429, error: "La IA está con muchos pedidos juntos. Probá de nuevo en un minuto." };
-  if (sinCupo) {
+  if (motivos.some((m) => m.endsWith(":429-minuto"))) return { estado: 429, error: "La IA está con muchos pedidos juntos. Probá de nuevo en un minuto." };
+  // El aviso de "se terminó el cupo" solo si TODOS los modelos lo dijeron (antes bastaba con uno y otro que fallara por otra cosa).
+  if (motivos.length && motivos.every(sinCupoDelDia)) {
     await avisarSinCupo();
     return { estado: 429, error: "Se terminó el cupo gratis de hoy de la IA. Cargalo a mano o probá mañana." };
   }
   return { estado: 502, error: "La IA no respondió. Probá de nuevo en un rato." };
 }
 
+// Gemma (sin modo JSON) a veces manda los números como texto: "150 g", "12,5".
+export const aNumero = (v) => (typeof v === "string" ? Number.parseFloat(v.replace(",", ".")) : Number(v));
 const num = (v, max) => {
-  const n = Number(v);
+  const n = aNumero(v);
   return Number.isFinite(n) && n >= 0 && n <= max ? n : null;
 };
 const redondeo = (n) => Math.round(n * 10) / 10;
@@ -136,10 +162,10 @@ const redondeo = (n) => Math.round(n * 10) / 10;
 export function limpiarAlimento(a) {
   const nombre = String(a?.nombre || "").replace(/\s+/g, " ").trim().slice(0, 60);
   const gramos = num(a?.gramos, 2000);
-  const kcal = num(a?.kcal_100g, 950);
   const p = num(a?.proteinas_100g, 100) ?? 0;
   const c = num(a?.carbohidratos_100g, 100) ?? 0;
   const g = num(a?.grasas_100g, 100) ?? 0;
+  const kcal = num(a?.kcal_100g, 950) ?? (p + c + g > 0 ? p * 4 + c * 4 + g * 9 : null);
   if (!nombre || !gramos || kcal == null || p + c + g > 105) return null;
   const unidades = num(a?.unidades, 50);
   return { nombre, gramos: Math.round(gramos), unidades: unidades >= 1 ? Math.round(unidades) : null, por100: { kcal: Math.round(kcal), p: redondeo(p), c: redondeo(c), g: redondeo(g) } };
