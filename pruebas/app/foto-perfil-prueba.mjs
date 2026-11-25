@@ -99,10 +99,10 @@ const guardada = await p.evaluate(() => window.__db.perfiles.find((x) => x.id ==
 assert.match(guardada, /^u1\/perfil\/\d+\.jpg$/);
 assert.ok(await p.evaluate(() => window.__subidas.some((s) => s.ruta.includes("/perfil/") && s.contentType === "image/jpeg")));
 // En la cabecera del perfil: la foto, cuadrada, con lo azul en el centro.
-const enCabecera = p.locator(".perfil-cabecera .avatar-foto");
+const enCabecera = p.locator(".perfil-avatar .avatar-foto");
 await enCabecera.waitFor();
 assert.deepEqual(await leerFoto(enCabecera), { w: 720, h: 720, color: "azul" });
-await p.locator(".perfil-cabecera").screenshot({ path: "capturas/foto-perfil-cabecera.png" });
+await p.locator(".perfil-avatar").screenshot({ path: "capturas/foto-perfil-cabecera.png" });
 
 // 3) Tocarla la abre en grande.
 await p.getByRole("button", { name: /Ver foto de perfil de/ }).click();
@@ -129,8 +129,8 @@ await grande.getByRole("button", { name: "Sacar" }).click();
 await grande.getByRole("button", { name: "¿Sacarla?" }).click();
 await p.waitForTimeout(900);
 assert.equal(await p.evaluate(() => window.__db.perfiles.find((x) => x.id === "u1").foto_path), null);
-assert.equal(await p.locator(".perfil-cabecera .avatar-foto").count(), 0);
-assert.equal(await p.locator(".perfil-cabecera .avatar-letra").count(), 1);
+assert.equal(await p.locator(".perfil-avatar .avatar-foto").count(), 0);
+assert.equal(await p.locator(".perfil-avatar .avatar-letra").count(), 1);
 await ctx.close();
 
 // 6) La de otro: se ve en su tarjeta y en su perfil; se abre en grande, sin botones para cambiarla.
