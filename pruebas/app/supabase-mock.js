@@ -169,6 +169,7 @@ class Consulta {
       return { data: this.unico ? nuevas[0] : nuevas, error: null };
     }
     if (window.__sinRed && this.tabla === "comidas" && ["insert", "update", "delete"].includes(this.op)) return { data: null, error: { message: "Failed to fetch" } };
+    if (this.op === "update" && this.tabla === "perfiles" && "foto_path" in (this.fila || {}) && !window.__con066) return { data: null, error: { code: "PGRST204", message: "Could not find the 'foto_path' column of 'perfiles' in the schema cache" } };
     if (this.op === "update") { const cambiadas = t.filter((f) => this.filtros.every((x) => x(f))); cambiadas.forEach((f) => Object.assign(f, this.fila)); return { data: cambiadas.map((f) => ({ id: f.id })), error: null }; }
     if (this.op === "delete") { db[this.tabla] = t.filter((f) => !this.filtros.every((x) => x(f))); return { data: null, error: null }; }
     if (this.op === "upsert") {
@@ -195,6 +196,8 @@ if (window.__con063) {
   db.destacadas = window.__destacadas || [];
   db.destacadas_fotos = window.__destacadasFotos || [];
 }
+// SQL 066: foto de perfil (Nahuel ya tiene una).
+if (window.__con066) db.perfiles.forEach((pf) => { pf.foto_path = pf.id === "u2" && window.__fotoNahuel ? "u2/perfil/nahuel.jpg" : null; });
 // SQL 065: fotos fijadas en el perfil.
 if (window.__con065) db.comidas.forEach((x) => { x.fijada_en = (window.__fijadas || {})[x.id] || null; });
 // SQL 062: comidas planeadas (y una de Nahuel que todavía no comió, que no se tiene que ver).
@@ -366,7 +369,12 @@ export const supabase = {
   storage: {
     from: () => ({
       createSignedUrls: async (rutas) => (window.__firmas = (window.__firmas || 0) + 1, { data: rutas.map((path) => ({ path, signedUrl: fotos[path] || foto("#556", "#99a", "📷") })) }),
-      upload: async (ruta, archivo, op) => ((window.__subidas = window.__subidas || []).push({ ruta, tipo: archivo?.type, peso: archivo?.size, contentType: op?.contentType }), { error: null }),
+      upload: async (ruta, archivo, op) => {
+        (window.__subidas = window.__subidas || []).push({ ruta, tipo: archivo?.type, peso: archivo?.size, contentType: op?.contentType });
+        // Lo subido se puede ver después (la foto de perfil recién puesta).
+        if (archivo instanceof Blob && ruta.includes("/perfil/")) fotos[ruta] = URL.createObjectURL(archivo);
+        return { error: null };
+      },
       remove: async (rutas) => ((window.__quitados = window.__quitados || []).push(...rutas), { error: null }),
       list: async (ruta, op) => {
         const arbol = window.__archivos || {};

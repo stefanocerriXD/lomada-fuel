@@ -1437,3 +1437,32 @@ console.log("backup: pruebas pasadas");
   await db.query("delete from comidas where id = any($1)", [ids]);
   console.log("065: pruebas pasadas");
 }
+
+// ===== 066: foto de perfil =====
+{
+  const s066 = fs.readFileSync(raiz + "066_foto_de_perfil.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s066), "066 en ASCII");
+  console.log((await db.exec(s066)).at(-1).rows[0].resultado);
+  await db.exec(s066);
+  // Cada uno pone la suya, de su carpeta; la de otro, no.
+  await rol(U[0], () => db.query("update perfiles set foto_path = $2 where id = $1", [U[0], `${U[0]}/perfil/yo.jpg`]));
+  assert.equal((await uno("select foto_path from perfiles where id = $1", [U[0]])).foto_path, `${U[0]}/perfil/yo.jpg`);
+  await assert.rejects(rol(U[0], () => db.query("update perfiles set foto_path = $2 where id = $1", [U[0], `${U[1]}/perfil/otro.jpg`])), /perfiles_foto_propia/);
+  await assert.rejects(rol(U[0], () => db.query("update perfiles set foto_path = $2 where id = $1", [U[0], `${U[0]}/comida.jpg`])), /perfiles_foto_propia/);
+  // Nadie cambia la foto de otro.
+  await rol(U[1], () => db.query("update perfiles set foto_path = null where id = $1", [U[0]]));
+  assert.ok((await uno("select foto_path from perfiles where id = $1", [U[0]])).foto_path, "otro no la saca");
+  // La ven los de su grupo; los de afuera, no.
+  await db.exec(`insert into storage.objects (bucket_id, name) values ('fotos', '${U[0]}/perfil/yo.jpg')`);
+  let companeros = 0;
+  for (const { id: u } of await filas("select id from perfiles")) {
+    const delGrupo = (await rol(u, () => uno("select public.carpeta_del_grupo($1) as si", [U[0]]))).si;
+    const ve = (await rol(u, () => filas("select name from storage.objects where name like '%/perfil/yo.jpg'"))).length > 0;
+    assert.equal(ve, delGrupo, `usuario ${u}`);
+    if (delGrupo && u !== U[0]) companeros++;
+  }
+  assert.ok(companeros > 0, "algún compañero la ve");
+  await db.exec(`delete from storage.objects where name = '${U[0]}/perfil/yo.jpg'`);
+  await db.query("update perfiles set foto_path = null where id = $1", [U[0]]);
+  console.log("066: pruebas pasadas");
+}

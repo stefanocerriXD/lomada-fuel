@@ -636,6 +636,17 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       } : {}),
     }]));
   }, [perfiles, extras, comidas, reloj]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Las fotos de perfil (SQL 066): se firman al cargar los perfiles y se renuevan con el reloj de 5 minutos.
+  useEffect(() => {
+    firmarRutas(Object.values(perfiles).map((p) => p.foto_path)).catch(() => {});
+  }, [perfiles, reloj, firmarRutas]);
+  // Solo cambia cuando cambia alguna foto de perfil (no con cada foto de comida que se firma): si no, todo lo que
+  // depende de los perfiles (como la entrega de logros) se volvería a correr sin motivo.
+  const urlsDePerfil = Object.values(perfilesConCaca).map((p) => (p.foto_path && fotos[p.foto_path]) || "").join("|");
+  const perfilesConFoto = useMemo(() => {
+    if (!urlsDePerfil.replace(/\|/g, "")) return perfilesConCaca;
+    return Object.fromEntries(Object.entries(perfilesConCaca).map(([id, p]) => [id, p.foto_path && fotos[p.foto_path] ? { ...p, foto: fotos[p.foto_path] } : p]));
+  }, [perfilesConCaca, urlsDePerfil]); // eslint-disable-line react-hooks/exhaustive-deps
   const castigo = useMemo(() => {
     const base = extras.multasActivas ? castigoDe({ usuarioId: usuario.id, multas: extras.multas, bochaEvo: extras.bochaEvo, comidas }) : { marca: null, evo: false, calavera: false, diario: false, activo: false };
     if (grupo.conBocha) return { ...base, soloTexto: base.diario };
@@ -650,8 +661,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       misGrupos,
       cambiarGrupo,
       recargarGrupos,
-      yo: perfilesConCaca[usuario.id] || { ...AVATAR_BASE, id: usuario.id, nombre: "" },
-      perfiles: perfilesConCaca,
+      yo: perfilesConFoto[usuario.id] || { ...AVATAR_BASE, id: usuario.id, nombre: "" },
+      perfiles: perfilesConFoto,
       castigo,
       imagenesBocha: extras.imagenesBocha || {},
       comidas,
@@ -703,7 +714,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConCaca, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, actualizarTodo, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConFoto, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, actualizarTodo, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

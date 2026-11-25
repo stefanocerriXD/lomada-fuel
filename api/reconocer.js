@@ -1,7 +1,7 @@
 // Reconoce los alimentos de la foto de un plato, o los números de una tabla nutricional, con Gemini.
 // Devuelve cada alimento con sus gramos estimados y valores por 100 g; la app los cruza con su lista y la persona ajusta.
 import { usuarioActual } from "./_auth.js";
-import { cupoPersona, ESQUEMA_ALIMENTO, hayGemini, limpiarAlimento, preguntarGemini, textoTope } from "./_gemini.js";
+import { aNumero, cupoPersona, ESQUEMA_ALIMENTO, hayGemini, limpiarAlimento, preguntarGemini, textoTope } from "./_gemini.js";
 
 const MAXIMO_BASE64 = 2_500_000;
 
@@ -12,7 +12,8 @@ const PEDIDO = `Sos nutricionista en Argentina. Mirá la foto y listá por separ
 - Valores por 100 g típicos de la preparación argentina casera. Incluí el aceite o aderezo solo si se ve.
 - Máximo 10 alimentos, del más importante al menos.
 - "titulo": cómo llamaría la comida una persona ("Milanesa con puré").
-- Si la foto no es de comida (una captura de pantalla, una persona, un paisaje), es_comida=false y la lista vacía.`;
+- Aunque la foto esté oscura, movida, de costado o la comida se vea a medias o envuelta (en un táper, en papel, a medio comer), si hay comida es_comida=true y listá tu mejor estimación: nunca devuelvas la lista vacía si se ve algo de comer.
+- Solo si la foto claramente no es de comida (una captura de pantalla, una persona, un paisaje), es_comida=false y la lista vacía.`;
 
 const PEDIDO_TEXTO = `Sos nutricionista en Argentina. Una persona describió en palabras (dictado por voz) lo que comió.
 - Listá por separado cada alimento o bebida que nombró, con nombres cortos en español rioplatense ("Empanada de carne", "Coca-Cola Zero", "Ensalada de lechuga y tomate").
@@ -58,13 +59,13 @@ const ESQUEMA = {
 };
 
 const num = (v, max) => {
-  const n = Number(v);
+  const n = aNumero(v);
   return Number.isFinite(n) && n >= 0 && n <= max ? n : 0;
 };
 const texto = (v) => String(v || "").replace(/\s+/g, " ").trim().slice(0, 60);
 // En la etiqueta, lo que no figura (-1) vuelve vacío: así no se confunde con un 0 de verdad.
 const numOpcional = (v, max) => {
-  const n = Number(v);
+  const n = aNumero(v);
   return Number.isFinite(n) && n >= 0 && n <= max ? n : null;
 };
 

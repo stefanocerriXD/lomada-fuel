@@ -10,7 +10,7 @@ import { Suspense, useEffect, useState } from "react";
 import { perezosa } from "../lib/perezosa.js";
 import Recuperable, { CargandoSeccion } from "../componentes/Recuperable.jsx";
 import { motion } from "motion/react";
-import { ArrowLeft, Bell, BellOff, BookOpen, Check, ChefHat, ChevronRight, Crown, Download, FileText, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, MoonStar, Palette, Plane, RefreshCw, Skull, Sprout, SunMedium, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
+import { ArrowLeft, Bell, BellOff, BookOpen, Camera, Check, ChefHat, ChevronRight, Crown, Download, FileText, HeartPulse, KeyRound, ListChecks, Lock, LogOut, Megaphone, MessageSquarePlus, MoonStar, Palette, Plane, RefreshCw, Skull, Sprout, SunMedium, Target, Unplug, UserRound, Users, Volume2, VolumeX, Watch } from "lucide-react";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { guardarTema, leerTema } from "../lib/tema.js";
@@ -19,6 +19,7 @@ import { calcularPlan, OBJETIVOS, PRIORIDADES } from "../lib/cuerpo.js";
 import { FormularioContrasena } from "../componentes/Contrasena.jsx";
 import { activarAvisos, avisosActivos, desactivarAvisos, estadoAvisos } from "../lib/avisos.js";
 import { Avatar } from "../componentes/Base.jsx";
+import { useFotoPerfil } from "../componentes/FotoPerfil.jsx";
 import { AjustesRegistros } from "../componentes/RegistrosDiarios.jsx";
 import Actualizaciones from "../componentes/Actualizaciones.jsx";
 import { ACTUALIZACIONES, hayNovedades } from "../data/actualizaciones.js";
@@ -97,6 +98,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const { castigo, usuario, yo, cargarPerfiles, salud, grupo, misGrupos, extras } = useDatos();
   const [nombre, setNombre] = useState(yo.nombre);
   const [color, setColor] = useState(yo.color);
+  const fotoPerfil = useFotoPerfil(avisar);
   const [meta, setMeta] = useState(yo.meta_calorias);
   // La bio (SQL 063): solo si la base ya la tiene.
   const conBio = "bio" in yo;
@@ -147,7 +149,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
   const estadoSalud = useEstadoSalud();
   // Agrupadas para que se encuentre todo rápido; el orden de los grupos es el del menú.
   const SECCIONES = [
-    { grupo: "Vos", id: "perfil", titulo: "Tu perfil", detalle: "Nombre, color, meta y plan", icono: UserRound },
+    { grupo: "Vos", id: "perfil", titulo: "Tu perfil", detalle: "Foto, nombre, color, meta y plan", icono: UserRound },
     { grupo: "Vos", id: "registros", titulo: "Registros diarios", detalle: "Creatina, gym, tus actividades y recordatorios", icono: ListChecks },
     { grupo: "Vos", id: "motivacion", titulo: "Viaje y Match Day", detalle: "Tu cuenta regresiva y tu día de partido", icono: Plane },
     { grupo: "Vos", id: "recetas", titulo: "Mis recetas", detalle: "Tus comidas caseras por porción", icono: ChefHat },
@@ -203,12 +205,17 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
 
       {seccion === "perfil" && (
         <>
+          {fotoPerfil.elementos}
           <form className="ajustes" onSubmit={guardar}>
             <section className="tarjeta ajuste">
               <div className="perfil-vista">
-                <motion.span key={color} initial={{ scale: 0.7 }} animate={{ scale: 1 }}>
-                  <Avatar perfil={{ nombre, color }} tam={72} />
-                </motion.span>
+                {/* Tocar el avatar: elegir la foto de perfil y encuadrarla. */}
+                <button type="button" className="perfil-avatar" onClick={fotoPerfil.elegir} aria-label={yo.foto ? "Cambiar foto de perfil" : "Poner foto de perfil"}>
+                  <motion.span key={color} initial={{ scale: 0.7 }} animate={{ scale: 1 }} style={{ display: "inline-grid" }}>
+                    <Avatar perfil={{ ...yo, nombre, color }} tam={72} />
+                  </motion.span>
+                  <span className="perfil-avatar-camara" aria-hidden="true"><Camera size={13} /></span>
+                </button>
                 <label>
                   <span>Nombre</span>
                   <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={30} required />
