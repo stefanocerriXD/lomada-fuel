@@ -13,7 +13,7 @@ await p.waitForTimeout(1200);
 await p.evaluate(() => { window.__db.perfiles.find((x) => x.id === "u1").meta_calorias = 2400; });
 await p.getByRole("button", { name: "Ajustes", exact: true }).locator("visible=true").first().click();
 await p.waitForTimeout(500);
-await p.getByRole("button", { name: /Tu perfil Nombre/ }).click();
+await p.getByRole("button", { name: /Tu perfil Foto, nombre/ }).click();
 await p.waitForTimeout(500);
 const aviso = p.locator(".meta-recalculada");
 await aviso.waitFor();

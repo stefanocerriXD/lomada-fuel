@@ -17,6 +17,7 @@ import NivelGeneral from "../componentes/NivelGeneral.jsx";
 import { inicioSemana } from "../lib/multas.js";
 import TarjetaLogro from "../componentes/TarjetaLogro.jsx";
 import Visor from "../componentes/Visor.jsx";
+import { useFotoPerfil, VerFotoPerfil } from "../componentes/FotoPerfil.jsx";
 
 const SECCIONES = [["dias", "Días"], ["fotos", "Fotos"], ["logros", "Logros"]];
 // De otra persona no se ve su plan, su peso ni su agua: esos logros muestran solo el nivel.
@@ -92,13 +93,29 @@ function Contenido({ perfil, onEditar, onEditarComida, avisar }) {
     ...(avance && (propio || !SOLO_PROPIOS.has(l.codigo)) ? { cantidad: avance[l.codigo] || 0 } : {}),
   })), [avance, niveles, propio]);
 
+  const [verFoto, setVerFoto] = useState(false);
+  const cambiarFoto = useFotoPerfil(avisar);
   const cacasSemana = (extras.multas || []).filter((m) => m.usuario_id === perfil.id && m.fecha >= inicioSemana()).length;
   const abrirFoto = (comida) => setVisor({ lista: conFoto, inicio: Math.max(conFoto.findIndex((c) => c.id === comida.id), 0) });
 
   return (
     <div className={castigo.calavera && !propio ? "perfil fotos-ocultas" : "perfil"}>
+      {propio && cambiarFoto.elementos}
+      <VerFotoPerfil
+        perfil={perfil}
+        abierta={verFoto}
+        propio={propio}
+        onCerrar={() => setVerFoto(false)}
+        onCambiar={() => { setVerFoto(false); cambiarFoto.elegir(); }}
+        onQuitar={() => { setVerFoto(false); cambiarFoto.quitar(); }}
+      />
       <div className="perfil-cabecera">
-        <Avatar perfil={perfil} tam={68} />
+        {perfil.foto || propio ? (
+          <button type="button" className="perfil-avatar" onClick={() => { setVerFoto(true); vibrar(5); }} aria-label={perfil.foto ? `Ver foto de perfil de ${perfil.nombre}` : "Poner foto de perfil"}>
+            <Avatar perfil={perfil} tam={68} />
+            {propio && <span className="perfil-avatar-camara" aria-hidden="true"><Camera size={13} /></span>}
+          </button>
+        ) : <Avatar perfil={perfil} tam={68} />}
         <div>
           {perfil.usuario && <strong>@{perfil.usuario}</strong>}
           <small>Meta: {numero(perfil.meta_calorias)} kcal por día</small>

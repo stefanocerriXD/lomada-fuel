@@ -91,7 +91,7 @@ export function Avatar({ perfil, tam = 40 }) {
   const deco = tam >= 28;
   return (
     <span
-      className={marco ? `avatar con-marco marco-${marco}${forma ? " con-forma" : ""}` : "avatar"}
+      className={`${marco ? `avatar con-marco marco-${marco}${forma ? " con-forma" : ""}` : "avatar"}${perfil?.foto ? " con-foto" : ""}`}
       style={{
         width: tam,
         height: tam,
@@ -103,7 +103,9 @@ export function Avatar({ perfil, tam = 40 }) {
       }}
       aria-hidden="true"
     >
-      <span className="avatar-letra">{(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}</span>
+      {perfil?.foto
+        ? <img className="avatar-foto" src={perfil.foto} alt="" draggable={false} loading="lazy" decoding="async" />
+        : <span className="avatar-letra">{(perfil?.nombre || "").trim().charAt(0).toUpperCase() || "L"}</span>}
       {deco && marco === "zafiro" && <span className="avatar-orbita" />}
       {deco && marco === "rayo" && <span className="avatar-rayos"><i /><i /></span>}
       {deco && ["galaxia", "mitico", "nebulosa", "supernova"].includes(marco) && <span className="avatar-estrellas" />}

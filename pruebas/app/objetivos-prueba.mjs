@@ -32,7 +32,7 @@ await p.waitForTimeout(500);
 
 // Objetivos de MyFitnessPal
 await p.getByRole("button", { name: "Ajustes", exact: true }).locator("visible=true").first().click();
-await p.getByRole("button", { name: /Tu perfil Nombre/ }).click();
+await p.getByRole("button", { name: /Tu perfil Foto, nombre/ }).click();
 await p.getByRole("button", { name: "Traer objetivos de MyFitnessPal" }).click();
 const hoja = p.getByRole("dialog", { name: "Objetivos de MyFitnessPal" });
 await hoja.waitFor();
