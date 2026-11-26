@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 
 // El logo de la app, "Disco de lomada": el círculo de la Lomada (azul, franja blanca y verde)
 // con el tenedor y el cuchillo asomando por detrás, separados por un aro transparente.
@@ -21,7 +21,7 @@ export const LOGO = {
   caja: "28 -26.5 520 520",
 };
 
-export default function Logo({ tam = 36, className = "" }) {
+export default function Logo({ tam = 36, className = "", sinDisco = false }) {
   const id = useId().replace(/:/g, "");
   const { cx, cy, r, corte } = LOGO;
   return (
@@ -37,11 +37,36 @@ export default function Logo({ tam = 36, className = "" }) {
         <path className="logo-tenedor" d={LOGO.tenedorD} />
         <path className="logo-cuchillo" d={LOGO.cuchilloD} />
       </g>
-      <g className="logo-disco" clipPath={`url(#disco-${id})`}>
-        <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill="#fff" />
-        <path d={LOGO.azulD} fill={LOGO.azul} />
-        <path d={LOGO.verdeD} fill={LOGO.verde} />
-      </g>
+      {!sinDisco && <Disco id={id} />}
     </svg>
+  );
+}
+
+function Disco({ id }) {
+  const { cx, cy, r } = LOGO;
+  return (
+    <g className="logo-disco" clipPath={`url(#disco-${id})`}>
+      <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill="#fff" />
+      <path d={LOGO.azulD} fill={LOGO.azul} />
+      <path d={LOGO.verdeD} fill={LOGO.verde} />
+    </g>
+  );
+}
+
+// El logo de las pantallas de carga (igual al de index.html): los cubiertos quietos y el plato girando en su lugar.
+// El plato es un SVG aparte que gira entero, así lo mueve la placa de video y no se traba mientras carga la app.
+// Arranca "en hora" con el reloj de la página, en el mismo ángulo que el de index.html.
+export function LogoCarga({ tam = 104 }) {
+  const id = useId().replace(/:/g, "") + "c";
+  const { cx, cy, r } = LOGO;
+  const [desfase] = useState(() => -(performance.now() % 1100));
+  return (
+    <span className="carga-logo" style={{ width: tam, height: tam }} aria-hidden="true">
+      <Logo tam={tam} sinDisco />
+      <svg className="carga-disco" viewBox={`${cx - r} ${cy - r} ${r * 2} ${r * 2}`} style={{ animationDelay: `${desfase}ms` }} focusable="false">
+        <defs><clipPath id={`disco-${id}`}><circle cx={cx} cy={cy} r={r} /></clipPath></defs>
+        <Disco id={id} />
+      </svg>
+    </span>
   );
 }

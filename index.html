@@ -33,38 +33,44 @@
     <style>
       #splash { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: var(--splash-fondo, #f2f6ef); transition: opacity 0.4s ease, visibility 0.4s ease; }
       #splash.fuera { opacity: 0; visibility: hidden; pointer-events: none; }
-      #splash svg { overflow: visible; animation: splash-entra 0.25s ease-out both; }
-      /* Al abrir: los cubiertos entran de los costados y el plato gira de corrido, sin pausas. */
-      #splash .splash-tenedor { animation: splash-izquierda 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
-      #splash .splash-cuchillo { animation: splash-derecha 0.55s 0.1s cubic-bezier(0.2, 1, 0.3, 1) both; }
-      #splash .splash-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.1s linear infinite; }
+      /* El logo queda quieto en su lugar; solo gira el plato. El plato es un elemento aparte (no un grupo dentro del SVG)
+         para que lo gire la placa de video: así no se traba ni salta mientras la app se termina de bajar. */
+      #splash .splash-logo { position: relative; width: 104px; height: 104px; animation: splash-entra 0.25s ease-out both; }
+      #splash .splash-logo svg { position: absolute; display: block; }
+      #splash .splash-disco { left: 18.077%; top: 15.962%; width: 68.077%; height: 68.077%; will-change: transform; animation: splash-gira 1.1s linear infinite; }
       @keyframes splash-entra { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes splash-izquierda { from { opacity: 0; transform: translateX(46px); } }
-      @keyframes splash-derecha { from { opacity: 0; transform: translateX(-46px); } }
-      @keyframes splash-gira { to { transform: rotate(360deg); } }
+      @keyframes splash-gira { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { #splash * { animation: none !important; } }
     </style>
   </head>
   <body>
     <div id="splash" role="status" aria-label="Cargando Lomada Fuel">
-      <svg viewBox="28 -26.5 520 520" width="104" height="104" aria-hidden="true">
-        <defs>
-          <clipPath id="splash-clip"><circle cx="299" cy="233.5" r="177" /></clipPath>
-          <mask id="splash-aro" maskUnits="userSpaceOnUse" x="-1000" y="-1000" width="3000" height="3000">
-            <rect x="-1000" y="-1000" width="3000" height="3000" fill="#fff" />
-            <circle cx="299" cy="233.5" r="199" fill="#000" />
-          </mask>
-        </defs>
-        <g mask="url(#splash-aro)" fill="var(--splash-tinta, #11251a)">
-          <path class="splash-tenedor" d="M36,132 H166 V190 C166,228 118,236 118,256 V413.5 A17.5,17.5 0 0 1 83,413.5 V256 C83,236 36,228 36,190 Z M35.75,48.25 A12.25,12.25 0 0 1 60.25,48.25 V140 H35.75 Z M88.25,48.5 A12.5,12.5 0 0 1 113.25,48.5 V140 H88.25 Z M141.25,48.5 A12.5,12.5 0 0 1 166.25,48.5 V140 H141.25 Z" />
-          <path class="splash-cuchillo" d="M473,250 V60 C473,45 482,36 492,36 C520,40 540,90 540,150 V246 H521 V413.5 A17.5,17.5 0 0 1 486,413.5 V250 Z" />
-        </g>
-        <g class="splash-disco" clip-path="url(#splash-clip)">
-          <rect x="122" y="56.5" width="354" height="354" fill="#fff" />
-          <path d="M118.0,52.5 H480.0 V228.0 Q299.0,213.2 118.0,274.0 Z" fill="#0165a0" />
-          <path d="M118.0,297.7 Q299.0,244.8 480.0,257.7 V414.5 H118.0 Z" fill="#046a43" />
-        </g>
-      </svg>
+      <div class="splash-logo" aria-hidden="true">
+        <svg viewBox="28 -26.5 520 520" width="104" height="104">
+          <defs>
+            <mask id="splash-aro" maskUnits="userSpaceOnUse" x="-1000" y="-1000" width="3000" height="3000">
+              <rect x="-1000" y="-1000" width="3000" height="3000" fill="#fff" />
+              <circle cx="299" cy="233.5" r="199" fill="#000" />
+            </mask>
+          </defs>
+          <g mask="url(#splash-aro)" fill="var(--splash-tinta, #11251a)">
+            <path d="M36,132 H166 V190 C166,228 118,236 118,256 V413.5 A17.5,17.5 0 0 1 83,413.5 V256 C83,236 36,228 36,190 Z M35.75,48.25 A12.25,12.25 0 0 1 60.25,48.25 V140 H35.75 Z M88.25,48.5 A12.5,12.5 0 0 1 113.25,48.5 V140 H88.25 Z M141.25,48.5 A12.5,12.5 0 0 1 166.25,48.5 V140 H141.25 Z" />
+            <path d="M473,250 V60 C473,45 482,36 492,36 C520,40 540,90 540,150 V246 H521 V413.5 A17.5,17.5 0 0 1 486,413.5 V250 Z" />
+          </g>
+        </svg>
+        <svg class="splash-disco" viewBox="122 56.5 354 354">
+          <defs><clipPath id="splash-clip"><circle cx="299" cy="233.5" r="177" /></clipPath></defs>
+          <g clip-path="url(#splash-clip)">
+            <rect x="122" y="56.5" width="354" height="354" fill="#fff" />
+            <path d="M118.0,52.5 H480.0 V228.0 Q299.0,213.2 118.0,274.0 Z" fill="#0165a0" />
+            <path d="M118.0,297.7 Q299.0,244.8 480.0,257.7 V414.5 H118.0 Z" fill="#046a43" />
+          </g>
+        </svg>
+      </div>
+      <script>
+        // El giro va "en hora" con el reloj de la página: si después aparece el logo de carga de la app, está en el mismo ángulo y no salta.
+        try { document.querySelector("#splash .splash-disco").style.animationDelay = -(performance.now() % 1100) + "ms"; } catch (e) {}
+      </script>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

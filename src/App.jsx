@@ -30,7 +30,7 @@ const Fiesta = perezosa(() => import("./componentes/Fiesta.jsx"));
 const InformeSemanal = perezosa(() => import("./componentes/InformeSemanal.jsx"));
 import { EVENTO_ACTUALIZACIONES, hayNovedades } from "./data/actualizaciones.js";
 import TirarParaActualizar from "./componentes/TirarParaActualizar.jsx";
-import Logo from "./componentes/Logo.jsx";
+import Logo, { LogoCarga } from "./componentes/Logo.jsx";
 import { alivio, campanita, cerrar, ding, pop, prepararSonidos } from "./lib/sonidos.js";
 import { FOTOS_POR_DIA, fotosDelDia } from "./lib/multas.js";
 import { EVENTO_PEDIDOS, pedidosPendientes } from "./lib/grupos.js";
@@ -177,7 +177,7 @@ function ConGrupo({ usuario, children }) {
 function Cargando() {
   return (
     <div className="pantalla-centro pantalla-carga" role="status" aria-label="Cargando">
-      <span className="carga-logo" aria-hidden="true"><Logo tam={104} /></span>
+      <LogoCarga tam={104} />
     </div>
   );
 }

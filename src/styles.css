@@ -2672,10 +2672,11 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 /* Carga con el logo: igual que la pantalla de index.html (el plato gira de corrido, los cubiertos quietos). */
 .pantalla-carga { position: fixed; inset: 0; z-index: 5; min-height: 0; padding: 0; background: var(--fondo); }
-.carga-logo { display: inline-flex; }
-.carga-logo .logo-disco { transform-box: fill-box; transform-origin: center; animation: splash-gira 1.1s linear infinite; }
-@keyframes splash-gira { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .carga-logo, .carga-logo .logo-disco { animation: none; } }
+.carga-logo { position: relative; display: block; flex: none; }
+.carga-logo svg { position: absolute; inset: 0; display: block; }
+.carga-logo .carga-disco { inset: auto; left: 18.077%; top: 15.962%; width: 68.077%; height: 68.077%; will-change: transform; animation: splash-gira 1.1s linear infinite; }
+@keyframes splash-gira { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .carga-logo .carga-disco { animation: none; } }
 
 /* Apple Salud: lo que llegó y lo que se mandó, día por día. */
 .salud-detalle, .salud-mandar { display: grid; gap: 10px; }
@@ -2689,7 +2690,6 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 /* Sin pantallas en blanco: mientras se baja una sección, y si algo no cargó. */
 .cargando-seccion { display: grid; place-items: center; min-height: 40dvh; }
-.cargando-seccion .carga-logo { animation: none; }
 .recuperable { display: grid; justify-items: center; gap: 8px; padding: 48px 20px; text-align: center; color: var(--tinta); }
 .recuperable.completa { min-height: var(--alto-visible, 100dvh); align-content: center; background: var(--fondo); }
 .recuperable span { color: var(--tinta-2); font-size: 0.9rem; }
