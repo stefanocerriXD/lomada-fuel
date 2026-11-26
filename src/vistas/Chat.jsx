@@ -18,6 +18,7 @@ import VerReceta, { useReceta } from "../componentes/VerReceta.jsx";
 import { totalesDeReceta } from "../lib/recetasPropias.js";
 import ImagenZoom from "../componentes/ImagenZoom.jsx";
 import { fiu, recibido } from "../lib/sonidos.js";
+import { partirEnlaces } from "../lib/enlaces.js";
 
 const MAXIMO_EN_PANTALLA = 250;
 const CLAVE_AVISO = "lomada-aviso-cerrado";
@@ -45,14 +46,33 @@ const colorDeNombre = (perfiles, id) => `var(--nombre-${(Object.keys(perfiles).s
 
 import { EnVivo, listaDeNombres } from "../componentes/EnVivo.jsx";
 
+// El texto de un mensaje: los links se tocan (abren aparte) y las @menciones van resaltadas.
 function ConMenciones({ texto }) {
   const { perfiles, yo } = useDatos();
   const nombres = Object.values(perfiles).map((p) => p.nombre).filter(Boolean).sort((a, b) => b.length - a.length);
-  if (!texto.includes("@") || !nombres.length) return texto;
-  const partes = texto.split(new RegExp(`(@(?:${nombres.map(escapar).join("|")}))`, "gi"));
-  return partes.map((parte, i) => (i % 2
-    ? <b key={i} className={normal(parte) === normal(`@${yo.nombre}`) ? "mencion mia" : "mencion"}>{parte}</b>
-    : parte));
+  const menciones = (trozo, clave) => {
+    if (!trozo.includes("@") || !nombres.length) return trozo;
+    const partes = trozo.split(new RegExp(`(@(?:${nombres.map(escapar).join("|")}))`, "gi"));
+    return partes.map((parte, i) => (i % 2
+      ? <b key={`${clave}-${i}`} className={normal(parte) === normal(`@${yo.nombre}`) ? "mencion mia" : "mencion"}>{parte}</b>
+      : parte));
+  };
+  const partes = partirEnlaces(texto);
+  if (partes.length === 1 && !partes[0].url) return menciones(texto, 0);
+  return partes.map((parte, i) => (parte.url
+    ? (
+      <a
+        key={i}
+        className="link-chat"
+        href={parte.url}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        // Que el toque abra el link y no el menú del mensaje ni el deslizar para responder.
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >{parte.texto}</a>
+    )
+    : <Fragment key={i}>{menciones(parte.texto, i)}</Fragment>));
 }
 
 function AvisoNotificaciones({ avisar }) {
