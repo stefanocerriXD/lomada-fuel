@@ -1,6 +1,6 @@
 import { Component } from "react";
 import { RefreshCw } from "lucide-react";
-import Logo from "./Logo.jsx";
+import Logo, { LogoCarga } from "./Logo.jsx";
 
 // Si algo de adentro falla al cargar o al dibujarse, en vez de la pantalla en blanco: un aviso y "Recargar".
 export default class Recuperable extends Component {
@@ -34,7 +34,7 @@ export default class Recuperable extends Component {
 export function CargandoSeccion() {
   return (
     <div className="cargando-seccion" role="status" aria-label="Cargando">
-      <span className="carga-logo" aria-hidden="true"><Logo tam={56} /></span>
+      <LogoCarga tam={56} />
     </div>
   );
 }
