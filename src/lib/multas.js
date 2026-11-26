@@ -1,5 +1,5 @@
 // La caca: el que no sube ninguna foto de comida en el día amanece con la maldición del Bocha,
-// y el que más cacas junta en la semana se come al Bocha Evo toda la semana siguiente.
+// y el que más cacas junta en la semana se come al Bocha Evo el lunes siguiente (un solo día).
 import { aFecha, fechaLocal, haceDias } from "./fechas.js";
 
 export const FOTOS_POR_DIA = 1;
@@ -23,9 +23,9 @@ export function cacasDeLaSemana(multas, perfiles, fecha = fechaLocal()) {
     .sort((a, b) => b.cacas - a.cacas || a.perfil.nombre.localeCompare(b.perfil.nombre));
 }
 
-// La marca de cada uno: "evo" toda la semana del castigo, "dia" el día después de no subir fotos.
+// La marca de cada uno: "evo" el día del castigo (el lunes que guarda bocha_evo), "dia" el día después de no subir fotos.
 export function marcaDeCaca({ usuarioId, multas, bochaEvo, hoy = fechaLocal() }) {
-  if (bochaEvo.some((b) => b.usuario_id === usuarioId && b.semana === inicioSemana(hoy))) return "evo";
+  if (bochaEvo.some((b) => b.usuario_id === usuarioId && b.semana === hoy)) return "evo";
   if (multas.some((m) => m.usuario_id === usuarioId && m.fecha === haceDias(1, aFecha(hoy)))) return "dia";
   return null;
 }
@@ -41,7 +41,7 @@ export function conCalavera({ usuarioId, multas, comidas, hoy = fechaLocal() }) 
 // Lo que va al lado del nombre: la calavera pesa más que la caca.
 export const marcaDelNombre = (perfil) => (perfil?.calavera ? " 💀" : perfil?.caca ? " 💩" : "");
 
-// El castigo propio. El del día se levanta subiendo la foto de hoy; el Bocha Evo dura toda la semana.
+// El castigo propio. El del día se levanta subiendo la foto de hoy; el Bocha Evo dura solo ese lunes.
 export function castigoDe({ usuarioId, multas, bochaEvo, comidas, hoy = fechaLocal() }) {
   const marca = marcaDeCaca({ usuarioId, multas, bochaEvo, hoy });
   const evo = marca === "evo";

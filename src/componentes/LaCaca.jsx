@@ -7,7 +7,7 @@ import { comprimirImagen } from "../lib/imagen.js";
 
 const IMAGENES = [
   ["bocha", "dia", "Bocha", "Le aparece al que ayer no subió fotos."],
-  ["bocha_evo", "evo", "Bocha Evo", "Le aparece toda la semana al que más caconas juntó."],
+  ["bocha_evo", "evo", "Bocha Evo", "Le aparece el lunes, todo el día, al que más caconas juntó en la semana."],
 ];
 
 // Las reglas de la caca y, para quien administra, las imágenes del Bocha.

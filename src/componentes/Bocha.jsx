@@ -91,7 +91,7 @@ export default function Bocha() {
     setCartel(true);
   }, [modo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // El Bocha Evo pinta la app de marrón hasta que termina la semana.
+  // El Bocha Evo pinta la app de marrón todo el día del castigo.
   useEffect(() => {
     if (modo !== "evo") return undefined;
     document.documentElement.dataset.tema = "caca";
@@ -222,7 +222,7 @@ export default function Bocha() {
             <strong>{modo === "evo" ? "BOCHA EVO" : "Te cayó la maldición del Bocha"}</strong>
             <span>
               {modo === "evo"
-                ? "Fuiste el que más caconas juntó la semana pasada. Hasta el lunes: cacona en la pantalla y sin chat."
+                ? "Fuiste el que más caconas juntó la semana pasada. Todo el día de hoy: cacona en la pantalla y sin chat. Mañana se va."
                 : "Ayer no subiste ninguna foto. Subí la de hoy para sacártelo de encima."}
             </span>
             <small>Tocá para seguir</small>
