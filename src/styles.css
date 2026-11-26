@@ -1179,6 +1179,8 @@ select { width: 100%; min-height: 44px; padding: 0 10px; border: 0; border-radiu
 .chat-menciones button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 44px; padding: 4px 2px; font-weight: 600; text-align: left; }
 .mencion { font-weight: 700; color: var(--sobre-acento-suave); }
 .chat-fila.propia .mencion { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+/* Links en el chat: azul como en WhatsApp, se pueden tocar y copiar (la burbuja no deja seleccionar). */
+.link-chat { color: var(--wa-link, #027eb5); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; -webkit-touch-callout: default; }
 .mencion.mia { padding: 0 3px; border-radius: 4px; background: var(--acento-suave); color: var(--sobre-acento-suave); }
 .historial { display: flex; flex-direction: column; gap: 4px; }
 .titulo-lista { margin-top: 6px; color: var(--tinta-2); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -2808,11 +2810,11 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .informe-macro.pasado .informe-macro-barra { box-shadow: inset 0 0 0 1.5px var(--peligro, #c62828); }
 
 /* Chat como WhatsApp: burbujas chicas con colita, hora en la misma línea, letra de 16 px y la barra de abajo finita */
-:root { --wa-propia: #d9fdd3; --wa-tinta-propia: #111b21; --wa-otra: #ffffff; --wa-hora: #667781; --wa-hora-propia: #667781; }
+:root { --wa-link: #027eb5; --wa-propia: #d9fdd3; --wa-tinta-propia: #111b21; --wa-otra: #ffffff; --wa-hora: #667781; --wa-hora-propia: #667781; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema]) { --wa-propia: #005c4b; --wa-tinta-propia: #e9edef; --wa-otra: #202c33; --wa-hora: #8696a0; --wa-hora-propia: rgb(233 237 239 / 60%); }
+  :root:not([data-tema]) { --wa-link: #53bdeb; --wa-propia: #005c4b; --wa-tinta-propia: #e9edef; --wa-otra: #202c33; --wa-hora: #8696a0; --wa-hora-propia: rgb(233 237 239 / 60%); }
 }
-:root[data-tema="oscuro"], :root[data-tema="negro"] { --wa-propia: #005c4b; --wa-tinta-propia: #e9edef; --wa-otra: #202c33; --wa-hora: #8696a0; --wa-hora-propia: rgb(233 237 239 / 60%); }
+:root[data-tema="oscuro"], :root[data-tema="negro"] { --wa-link: #53bdeb; --wa-propia: #005c4b; --wa-tinta-propia: #e9edef; --wa-otra: #202c33; --wa-hora: #8696a0; --wa-hora-propia: rgb(233 237 239 / 60%); }
 :root[data-tema="negro"] { --wa-otra: #1f1f1f; }
 
 .chat-mensajes { gap: 2px; padding: 4px 9px 4px 2px; }
