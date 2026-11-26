@@ -1,7 +1,7 @@
 import { Camera, Check } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal } from "../lib/fechas.js";
-import { cacasDeLaSemana, FOTOS_POR_DIA, fotosDelDia, inicioSemana } from "../lib/multas.js";
+import { cacasDeLaSemana, FOTOS_POR_DIA, fotosDelDia } from "../lib/multas.js";
 import { Avatar } from "./Base.jsx";
 
 // Las maldiciones de la semana y quién carga con el Bocha Evo.
@@ -9,7 +9,7 @@ export default function Multas() {
   const { usuario, perfiles, comidas, extras, grupo } = useDatos();
   const hoy = fechaLocal();
   const tabla = cacasDeLaSemana(extras.multas || [], perfiles, hoy);
-  const evo = (extras.bochaEvo || []).filter((b) => b.semana === inicioSemana(hoy)).map((b) => perfiles[b.usuario_id]?.nombre).filter(Boolean);
+  const evo = (extras.bochaEvo || []).filter((b) => b.semana === hoy).map((b) => perfiles[b.usuario_id]?.nombre).filter(Boolean);
   const subio = fotosDelDia(comidas, usuario.id, hoy) >= FOTOS_POR_DIA;
 
   return (
@@ -21,7 +21,7 @@ export default function Multas() {
         <small>Mínimo {FOTOS_POR_DIA} foto de comida por día. Se cuenta a la medianoche.</small>
       </div>
 
-      {evo.length > 0 && <p className="multas-evo">Bocha Evo esta semana: <strong>{evo.join(" y ")}</strong></p>}
+      {evo.length > 0 && <p className="multas-evo">Bocha Evo hoy: <strong>{evo.join(" y ")}</strong></p>}
 
       <ul className="multas-tabla">
         {tabla.map(({ perfil, cacas }) => (
@@ -33,7 +33,7 @@ export default function Multas() {
         ))}
       </ul>
       <small className="multas-nota">{grupo.conBocha
-        ? "Cada día sin foto es una maldición del Bocha. El domingo a la noche, el que más juntó se come al Bocha Evo toda la semana siguiente."
+        ? "Cada día sin foto es una maldición del Bocha. El domingo a la noche, el que más juntó se come al Bocha Evo todo el lunes."
         : "Cada día sin foto es una 💩. Al día siguiente ves borrosas las fotos de los demás hasta subir la tuya."} Dos semanas sin subir: 💀 y no ves ninguna foto hasta subir la tuya.</small>
     </section>
   );

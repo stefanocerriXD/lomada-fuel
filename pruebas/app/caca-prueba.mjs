@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright-core";
+import { castigoDe } from "../../src/lib/multas.js";
+
+// El Bocha Evo dura un día: el lunes que guarda la fila. El martes (y el resto de la semana) ya no.
+const evoDel = (hoy) => castigoDe({ usuarioId: "u1", multas: [], bochaEvo: [{ usuario_id: "u1", semana: "2026-11-23", cacas: 5 }], comidas: [], hoy });
+assert.equal(evoDel("2026-11-23").evo, true, "el lunes, sí");
+assert.equal(evoDel("2026-11-24").evo, false, "el martes ya no");
+assert.equal(evoDel("2026-11-26").activo, false, "el jueves, nada");
+
 const B = "archivos/";
 const b = await chromium.launch({ channel: "chrome", headless: true });
 const errores = [];
@@ -18,12 +26,12 @@ async function abrir() {
 }
 const castigar = (p, evo) => p.evaluate((evo) => {
   const f = (d) => { const x = new Date(); x.setDate(x.getDate() - d); return x.toLocaleDateString("en-CA"); };
-  const lunes = (() => { const x = new Date(); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.toLocaleDateString("en-CA"); })();
   const hoy = f(0);
   // Hoy todavía no subí ninguna foto.
   window.__db.comidas = window.__db.comidas.filter((c) => !(c.usuario_id === "u1" && c.fecha === hoy));
   window.__db.multas = [{ usuario_id: "u1", fecha: f(1), fotos: 0 }, { usuario_id: "u3", fecha: f(1), fotos: 0 }];
-  window.__db.bocha_evo = evo ? [{ usuario_id: "u1", semana: lunes, cacas: 5 }] : [];
+  // El Evo es del día que dice la fila (en la base siempre un lunes): hoy, para que la prueba ande cualquier día.
+  window.__db.bocha_evo = evo ? [{ usuario_id: "u1", semana: hoy, cacas: 5 }] : [];
   window.__canalDatos().emitir("multas", { eventType: "INSERT" });
   window.__canalDatos().emitir("comidas", { eventType: "DELETE", old: {} });
 }, evo);

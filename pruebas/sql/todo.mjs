@@ -1433,3 +1433,33 @@ console.log("backup: pruebas pasadas");
   await db.query("update perfiles set foto_path = null where id = $1", [U[0]]);
   console.log("066: pruebas pasadas");
 }
+
+// ===== 067: el Bocha Evo dura un dia =====
+{
+  const s067 = fs.readFileSync(raiz + "067_bocha_evo_un_dia.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s067), "067 en ASCII");
+  console.log((await db.exec(s067)).at(-1).rows[0].resultado);
+  await db.exec(s067);
+  const g = await uno("select m.usuario_id, m.grupo_id from miembros_grupo m join grupos g on g.id = m.grupo_id where g.con_bocha limit 1");
+  assert.ok(g, "hay un grupo con Bocha");
+  const hoy = "(now() at time zone 'America/Argentina/Buenos_Aires')::date";
+  const mandar = () => db.query("insert into mensajes (usuario_id, texto, grupo_id) values ($1, 'hola', $2)", [g.usuario_id, g.grupo_id]);
+  await db.exec("delete from bocha_evo");
+  // El dia del castigo: sin chat.
+  await db.query(`insert into bocha_evo (usuario_id, semana, cacas) values ($1, ${hoy}, 5)`, [g.usuario_id]);
+  await assert.rejects(mandar(), /bocha_evo/, "el lunes del castigo no puede escribir");
+  // Al dia siguiente ya puede (antes seguia tapado toda la semana).
+  await db.query(`update bocha_evo set semana = ${hoy} - 1 where usuario_id = $1`, [g.usuario_id]);
+  await mandar();
+  // Los textos: "todo el lunes", ya no "toda la semana".
+  for (const f of ["contar_multas(date)", "destinos_caca(text, text)"]) {
+    const def = (await uno(`select pg_get_functiondef('public.${f}'::regprocedure) d`)).d;
+    assert.ok(!/toda la semana|Toda la semana/.test(def), `${f}: ${def.match(/.{0,40}oda la semana.{0,40}/)?.[0]}`);
+    assert.ok(def.includes("todo el lunes") || def.includes("Todo el lunes"), f);
+  }
+  await db.query(`update bocha_evo set semana = ${hoy}`);
+  const ev = (await uno("select public.destinos_caca('secreta', 'anuncio_caca') a")).a;
+  if (ev) assert.equal(ev.cuerpo, "Todo el lunes con la pantalla de cacona y sin chat.");
+  await db.exec("delete from bocha_evo; delete from mensajes where texto = 'hola'");
+  console.log("067: pruebas pasadas");
+}
