@@ -3071,6 +3071,27 @@ button.planeada-datos { padding: 0; background: none; color: inherit; text-align
 .tabla-estrellas .datos small { color: var(--tinta-2); font-size: 0.78rem; }
 .tabla-estrellas .promedio { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; }
 .tabla-estrellas .promedio svg { color: #e9a800; }
+/* Estrellas en el informe semanal: las tuyas (con las cinco pintadas hasta el promedio) y la tabla del grupo. */
+.hp-estrellitas { position: relative; display: inline-flex; }
+.hp-estrellitas > span { display: inline-flex; gap: 4px; white-space: nowrap; }
+.hp-estrellitas .vacias { color: rgb(255 255 255 / 22%); }
+.hp-estrellitas .llenas { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: #ffc83a; filter: drop-shadow(0 2px 8px rgb(255 200 58 / 45%)); }
+.hp-estrellitas svg { flex: none; }
+.hp-sub.chica { margin: -4px 0 0; font-size: 0.82rem; opacity: 0.75; }
+.hp-ranking { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.hp-ranking li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; background: rgb(255 255 255 / 10%); }
+.hp-ranking li.yo { background: rgb(255 255 255 / 22%); box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 45%); }
+.hp-ranking li:first-child .lugar { color: #ffc83a; }
+.hp-ranking .lugar { font-weight: 900; text-align: center; }
+.hp-ranking .datos { display: grid; min-width: 0; line-height: 1.2; }
+.hp-ranking .datos strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hp-ranking .datos small { font-size: 0.78rem; opacity: 0.8; }
+.hp-ranking .promedio { display: inline-flex; align-items: center; gap: 4px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.hp-ranking .promedio svg { color: #ffc83a; }
+.informe-estrellas { display: flex; flex-direction: column; }
+.informe-estrellas h3 { display: flex; align-items: center; gap: 6px; margin: 10px 0 4px; font-size: 0.95rem; }
+.informe-estrellas h3 svg { color: #e9a800; }
+.informe-estrellas .tabla-estrellas { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--borde); }
 .estrellas-semana-nota { margin: 0; color: var(--tinta-2); font-size: 0.8rem; }
 
 /* Guía de novedades: un foco sobre lo nuevo y un cartelito con OK y la cruz. */
