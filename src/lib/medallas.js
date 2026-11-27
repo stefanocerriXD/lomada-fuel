@@ -1,8 +1,9 @@
 import {
   Beef, Bomb, Camera, Candy, CupSoda, Droplets, Dumbbell, Flame, Leaf, Moon, Pizza, Repeat, Scale, Soup, Sparkles,
   Sunrise, Target, Utensils, UtensilsCrossed, Wine, Crown, Martini, PartyPopper, Pill,
-  Volleyball, Footprints, Trophy, PersonStanding,
+  Volleyball, Footprints, Trophy, PersonStanding, Star, ChefHat, Award, Gavel, CalendarCheck,
 } from "lucide-react";
+import { cantidadesEstrellas, PREFIJO_CHEF, semanasChefNuevas } from "./estrellas.js";
 import { calcularPlan } from "./cuerpo.js";
 import { desafioTerminado, puntajes } from "./desafios.js";
 import { aFecha, fechaLocal } from "./fechas.js";
@@ -41,6 +42,14 @@ export const LOGROS = [
   logro("cuatro", "alimentacion", Wine, "días con las 4 comidas", [[1, "Cuatro de cuatro"], [7, "Ordenado"], [30, "Reloj suizo"], [90, "Metrónomo"], [300, "Máquina de registrar"]]),
   logro("fotografo", "alimentacion", Camera, "fotos", [[10, "Fotógrafo aficionado"], [50, "Fotógrafo gastronómico"], [150, "Foodie"], [400, "Crítico gastronómico"], [1000, "Leyenda de la foto"]]),
   logro("monotematico", "alimentacion", Repeat, "veces lo mismo", [[7, "Repetidor"], [15, "Monotemático"], [30, "Cabeza dura"], [75, "Fanático"], [200, "Una sola comida"]]),
+
+  // Estrellas: lo que el grupo puntúa tus platos desde las historias (SQL 068).
+  logro("estrellas", "estrellas", Star, "estrellas recibidas", [[10, "Primera estrella"], [50, "Cocinero de barrio"], [150, "Chef"], [400, "Estrella Michelin"], [1000, "Leyenda de la cocina"]]),
+  logro("cinco", "estrellas", Award, "platos de 5 estrellas", [[1, "Plato perfecto"], [5, "Mano de oro"], [15, "Alta cocina"], [40, "Cocina de autor"], [100, "Cinco tenedores"]]),
+  logro("chef", "estrellas", ChefHat, "semanas como chef de la semana", [[1, "Chef de la semana"], [3, "Chef del mes"], [8, "Jefe de cocina"], [20, "Chef ejecutivo"], [52, "Chef del año"]]),
+  // Puntuar los platos de los demás también suma: desde el primer voto, y por volver a votar seguido.
+  logro("jurado", "estrellas", Gavel, "platos puntuados", [[1, "Primer voto"], [20, "Jurado"], [75, "Paladar fino"], [250, "Juez implacable"], [800, "La voz de la crítica"]]),
+  logro("jurado_dias", "estrellas", CalendarCheck, "días puntuando platos", [[3, "Votante"], [10, "Jurado de la semana"], [30, "Jurado del mes"], [90, "Jurado vitalicio"], [200, "Corte suprema del plato"]]),
 
   // Fiesta: lo que se carga en el modo fiesta. Los goles no dan logros.
   logro("vasos", "fiesta", Martini, "vasos en el modo fiesta", [[10, "Primer brindis"], [50, "Copa en mano"], [150, "Barra libre"], [400, "Dueño de la barra"], [1000, "Hígado de acero"]]),
@@ -126,7 +135,7 @@ export function mejorRacha(fechas) {
 }
 
 // Cuánto lleva la persona en cada logro.
-export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, victorias = 0, registros = [] }) {
+export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, victorias = 0, registros = [], puntajes = [], semanasChef = 0 }) {
   const suyas = comidas.filter((c) => c.usuario_id === usuarioId);
   // Las noches del modo fiesta tienen sus propios logros: no cuentan como comidas.
   const fiestas = suyas.filter((c) => c.tipo === "fiesta" && !c.privada && Array.isArray(c.alimentos) && c.alimentos.length > 0);
@@ -164,6 +173,8 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
   const ids = new Set(suyas.map((c) => c.id));
   total.fotogenico = reacciones.filter((r) => ids.has(r.comida_id)).length;
 
+  Object.assign(total, cantidadesEstrellas({ usuarioId, comidas, puntajes, semanasChef }));
+
   for (const [codigo, re] of Object.entries(ANTOJOS)) total[codigo] = visibles.filter((c) => re.test(textoDe(c))).length;
 
   const horaDe = (c) => new Date(c.creado_en).getHours();
@@ -185,8 +196,8 @@ export function cantidades({ usuarioId, comidas, agua, reacciones, perfiles, sal
   return total;
 }
 
-// Devuelve lo nuevo para guardar: retos ganados ("victoria:id") y niveles alcanzados ("mate:2").
-export function medallasGanadas({ usuarioId, comidas, agua, reacciones, desafios, perfiles, salud, pesos, yaGanadas, registros = [] }) {
+// Devuelve lo nuevo para guardar: retos ganados ("victoria:id"), semanas de chef ("chef_semana:2026-11-23") y niveles alcanzados ("mate:2").
+export function medallasGanadas({ usuarioId, comidas, agua, reacciones, desafios, perfiles, salud, pesos, yaGanadas, registros = [], puntajes = [] }) {
   const victoriasPrevias = yaGanadas.filter((c) => c.startsWith("victoria:"));
   const nuevasVictorias = desafios
     .filter((d) => {
@@ -196,12 +207,14 @@ export function medallasGanadas({ usuarioId, comidas, agua, reacciones, desafios
     })
     .map((d) => `victoria:${d.id}`);
 
-  const total = cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, registros, victorias: victoriasPrevias.length + nuevasVictorias.length });
+  const nuevasChef = puntajes.length ? semanasChefNuevas({ usuarioId, comidas, puntajes, perfiles, yaGanadas }) : [];
+  const semanasChef = yaGanadas.filter((c) => c.startsWith(PREFIJO_CHEF)).length + nuevasChef.length;
+  const total = cantidades({ usuarioId, comidas, agua, reacciones, perfiles, salud, pesos, registros, puntajes, semanasChef, victorias: victoriasPrevias.length + nuevasVictorias.length });
   const guardados = nivelesGuardados(yaGanadas);
   const niveles = LOGROS.flatMap((l) => {
     const alcanzado = nivelDe(l, total[l.codigo] || 0);
     const desde = (guardados[l.codigo] || 0) + 1;
     return Array.from({ length: Math.max(0, alcanzado - desde + 1) }, (_, i) => `${l.codigo}:${desde + i}`);
   });
-  return [...nuevasVictorias, ...niveles];
+  return [...nuevasVictorias, ...nuevasChef, ...niveles];
 }

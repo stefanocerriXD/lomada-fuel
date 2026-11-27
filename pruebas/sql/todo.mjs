@@ -1463,3 +1463,106 @@ console.log("backup: pruebas pasadas");
   await db.exec("delete from bocha_evo; delete from mensajes where texto = 'hola'");
   console.log("067: pruebas pasadas");
 }
+
+// ===== 068: estrellas a los platos =====
+{
+  const s068 = fs.readFileSync(raiz + "068_estrellas.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s068), "068 en ASCII");
+  console.log((await db.exec(s068)).at(-1).rows[0].resultado);
+  await db.exec(s068);
+  const yo = U[0];
+  const companero = (await uno("select m2.usuario_id id from miembros_grupo m1 join miembros_grupo m2 on m1.grupo_id = m2.grupo_id where m1.usuario_id = $1 and m2.usuario_id <> $1 limit 1", [yo])).id;
+  const ajeno = (await uno("select p.id from perfiles p where p.id <> $1 and not exists (select 1 from miembros_grupo a join miembros_grupo b on a.grupo_id = b.grupo_id where a.usuario_id = p.id and b.usuario_id = $1) limit 1", [yo]))?.id;
+  const nueva = (u, tipo = "almuerzo") => rol(u, () => uno("insert into comidas (usuario_id, tipo, fecha, descripcion, calorias) values ($1, $2, current_date, 'Milanesa', 700) returning id", [u, tipo]));
+  const suya = (await nueva(companero)).id;
+  const mia = (await nueva(yo)).id;
+  const fiesta = (await nueva(companero, "fiesta").catch(() => null))?.id;
+  const poner = (u, comida, n) => rol(u, () => db.query("insert into puntajes_comida (comida_id, usuario_id, estrellas) values ($1, $2, $3) on conflict (comida_id, usuario_id) do update set estrellas = excluded.estrellas", [comida, u, n]));
+  // Al plato de un compañero, si; al propio, no; a nombre de otro, no; fuera de 1 a 5, no.
+  await poner(yo, suya, 4);
+  await poner(yo, suya, 5);
+  assert.equal((await uno("select estrellas from puntajes_comida where comida_id = $1 and usuario_id = $2", [suya, yo])).estrellas, 5, "se cambia");
+  await assert.rejects(poner(yo, mia, 5), /row-level security/, "a la propia no");
+  await assert.rejects(rol(yo, () => db.query("insert into puntajes_comida (comida_id, usuario_id, estrellas) values ($1, $2, 5)", [suya, companero])), /row-level security/);
+  await assert.rejects(poner(yo, suya, 6), /check/);
+  await assert.rejects(poner(yo, suya, 0), /check/);
+  if (fiesta) await assert.rejects(poner(yo, fiesta, 5), /row-level security/, "la fiesta no se puntua");
+  // Las ve el grupo (el dueno del plato tambien); alguien de otro grupo, no, y tampoco puede puntuar.
+  assert.equal((await rol(companero, () => filas("select * from puntajes_comida where comida_id = $1", [suya]))).length, 1);
+  if (ajeno) {
+    assert.equal((await rol(ajeno, () => filas("select * from puntajes_comida where comida_id = $1", [suya]))).length, 0, "otro grupo no las ve");
+    await assert.rejects(poner(ajeno, suya, 5), /row-level security/, "otro grupo no puntua");
+  }
+  // Nadie saca la de otro; la propia si. Si se borra la comida, se van sus estrellas.
+  await rol(companero, () => db.query("delete from puntajes_comida where comida_id = $1", [suya]));
+  assert.equal((await uno("select count(*)::int n from puntajes_comida where comida_id = $1", [suya])).n, 1, "otro no la saca");
+  await rol(yo, () => db.query("delete from puntajes_comida where comida_id = $1 and usuario_id = $2", [suya, yo]));
+  assert.equal((await uno("select count(*)::int n from puntajes_comida where comida_id = $1", [suya])).n, 0);
+  await poner(yo, suya, 3);
+  await db.query("delete from comidas where id = any($1)", [[suya, mia, fiesta].filter(Boolean)]);
+  assert.equal((await uno("select count(*)::int n from puntajes_comida")).n, 0, "se borra con la comida");
+  await assert.rejects(db.query("set role anon").then(() => db.query("select * from puntajes_comida")).finally(() => db.query("reset role")), /permission denied/);
+  console.log("068: pruebas pasadas");
+}
+
+// ===== 069: los pedidos para entrar, en el chat del grupo =====
+{
+  const s069 = fs.readFileSync(raiz + "069_pedidos_en_el_chat.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s069), "069 en ASCII");
+  console.log((await db.exec(s069)).at(-1).rows[0].resultado);
+  await db.exec(s069);
+  // Un grupo nuevo con admin y otro integrante, y alguien de afuera que pide entrar.
+  const [admin, otro, afuera] = (await filas("select id from perfiles order by id limit 3")).map((r) => r.id);
+  assert.ok(afuera, "hay tres personas");
+  const g = await uno("insert into grupos (nombre, codigo, con_bocha, creado_por) values ('Chat pedidos', 'chatpedidos-4321', false, $1) returning id, codigo, creado_por", [admin]);
+  await db.query("insert into miembros_grupo (usuario_id, grupo_id) values ($1, $3), ($2, $3) on conflict do nothing", [admin, otro, g.id]);
+  await db.query("delete from miembros_grupo where usuario_id = $1 and grupo_id = $2", [afuera, g.id]);
+  await db.query("delete from salidas_grupo where usuario_id = $1", [afuera]);
+  await db.query("delete from solicitudes_grupo where usuario_id = $1", [afuera]);
+  const nombre = (await uno("select nombre from perfiles where id = $1", [afuera])).nombre;
+  // El último aviso de pedido del grupo (un pedido cancelado se borra, pero su mensaje queda).
+  const delPedido = async () => uno("select m.* from mensajes m where m.grupo_id = $1 and m.aviso_grupo = 'pedido' order by m.creado_en desc, m.id limit 1", [g.id]);
+
+  // Pide entrar: aparece en el chat de ese grupo, esperando.
+  await rol(afuera, () => db.query("select public.pedir_entrar_a_grupo($1)", [g.codigo]));
+  let m = await delPedido();
+  assert.equal(m.grupo_id, g.id);
+  assert.equal(m.usuario_id, null, "lo dice el bot");
+  assert.equal(m.solicitud_estado, "pendiente");
+  assert.equal(m.texto, `${nombre} quiere unirse al grupo.`);
+  // Solo el admin lo acepta; otro del grupo, no.
+  await assert.rejects(rol(otro, () => db.query("select public.responder_solicitud($1, true)", [m.solicitud_id])), /no_sos_admin/);
+  await rol(g.creado_por, () => db.query("select public.responder_solicitud($1, true)", [m.solicitud_id]));
+  m = await delPedido();
+  assert.equal(m.solicitud_estado, "aceptada", "queda aceptado");
+  const unido = await uno("select texto, grupo_id from mensajes where solicitud_id = $1 and aviso_grupo = 'unido'", [m.solicitud_id]);
+  assert.equal(unido.texto, `${nombre} se unió al grupo.`);
+  assert.equal(unido.grupo_id, g.id);
+  assert.ok(await uno("select 1 from miembros_grupo where usuario_id = $1 and grupo_id = $2", [afuera, g.id]), "ya esta adentro");
+
+  // Otro pedido que se cancela: el mensaje lo dice. Y uno rechazado tambien.
+  await db.query("delete from miembros_grupo where usuario_id = $1 and grupo_id = $2", [afuera, g.id]);
+  await db.query("delete from salidas_grupo where usuario_id = $1", [afuera]);
+  await rol(afuera, () => db.query("select public.pedir_entrar_a_grupo($1)", [g.codigo]));
+  await rol(afuera, () => db.query("select public.cancelar_solicitud($1)", [g.id]));
+  assert.equal((await delPedido()).solicitud_estado, "cancelada");
+  await rol(afuera, () => db.query("select public.pedir_entrar_a_grupo($1)", [g.codigo]));
+  m = await delPedido();
+  await rol(g.creado_por, () => db.query("select public.responder_solicitud($1, false)", [m.solicitud_id]));
+  assert.equal((await delPedido()).solicitud_estado, "rechazada");
+  assert.equal((await uno("select count(*)::int n from mensajes where solicitud_id = $1 and aviso_grupo = 'unido'", [m.solicitud_id])).n, 0, "rechazado no se une");
+  // Los del grupo lo ven en su chat (mirando ese grupo); los de afuera, no.
+  const antesGrupo = (await uno("select grupo_id from perfiles where id = $1", [otro])).grupo_id;
+  await db.exec("set lomada.cambiar_grupo = 'si'");
+  await db.query("update perfiles set grupo_id = $2 where id = $1", [otro, g.id]);
+  await db.exec("reset lomada.cambiar_grupo");
+  assert.ok((await rol(otro, () => filas("select id from mensajes where solicitud_id = $1", [m.solicitud_id]))).length >= 1, "el del grupo lo ve");
+  assert.equal((await rol(afuera, () => filas("select id from mensajes where solicitud_id = $1", [m.solicitud_id]))).length, 0, "el de afuera no ve el chat");
+  await db.exec("set lomada.cambiar_grupo = 'si'");
+  await db.query("update perfiles set grupo_id = $2 where id = $1", [otro, antesGrupo]);
+  await db.exec("reset lomada.cambiar_grupo");
+  await db.query("delete from mensajes where aviso_grupo is not null");
+  await db.query("delete from solicitudes_grupo where usuario_id = $1", [afuera]);
+  await db.query("delete from grupos where id = $1", [g.id]);
+  console.log("069: pruebas pasadas");
+}

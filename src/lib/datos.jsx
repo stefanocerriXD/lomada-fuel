@@ -7,6 +7,7 @@ import { haceDias } from "./fechas.js";
 import { cantidades, nivelesGuardados, nivelGeneral } from "./medallas.js";
 import { configurarTotales } from "./macros.js";
 import { castigoDe, conCalavera, marcaDeCaca } from "./multas.js";
+import { PREFIJO_CHEF } from "./estrellas.js";
 import { estadoDeFiesta } from "./fiestaEstado.js";
 import { marcarActividad } from "./vivo.js";
 import { ponerInsignia } from "./insignia.js";
@@ -55,6 +56,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   const [salud, setSalud] = useState(undefined);
   const [pesos, setPesos] = useState([]);
   const [reacciones, setReacciones] = useState([]);
+  // Estrellas a los platos (SQL 068). Sin la tabla, null: no se muestra para puntuar.
+  const [puntajes, setPuntajes] = useState(null);
   const [perfilId, abrirPerfil] = useState(null);
   const [respuesta, responder] = useState(null);
   const [mensajes, setMensajes] = useState([]);
@@ -314,6 +317,36 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     if (!error) setReacciones(data);
   }, []);
 
+  const cargarPuntajes = useCallback(async () => {
+    const { data, error } = await supabase.from("puntajes_comida").select("comida_id, usuario_id, estrellas, creado_en").limit(8000);
+    setPuntajes(error ? null : data);
+  }, []);
+
+  // Poner estrellas (o cambiarlas). Tocar las mismas que ya pusiste las saca.
+  // Lo que había se lee en el momento (de la referencia), no adentro de la actualización, que React corre después.
+  const puntajesRef = useRef(puntajes);
+  puntajesRef.current = puntajes;
+  const puntuar = useCallback(
+    async (comidaId, estrellas) => {
+      const antes = (puntajesRef.current || []).find((p) => p.comida_id === comidaId && p.usuario_id === usuario.id)?.estrellas || 0;
+      setPuntajes((prev) => {
+        const lista = prev || [];
+        const sin = lista.filter((p) => !(p.comida_id === comidaId && p.usuario_id === usuario.id));
+        return antes === estrellas ? sin : [...sin, { comida_id: comidaId, usuario_id: usuario.id, estrellas, creado_en: new Date().toISOString() }];
+      });
+      const consulta = supabase.from("puntajes_comida");
+      const { error } = antes === estrellas
+        ? await consulta.delete().eq("comida_id", comidaId).eq("usuario_id", usuario.id)
+        : await consulta.upsert({ comida_id: comidaId, usuario_id: usuario.id, estrellas }, { onConflict: "comida_id,usuario_id" });
+      if (error) {
+        cargarPuntajes().catch(() => {});
+        return false;
+      }
+      return antes === estrellas ? 0 : estrellas;
+    },
+    [usuario.id, cargarPuntajes],
+  );
+
   const alternarReaccion = useCallback(
     async (comidaId, emoji) => {
       const clave = (r) => r.comida_id === comidaId && r.usuario_id === usuario.id && r.emoji === emoji;
@@ -404,11 +437,12 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   useEffect(() => {
     cargarSalud().catch(() => {});
     cargarReacciones().catch(() => {});
+    cargarPuntajes().catch(() => {});
     cargarExtras().catch(() => {});
     // El bot publica una sola vez por semana, sin importar cuántas veces se llame.
     supabase.rpc("publicar_resumen_semanal").then(() => {}, () => {});
     cargarLogros().catch(() => {});
-  }, [cargarSalud, cargarReacciones, cargarExtras, cargarLogros]);
+  }, [cargarSalud, cargarReacciones, cargarPuntajes, cargarExtras, cargarLogros]);
 
   useEffect(() => {
     let activo = true;
@@ -437,8 +471,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   const refrescar = useCallback(async (forzar = false) => {
     if (!forzar && Date.now() - ultimoRefresco.current < 2000) return;
     ultimoRefresco.current = Date.now();
-    await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarExtras(), cargarSocial(), cargarInvitaciones()]);
-  }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarExtras, cargarSocial, cargarInvitaciones]);
+    await Promise.allSettled([cargarPerfiles(), cargarComidas(), cargarMensajes(), cargarReacciones(), cargarPuntajes(), cargarExtras(), cargarSocial(), cargarInvitaciones()]);
+  }, [cargarPerfiles, cargarComidas, cargarMensajes, cargarReacciones, cargarPuntajes, cargarExtras, cargarSocial, cargarInvitaciones]);
 
   // Deslizar hacia abajo: trae todo de nuevo, también los logros y lo de cada pantalla.
   const actualizarTodo = useCallback(async () => {
@@ -468,6 +502,15 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     let canal = supabase.channel(`grupo-${Date.now()}`);
     canal = tabla(canal, "comidas", () => enTanda("comidas", cargarComidas));
     canal = tabla(canal, "reacciones", () => enTanda("reacciones", cargarReacciones));
+    // Las estrellas llegan de a una (no se vuelve a bajar toda la lista por cada estrella: menos tráfico).
+    canal = tabla(canal, "puntajes_comida", ({ eventType, new: nueva, old: vieja }) => {
+      const fila = eventType === "DELETE" ? vieja : nueva;
+      if (!fila?.comida_id || !fila?.usuario_id) return enTanda("puntajes", cargarPuntajes);
+      setPuntajes((prev) => {
+        const sin = (prev || []).filter((p) => !(p.comida_id === fila.comida_id && p.usuario_id === fila.usuario_id));
+        return eventType === "DELETE" ? sin : [...sin, { comida_id: fila.comida_id, usuario_id: fila.usuario_id, estrellas: fila.estrellas, creado_en: fila.creado_en }];
+      });
+    });
     canal = tabla(canal, "perfiles", () => enTanda("perfiles", cargarPerfiles));
     for (const nombre of ["medallas", "desafios", "agua", "multas", "bocha_evo", "ajustes_grupo"]) canal = tabla(canal, nombre, () => enTanda("extras", cargarExtras));
     for (const nombre of ["reacciones_mensajes", "lecturas"]) canal = tabla(canal, nombre, () => enTanda("social", cargarSocial));
@@ -510,7 +553,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
         reintento.current = setTimeout(conectar, REINTENTO_MS);
       }
     });
-  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura, marcarEliminado, grupo.id]);
+  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarPuntajes, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura, marcarEliminado, grupo.id]);
 
   useEffect(() => {
     cargarMensajes().catch(() => setMensajesListos(true));
@@ -610,9 +653,11 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
 
   const progreso = useMemo(() => {
     if (!comidasLogros) return null;
-    const victorias = extras.medallas.filter((m) => m.usuario_id === usuario.id && m.codigo.startsWith("victoria:")).length;
-    return cantidades({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, perfiles, salud: salud || null, pesos, victorias, registros: registrosLogros });
-  }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, salud, usuario.id, registrosLogros]);
+    const mias = extras.medallas.filter((m) => m.usuario_id === usuario.id);
+    const victorias = mias.filter((m) => m.codigo.startsWith("victoria:")).length;
+    const semanasChef = mias.filter((m) => m.codigo.startsWith(PREFIJO_CHEF)).length;
+    return cantidades({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, perfiles, salud: salud || null, pesos, victorias, registros: registrosLogros, puntajes: puntajes || [], semanasChef });
+  }, [aguaLogros, comidasLogros, extras.medallas, perfiles, pesos, reacciones, puntajes, salud, usuario.id, registrosLogros]);
 
   // El modo fiesta depende de la hora (se va a las 20 del día siguiente): se vuelve a mirar cada 5 minutos.
   const [reloj, setReloj] = useState(0);
@@ -710,11 +755,13 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       cargarSalud,
       reacciones,
       alternarReaccion,
+      puntajes,
+      puntuar,
       extras,
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConFoto, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, actualizarTodo, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConFoto, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, actualizarTodo, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, puntajes, puntuar, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
