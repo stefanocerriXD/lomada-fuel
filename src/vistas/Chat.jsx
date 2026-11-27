@@ -2,7 +2,8 @@ import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import { marcaDelNombre } from "../lib/multas.js";
 import { MarcaFiesta } from "../componentes/MarcaFiesta.jsx";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Ban, Bell, Bot, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, X } from "lucide-react";
+import { Ban, Bell, Bot, Check, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, UserCheck, UserPlus, X } from "lucide-react";
+import { EVENTO_PEDIDOS, gruposQueAdministro, textoError } from "../lib/grupos.js";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
 import { activarAvisos, avisosActivos, estadoAvisos } from "../lib/avisos.js";
@@ -73,6 +74,48 @@ function ConMenciones({ texto }) {
       >{parte.texto}</a>
     )
     : <Fragment key={i}>{menciones(parte.texto, i)}</Fragment>));
+}
+
+// Alguien pidió entrar al grupo (SQL 069): lo ve todo el grupo; quien administra lo acepta o lo rechaza acá.
+// La base vuelve a revisar que sea el admin. Al aceptarlo, el bot avisa que se unió.
+function AvisoPedido({ m, admin, avisar }) {
+  const { cargarPerfiles } = useDatos();
+  const [ocupado, setOcupado] = useState(false);
+  const [rechazando, setRechazando] = useState(false);
+  // La respuesta se ve al instante; después llega igual desde la base (y la ven todos).
+  const [respondido, setRespondido] = useState(null);
+  const estado = respondido || m.solicitud_estado || "pendiente";
+  async function responderPedido(aceptar) {
+    if (!aceptar && !rechazando) return setRechazando(true);
+    setOcupado(true);
+    const { error } = await supabase.rpc("responder_solicitud", { p_id: m.solicitud_id, p_aceptar: aceptar });
+    setOcupado(false);
+    setRechazando(false);
+    if (error) return avisar?.(textoError(error));
+    vibrar(aceptar ? 20 : 10);
+    setRespondido(aceptar ? "aceptada" : "rechazada");
+    window.dispatchEvent(new Event(EVENTO_PEDIDOS));
+    if (aceptar) cargarPerfiles?.().catch?.(() => {});
+  }
+  const pie = {
+    aceptada: <span className="pedido-estado aceptado"><Check size={15} aria-hidden="true" /> Aceptado</span>,
+    rechazada: <span className="pedido-estado">No fue aceptado</span>,
+    cancelada: <span className="pedido-estado">Canceló el pedido</span>,
+  }[estado];
+  return (
+    <motion.article id={`m-${m.id}`} className={`pedido-grupo ${estado}`} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+      <span className="pedido-icono" aria-hidden="true"><UserPlus size={20} /></span>
+      <p>{m.texto}</p>
+      {pie || (admin ? (
+        <div className="pedido-acciones">
+          <button type="button" className="boton-chico acento" disabled={ocupado} onClick={() => responderPedido(true)}><Check size={15} aria-hidden="true" /> Aceptar</button>
+          <button type="button" className={rechazando ? "boton-chico peligro" : "boton-chico"} disabled={ocupado} onClick={() => responderPedido(false)} onBlur={() => setRechazando(false)}>
+            <X size={15} aria-hidden="true" /> {rechazando ? "¿Rechazar?" : "Rechazar"}
+          </button>
+        </div>
+      ) : <span className="pedido-estado">Esperando que lo acepte quien administra el grupo</span>)}
+    </motion.article>
+  );
 }
 
 function AvisoNotificaciones({ avisar }) {
@@ -476,6 +519,16 @@ export default function Chat({ avisar }) {
     for (const r of reaccionesMensajes) (mapa[r.mensaje_id] ||= []).push(r);
     return mapa;
   }, [reaccionesMensajes]);
+  // ¿Administro este grupo? Solo hace falta saberlo si hay algún pedido esperando en el chat.
+  const { grupo } = useDatos();
+  const hayPedidos = mensajes.some((m) => m.aviso_grupo === "pedido" && (m.solicitud_estado || "pendiente") === "pendiente");
+  const [soyAdmin, setSoyAdmin] = useState(false);
+  useEffect(() => {
+    if (!hayPedidos) return undefined;
+    let activo = true;
+    gruposQueAdministro().then((ids) => activo && setSoyAdmin((ids || []).includes(grupo.id)));
+    return () => { activo = false; };
+  }, [hayPedidos, grupo.id]);
   const reposo = useRef(null);
   const campo = useRef(null);
   const lista = useRef(null);
@@ -757,6 +810,16 @@ export default function Chat({ avisar }) {
             </Fragment>
           );
 
+          // Los pedidos para entrar y quién se unió (SQL 069).
+          if (m.aviso_grupo === "pedido") return conCorte(<div className="chat-grupo">{separador}<AvisoPedido m={m} admin={soyAdmin} avisar={avisar} /></div>);
+          if (m.aviso_grupo === "unido") {
+            return conCorte(
+              <div className="chat-grupo">
+                {separador}
+                <p id={`m-${m.id}`} className="chat-se-unio"><span><UserCheck size={14} aria-hidden="true" /> {m.texto}</span></p>
+              </div>,
+            );
+          }
           if (!m.usuario_id) {
             return conCorte(
               <div className="chat-grupo">

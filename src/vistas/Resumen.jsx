@@ -21,6 +21,8 @@ import CartelMejoras from "../componentes/CartelMejoras.jsx";
 import Recomendador from "../componentes/Recomendador.jsx";
 import Progreso from "./Progreso.jsx";
 import Visor from "../componentes/Visor.jsx";
+import HistoriasComidas from "../componentes/Historias.jsx";
+import EstrellasSemana from "../componentes/EstrellasSemana.jsx";
 import CompartirInstagram, { fiestaParaInstagram } from "../componentes/CompartirInstagram.jsx";
 import { createPortal } from "react-dom";
 import { borrado, clink, copiado } from "../lib/sonidos.js";
@@ -118,6 +120,8 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
 
       <CartelMejoras />
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
+      {/* Las historias del día que estás mirando: lo que comió cada uno, comida por comida. */}
+      <HistoriasComidas delDia={delDia} />
 
       <section className="tarjeta tarjeta-heroe">
         {racha > 1 && (
@@ -606,6 +610,8 @@ function ResumenSemana() {
         <span><strong>Tu informe semanal</strong><small>De lunes a domingo, con todo lo que cargaste</small></span>
         <ChevronRight size={18} aria-hidden="true" />
       </button>
+
+      <EstrellasSemana />
 
       <div className="fichas-personas" role="group" aria-label="Elegir persona">
         {Object.values(perfiles).map((p) => (

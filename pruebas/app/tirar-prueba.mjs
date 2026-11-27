@@ -31,12 +31,23 @@ assert.ok(Number(op[0]) > 0.9 && /listo/.test(op[1]));
 await p.screenshot({ path: "capturas/tirar.png", clip: { x: 0, y: 0, width: 390, height: 220 } });
 await toque("touchEnd", []);
 await p.waitForTimeout(150);
-assert.match(await p.locator(".tirar-actualizar").getAttribute("class"), /girando/);
-await p.waitForTimeout(1200);
+assert.match(await p.locator(".tirar-actualizar").getAttribute("class"), /actualizando/);
+// Mientras actualiza, el logo se queda quieto y centrado: solo gira el plato (antes se corría y giraba entero).
+const quieto = await p.locator(".tirar-actualizar").evaluate((el) => {
+  const r = el.getBoundingClientRect();
+  return { centro: Math.round(r.left + r.width / 2), animaciones: el.getAnimations().filter((a) => a.animationName).length, plato: el.querySelector(".carga-disco").getAnimations().length };
+});
+await p.waitForTimeout(300);
+const despues = await p.locator(".tirar-actualizar").evaluate((el) => Math.round(el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2));
+console.log("quieto:", quieto, despues);
+assert.ok(Math.abs(quieto.centro - 195) <= 1 && Math.abs(despues - 195) <= 1, "centrado");
+assert.equal(quieto.animaciones, 0, "el círculo no gira entero");
+assert.ok(quieto.plato >= 1, "el plato gira");
+await p.waitForTimeout(900);
 const tablas = await p.evaluate((n) => (window.__llamadas || []).slice(n).map((l) => `${l.tabla}:${l.op || "select"}`), antesTotal);
 console.log("despues:", [...new Set(tablas)].join(" "));
 assert.ok(tablas.includes("comidas:select") && tablas.includes("registros_diarios:select"), "volvió a traer todo");
-assert.doesNotMatch(await p.locator(".tirar-actualizar").getAttribute("class"), /girando/);
+assert.doesNotMatch(await p.locator(".tirar-actualizar").getAttribute("class"), /actualizando/);
 // Sin scroll arriba de todo no actúa
 await p.evaluate(() => window.scrollTo(0, 400)); await p.waitForTimeout(200);
 const antes2 = await p.evaluate(() => (window.__llamadas || []).length);

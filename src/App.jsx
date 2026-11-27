@@ -13,6 +13,17 @@ import SubidaNivel from "./componentes/SubidaNivel.jsx";
 import { Aviso, Avatar, datosMarco, Festejo, Hoja, Insignia, marcoDe, resorte, vibrar } from "./componentes/Base.jsx";
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
+import GuiaNovedades from "./componentes/GuiaNovedades.jsx";
+
+// La guía de lo nuevo (historias y estrellas): sale una vez, en el Resumen, cuando ya andan las estrellas (SQL 068).
+const conTexto = (selector, texto) => () => [...document.querySelectorAll(selector)].find((el) => el.textContent.trim().includes(texto) && el.getClientRects().length);
+const GUIA_HISTORIAS = [
+  { donde: ".hdias", titulo: "Nuevo: historias del día", texto: "Cada círculo es una comida del día. Tocalo para ver lo que comió cada uno, como en Instagram. El aro de color quiere decir que hay algo que no viste." },
+  { donde: ".hdias .hdia:not(.vacia)", titulo: "Cómo se pasan", texto: "Tocá a la derecha para avanzar y a la izquierda para volver. Mantené apretado para pausar, deslizá de costado para ir a otra comida y hacia abajo para cerrar." },
+  { donde: ".hdias .hdia:not(.vacia)", titulo: "Puntuá los platos", texto: "En cada historia le podés poner de 1 a 5 estrellas al plato de los demás. Tocando las calorías ves el desglose de lo que comió." },
+  { donde: conTexto(".selector [role='tab']", "Semana"), titulo: "Chef y plato de la semana", texto: "En Semana ves quién va ganando con las estrellas: el chef (mejor promedio) y el plato de la semana. Se cierra el domingo a la noche." },
+  { donde: conTexto(".item-menu", "Logros"), titulo: "Logros de estrellas", texto: "Hay logros nuevos por las estrellas que recibís, por ganar la semana y también por puntuar los platos de los demás: el primero sale con tu primer voto." },
+];
 import InstalarApp from "./componentes/InstalarApp.jsx";
 import Bocha from "./componentes/Bocha.jsx";
 import HojaFestejo from "./componentes/MarcaFiesta.jsx";
@@ -183,7 +194,7 @@ function Cargando() {
 }
 
 function Principal({ recuperando, onRecuperado }) {
-  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidas, comidasLogros, aguaLogros, registrosLogros, actualizarTodo, perfiles, reacciones, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
+  const { usuario, grupo, misGrupos, yo, estado, salud, pesos, comidas, comidasLogros, aguaLogros, registrosLogros, actualizarTodo, perfiles, reacciones, puntajes, extras, cargarExtras, abrirPerfil, respuesta, sinLeer, recetaAlChat } = useDatos();
   // Con los datos listos (o un error para mostrar) se va el logo de carga.
   useEffect(() => {
     if (estado.listo || estado.error) quitarSplash();
@@ -397,7 +408,7 @@ function Principal({ recuperando, onRecuperado }) {
   useEffect(() => {
     if (!estado.listo || !extras.disponible || !comidasLogros || entregando.current) return;
     const yaGanadas = extras.medallas.filter((m) => m.usuario_id === usuario.id).map((m) => m.codigo);
-    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, desafios: [], perfiles, salud, pesos, yaGanadas, registros: registrosLogros });
+    const nuevas = medallasGanadas({ usuarioId: usuario.id, comidas: comidasLogros, agua: aguaLogros, reacciones, desafios: [], perfiles, salud, pesos, yaGanadas, registros: registrosLogros, puntajes: puntajes || [] });
     if (!nuevas.length) return;
     entregando.current = true;
     supabase
@@ -418,7 +429,7 @@ function Principal({ recuperando, onRecuperado }) {
         }
         entregando.current = false;
       });
-  }, [estado.listo, extras, comidasLogros, aguaLogros, registrosLogros, reacciones, perfiles, salud, pesos, usuario.id, cargarExtras, avisar]);
+  }, [estado.listo, extras, comidasLogros, aguaLogros, registrosLogros, reacciones, puntajes, perfiles, salud, pesos, usuario.id, cargarExtras, avisar]);
 
   // Resultado de la autorización de WHOOP, que vuelve a la app con un parámetro en la dirección.
   useEffect(() => {
@@ -557,6 +568,7 @@ function Principal({ recuperando, onRecuperado }) {
       </Hoja>
       <Festejo key={festejo} activo={festejo > 0} />
       <NuevoLogro codigo={logroNuevo} onTerminar={terminarLogro} />
+      <GuiaNovedades id="historias-estrellas" pasos={GUIA_HISTORIAS} lista={vista === "resumen" && estado.listo && puntajes !== null && !logroNuevo} />
       <SubidaNivel ocupado={Boolean(logroNuevo)} />
       {grupo.conBocha && <Bocha />}
       <Aviso texto={aviso} />

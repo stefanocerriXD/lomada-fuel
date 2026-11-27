@@ -196,6 +196,10 @@ if (window.__con063) {
   db.destacadas = window.__destacadas || [];
   db.destacadas_fotos = window.__destacadasFotos || [];
 }
+// SQL 069: los pedidos que esperan aparecen en el chat.
+if (window.__con069) (window.__pedidos || []).filter((x) => !x.estado).forEach((x, n) => db.mensajes.push({ id: `mp-${x.id}`, usuario_id: null, texto: `${x.nombre} quiere unirse al grupo.`, aviso_grupo: "pedido", solicitud_id: x.id, solicitud_estado: "pendiente", creado_en: ts(0, 14 + n) }));
+// SQL 068: estrellas a los platos.
+if (window.__con068) db.puntajes_comida = window.__puntajes || [];
 // SQL 066: foto de perfil (Nahuel ya tiene una).
 if (window.__con066) db.perfiles.forEach((pf) => { pf.foto_path = pf.id === "u2" && window.__fotoNahuel ? "u2/perfil/nahuel.jpg" : null; });
 // SQL 065: fotos fijadas en el perfil.
@@ -295,6 +299,9 @@ export const supabase = {
       if (!x || x.estado) return { data: null, error: { message: "sin_pedido" } };
       x.estado = p.p_aceptar ? "aceptada" : "rechazada";
       if (p.p_aceptar) db.perfiles.push({ ...db.perfiles[1], id: x.usuario_id, nombre: x.nombre, usuario: x.usuario });
+      // Lo que hace la base con el SQL 069: el aviso del chat cambia y, si entró, el bot dice que se unió.
+      db.mensajes.filter((mm) => mm.solicitud_id === x.id && mm.aviso_grupo === "pedido").forEach((mm) => { mm.solicitud_estado = x.estado; });
+      if (p.p_aceptar && window.__con069) db.mensajes.push({ id: `mu-${x.id}`, usuario_id: null, texto: `${x.nombre} se unió al grupo.`, aviso_grupo: "unido", solicitud_id: x.id, creado_en: new Date().toISOString() });
       return { data: null, error: null };
     }
     if (nombre === "sacar_de_grupo") { db.perfiles = db.perfiles.filter((pf) => pf.id !== p.p_usuario); return { data: null, error: null }; }
