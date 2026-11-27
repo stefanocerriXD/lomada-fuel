@@ -31,13 +31,13 @@ export function informeListo(ahora = new Date()) {
 const leerCerrado = () => { try { return localStorage.getItem(CLAVE_CERRADO); } catch { return null; } };
 
 export function useInforme(activo) {
-  const { usuario, yo, comidas, perfiles, salud, extras } = useDatos();
+  const { usuario, yo, comidas, perfiles, salud, extras, puntajes } = useDatos();
   return useMemo(() => {
     if (!activo) return null;
     const plan = salud ? calcularPlan(salud) : null;
     const metasMacros = plan ? { p: plan.proteinas, c: plan.carbohidratos, g: plan.grasas } : null;
-    return armarInforme({ comidas, usuarioId: usuario.id, meta: yo.meta_calorias, metaProteina: plan?.proteinas || null, metasMacros, agua: extras.agua, perfiles });
-  }, [activo, comidas, usuario.id, yo.meta_calorias, salud, extras.agua, perfiles]);
+    return armarInforme({ comidas, usuarioId: usuario.id, meta: yo.meta_calorias, metaProteina: plan?.proteinas || null, metasMacros, agua: extras.agua, perfiles, puntajes });
+  }, [activo, comidas, usuario.id, yo.meta_calorias, salud, extras.agua, perfiles, puntajes]);
 }
 
 // ---------- El cartel anclado arriba del resumen ----------

@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { animate, AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowDownRight, ArrowUpRight, Award, ChevronRight, Droplets, Flame, List, Moon, Sparkles, Target, TrendingUp, Utensils, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Award, ChefHat, ChevronRight, Crown, Droplets, Flame, List, Moon, Sparkles, Star, Target, TrendingUp, Users, Utensils, X } from "lucide-react";
 import { useDatos } from "../lib/datos.jsx";
 import { calcularPlan } from "../lib/cuerpo.js";
 import { armarInforme, semanaDelInforme } from "../lib/informe.js";
 import { contraMeta } from "../lib/metaMacro.js";
 import { fechaLocal, nombreDia } from "../lib/fechas.js";
 import { tipoInfo } from "../lib/macros.js";
-import { Hoja, Numero, vibrar } from "./Base.jsx";
+import { MIN_PLATOS_CHEF, promedioTexto } from "../lib/estrellas.js";
+import { Avatar, Hoja, Numero, vibrar } from "./Base.jsx";
 import Logo from "./Logo.jsx";
 import { musiquita } from "../lib/sonidos.js";
 
@@ -69,7 +70,10 @@ function pantallasDe(i, nombre) {
   if (i.bien.length) lista.push({ id: "bien", fondo: "verde" });
   if (i.mejorar.length) lista.push({ id: "mejorar", fondo: "naranja" });
   if (i.comidaTop || i.favorito || i.horaCena !== null || i.aguaPromedio > 0 || (i.finde > 0 && i.habiles > 0)) lista.push({ id: "datos", fondo: "azul" });
-  lista.push({ id: "constancia", fondo: "noche" }, { id: "cierre", fondo: "verde" });
+  lista.push({ id: "constancia", fondo: "noche" });
+  // Las estrellas de la semana: las tuyas y las del grupo (solo si alguien puntuó).
+  if (i.estrellas) lista.push({ id: "estrellas", fondo: "naranja" }, { id: "estrellas-grupo", fondo: "azul" });
+  lista.push({ id: "cierre", fondo: "verde" });
   return lista.map((p) => ({ ...p, nombre }));
 }
 
@@ -316,6 +320,68 @@ function Pantalla({ id, i, nombre, onCerrar, onLista }) {
       </div>
     );
   }
+  if (id === "estrellas") {
+    const e = i.estrellas;
+    const m = e.mias;
+    return (
+      <div className="hp">
+        <motion.p className="hp-chico" {...aparecer(0)}><Star size={16} fill="currentColor" /> Tus estrellas</motion.p>
+        {m ? (
+          <>
+            <motion.p className="hp-numero" {...aparecer(1)}><Contador valor={m.promedio} decimales={1} /><small>de promedio · {m.votos} {m.votos === 1 ? "voto" : "votos"} del grupo</small></motion.p>
+            <motion.div {...aparecer(2)}><Estrellitas valor={m.promedio} /></motion.div>
+          </>
+        ) : (
+          <motion.h2 className="hp-titulo chico" {...aparecer(1)}>Esta semana nadie puntuó tus platos</motion.h2>
+        )}
+        {e.soyChef ? (
+          <motion.p className="hp-pildora" {...aparecer(3)}><Crown size={16} /> Sos el chef de la semana</motion.p>
+        ) : e.puesto > 0 && e.personas.length > 1 ? (
+          <motion.p className="hp-pildora" {...aparecer(3)}>#{e.puesto} de {e.personas.length} en las estrellas del grupo</motion.p>
+        ) : null}
+        <div className="hp-tres">
+          {[["Platos puntuados", m?.platos || 0], ["Platos perfectos", m?.cincos || 0], ["Votos que diste", e.diste]].map(([t, v], n) => (
+            <motion.div key={t} {...aparecer(4 + n)}><strong><Contador valor={v} /></strong><small>{t}</small></motion.div>
+          ))}
+        </div>
+        {m?.mejor && (
+          <motion.p className="hp-sub" {...aparecer(7)}>Tu mejor plato: {m.mejor.comida.descripcion || tipoInfo(m.mejor.comida.tipo).texto}, {promedioTexto(m.mejor.promedio)} con {m.mejor.votos} {m.mejor.votos === 1 ? "voto" : "votos"}</motion.p>
+        )}
+        {!m && <motion.p className="hp-sub" {...aparecer(7)}>Subí fotos de tus platos: el grupo los puntúa desde las historias del Resumen.</motion.p>}
+      </div>
+    );
+  }
+  if (id === "estrellas-grupo") {
+    const e = i.estrellas;
+    const g = e.grupo;
+    const filas = rankingCorto(e);
+    return (
+      <div className="hp">
+        <motion.p className="hp-chico" {...aparecer(0)}><Users size={16} /> Las estrellas del grupo</motion.p>
+        <motion.h2 className="hp-titulo chico" {...aparecer(1)}>
+          {e.chefs.length ? <>{e.chefs.length > 1 ? "Chefs" : "Chef"} de la semana: <em>{e.chefs.map((c) => (c.perfil.id === e.yoId ? "vos" : c.perfil.nombre)).join(" y ")}</em></> : "Esta semana nadie llegó a chef"}
+        </motion.h2>
+        {e.plato && (
+          <motion.p className="hp-pildora" {...aparecer(2)}><ChefHat size={16} /> Plato de la semana: {e.plato.comida.descripcion || tipoInfo(e.plato.comida.tipo).texto} · {promedioTexto(e.plato.promedio)}</motion.p>
+        )}
+        <ol className="hp-ranking">
+          {filas.map(({ p, lugar }, n) => (
+            <motion.li key={p.perfil.id} className={p.perfil.id === e.yoId ? "yo" : ""} {...aparecer(3 + n)}>
+              <span className="lugar">{lugar}</span>
+              <span className="datos"><strong>{p.perfil.id === e.yoId ? "Vos" : p.perfil.nombre}</strong><small>{p.platos} {p.platos === 1 ? "plato" : "platos"} · {p.votos} {p.votos === 1 ? "voto" : "votos"}</small></span>
+              <span className="promedio"><Star size={15} fill="currentColor" aria-hidden="true" /> {promedioTexto(p.promedio)}</span>
+            </motion.li>
+          ))}
+        </ol>
+        {e.personas[0] && !e.chefs.includes(e.personas[0]) && <motion.p className="hp-sub chica" {...aparecer(3 + filas.length)}>Para ser chef hay que tener al menos {MIN_PLATOS_CHEF} platos puntuados.</motion.p>}
+        <div className="hp-tres">
+          {[["Votos", <Contador key="v" valor={g.votos} />], ["Promedio", promedioTexto(g.promedio)], ["Perfectos", <Contador key="c" valor={g.perfectos} />]].map(([t, v], n) => (
+            <motion.div key={t} {...aparecer(4 + filas.length + n)}><strong>{v}</strong><small>{t}</small></motion.div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   // Cierre
   return (
     <div className="hp hp-portada">
@@ -416,8 +482,64 @@ function Contenido({ informe: i }) {
         <Dato icono={Utensils} titulo="Comidas y fotos" texto={`${i.platos} comidas cargadas y ${i.fotos} ${i.fotos === 1 ? "foto" : "fotos"} · desayunaste ${i.conDesayuno} de 7 días`} />
         {i.integrantes > 1 && i.puesto > 0 && <Dato icono={Award} titulo="Constancia en el grupo" texto={`Puesto ${i.puesto} de ${i.integrantes}`} />}
       </section>
+      {i.estrellas && <EstrellasLista e={i.estrellas} />}
       <p className="nota">Son estimaciones para llevar la cuenta entre amigos. No reemplazan a un profesional de la nutrición.</p>
     </div>
+  );
+}
+
+// Cinco estrellas pintadas hasta el promedio (4,3 pinta cuatro y un tercio).
+function Estrellitas({ valor }) {
+  const llenas = [0, 1, 2, 3, 4].map((n) => <Star key={n} size={30} fill="currentColor" strokeWidth={0} />);
+  return (
+    <span className="hp-estrellitas" role="img" aria-label={`${promedioTexto(valor)} de 5 estrellas`}>
+      <span className="vacias">{llenas}</span>
+      <motion.span className="llenas" initial={{ width: 0 }} animate={{ width: `${(valor / 5) * 100}%` }} transition={{ delay: 0.5, duration: 1, ease: [0.16, 1, 0.3, 1] }}>{llenas}</motion.span>
+    </span>
+  );
+}
+
+// La tabla del grupo: los primeros 5, y si quedaste afuera, vos con tu puesto.
+function rankingCorto(e) {
+  const filas = e.personas.map((p, n) => ({ p, lugar: n + 1 }));
+  const arriba = filas.slice(0, 5);
+  const mia = filas.find((f) => f.p.perfil.id === e.yoId);
+  return mia && !arriba.includes(mia) ? [...arriba.slice(0, 4), mia] : arriba;
+}
+
+function EstrellasLista({ e }) {
+  const m = e.mias;
+  const g = e.grupo;
+  const plato = e.plato;
+  return (
+    <section className="informe-estrellas" aria-label="Estrellas de la semana">
+      <h3><Star size={16} fill="currentColor" aria-hidden="true" /> Estrellas</h3>
+      <Dato
+        icono={Star}
+        titulo="Tus estrellas"
+        texto={m ? `${promedioTexto(m.promedio)} de promedio con ${m.votos} ${m.votos === 1 ? "voto" : "votos"} en ${m.platos} ${m.platos === 1 ? "plato" : "platos"}${m.cincos ? ` · ${m.cincos} ${m.cincos === 1 ? "plato perfecto" : "platos perfectos"}` : ""}${e.puesto ? ` · puesto ${e.puesto} de ${e.personas.length}` : ""}` : "Nadie puntuó tus platos esta semana"}
+      />
+      {m?.mejor && <Dato icono={Award} titulo="Tu mejor plato" texto={`${m.mejor.comida.descripcion || tipoInfo(m.mejor.comida.tipo).texto}: ${promedioTexto(m.mejor.promedio)} con ${m.mejor.votos} ${m.mejor.votos === 1 ? "voto" : "votos"}`} />}
+      <Dato icono={Target} titulo="Tus votos" texto={e.diste ? `Puntuaste ${e.diste} ${e.diste === 1 ? "plato" : "platos"}, con ${promedioTexto(e.promedioDiste)} de promedio` : "No puntuaste platos esta semana"} />
+      <Dato icono={Crown} titulo="Chef de la semana" texto={e.chefs.length ? `${e.chefs.map((c) => (c.perfil.id === e.yoId ? "Vos" : c.perfil.nombre)).join(" y ")}, con ${promedioTexto(e.chefs[0].promedio)} de promedio` : "Nadie llegó a 2 platos puntuados"} />
+      {plato && <Dato icono={ChefHat} titulo="Plato de la semana" texto={`${plato.comida.descripcion || tipoInfo(plato.comida.tipo).texto}, de ${plato.comida.usuario_id === e.yoId ? "vos" : e.personas.find((p) => p.perfil.id === plato.comida.usuario_id)?.perfil.nombre || "alguien"}: ${promedioTexto(plato.promedio)}`} />}
+      <Dato icono={Users} titulo="El grupo" texto={`${g.votos} ${g.votos === 1 ? "voto" : "votos"} de ${g.votantes} ${g.votantes === 1 ? "persona" : "personas"} en ${g.platos} ${g.platos === 1 ? "plato" : "platos"} · ${promedioTexto(g.promedio)} de promedio${g.perfectos ? ` · ${g.perfectos} ${g.perfectos === 1 ? "plato perfecto" : "platos perfectos"}` : ""}`} />
+      {e.personas.length > 0 && (
+        <ol className="tabla-estrellas">
+          {e.personas.map((p, n) => (
+            <li key={p.perfil.id}>
+              <span className="lugar">{n + 1}</span>
+              <Avatar perfil={p.perfil} tam={34} />
+              <span className="datos">
+                <strong>{p.perfil.id === e.yoId ? "Vos" : p.perfil.nombre}</strong>
+                <small>{p.platos} {p.platos === 1 ? "plato" : "platos"} · {p.votos} {p.votos === 1 ? "voto" : "votos"}{p.cincos ? ` · ${p.cincos} ${p.cincos === 1 ? "plato perfecto" : "platos perfectos"}` : ""}</small>
+              </span>
+              <span className="promedio" aria-label={`Promedio ${promedioTexto(p.promedio)}`}><Star size={15} fill="currentColor" aria-hidden="true" /> {promedioTexto(p.promedio)}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
 

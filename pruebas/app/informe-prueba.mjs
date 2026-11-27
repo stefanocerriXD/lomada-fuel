@@ -114,6 +114,57 @@ assert.match(textoMacros, /Proteínas[\s\S]*(Faltaron|Te pasaste|En la meta)[\s\
 await p.screenshot({ path: "capturas/informe-macros-meta.png" });
 await ctx.close();
 
+// 5) Con estrellas: una pantalla con las tuyas y otra con las del grupo; en la lista, las dos cosas.
+const puntajes = [
+  ["c2", "u2", 5], ["c2", "u3", 4], ["c6", "u2", 5], ["c6", "u3", 5], // Steve: 2 platos, 4,8 de promedio
+  ["c3", "u1", 4], ["c3", "u3", 3], ["c10", "u1", 3], ["c10", "u3", 4], // Nahuel: 2 platos, 3,5
+  ["c4", "u1", 5], // Juan: 1 plato (no llega a chef)
+].map(([comida_id, usuario_id, estrellas]) => ({ comida_id, usuario_id, estrellas, creado_en: "2026-11-15T21:00:00-03:00" }));
+({ ctx, p } = await abrir("2026-11-15T20:30:00-03:00", "/?vista=informe", { __con068: true, __puntajes: puntajes }));
+const conEstrellas = p.getByRole("dialog", { name: "Tu informe semanal" });
+await conEstrellas.waitFor({ timeout: 8000 });
+const hasta = async (texto) => {
+  for (let n = 0; n < 14 && !(await conEstrellas.getByText(texto).count()); n += 1) {
+    const caja = await conEstrellas.boundingBox();
+    await p.mouse.click(caja.x + caja.width * 0.8, caja.y + caja.height / 2);
+    await p.waitForTimeout(600);
+  }
+  await conEstrellas.getByText(texto).first().waitFor();
+  await p.waitForTimeout(1500);
+};
+await hasta("Tus estrellas");
+const mias = await conEstrellas.innerText();
+assert.match(mias, /4,8[\s\S]*de promedio · 4 votos del grupo/);
+assert.match(mias, /Sos el chef de la semana/);
+assert.match(mias, /2\s*Platos puntuados[\s\S]*2\s*Platos perfectos[\s\S]*3\s*Votos que diste/);
+assert.match(mias, /Tu mejor plato: Asado con ensalada, 5,0 con 2 votos/);
+await p.screenshot({ path: "capturas/informe-estrellas.png" });
+await hasta("Las estrellas del grupo");
+const grupo = await conEstrellas.innerText();
+assert.match(grupo, /Chef de la semana: vos/);
+assert.match(grupo, /Para ser chef hay que tener al menos 2 platos puntuados/);
+assert.match(grupo, /Plato de la semana: Asado con ensalada/);
+assert.match(grupo, /1\s*Juan[\s\S]*5,0[\s\S]*2\s*Vos[\s\S]*4,8[\s\S]*3\s*Nahuel[\s\S]*3,5/);
+assert.match(grupo, /9\s*Votos[\s\S]*4,2\s*Promedio[\s\S]*2\s*Perfectos/);
+await p.screenshot({ path: "capturas/informe-estrellas-grupo.png" });
+await hasta("¡A romperla esta semana!");
+await conEstrellas.getByRole("button", { name: "Ver todo en una lista" }).click();
+const listaEstrellas = p.locator(".informe-estrellas");
+await listaEstrellas.waitFor();
+const textoLista = await listaEstrellas.innerText();
+assert.match(textoLista, /Tus estrellas[\s\S]*4,8 de promedio con 4 votos en 2 platos · 2 platos perfectos · puesto 2 de 3/);
+assert.match(textoLista, /Tus votos[\s\S]*Puntuaste 3 platos, con 4,0 de promedio/);
+assert.match(textoLista, /El grupo[\s\S]*9 votos de 3 personas en 5 platos/);
+await listaEstrellas.scrollIntoViewIfNeeded();
+await p.screenshot({ path: "capturas/informe-estrellas-lista.png" });
+await ctx.close();
+
+// Sin estrellas en la semana, no aparecen esas pantallas.
+({ ctx, p } = await abrir("2026-11-15T20:30:00-03:00", "/?vista=informe", { __con068: true, __puntajes: [] }));
+await p.getByRole("dialog", { name: "Tu informe semanal" }).waitFor({ timeout: 8000 });
+assert.ok(!(await p.locator(".historia-barras span").count() > barras), "no suma pantallas de estrellas");
+await ctx.close();
+
 // 3) Un miércoles no hay cartel.
 ({ ctx, p } = await abrir("2026-11-18T12:00:00-03:00"));
 assert.equal(await p.locator(".cartel-informe").count(), 0);

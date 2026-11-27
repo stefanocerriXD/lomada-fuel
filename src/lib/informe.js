@@ -2,6 +2,7 @@
 import { sumarComidas } from "./macros.js";
 import { fechaLocal } from "./fechas.js";
 import { alimentosVisibles } from "../componentes/DetalleAlimentos.jsx";
+import { puntuable, rankingSemana } from "./estrellas.js";
 
 const DIA_MS = 86400000;
 const aFecha = (texto) => new Date(`${texto}T12:00:00`);
@@ -34,7 +35,38 @@ function resumenDe(porDia) {
   return { dias: cargados.length, kcal: Math.round(suma("kcal") / n), p: Math.round(suma("p") / n), c: Math.round(suma("c") / n), g: Math.round(suma("g") / n) };
 }
 
-export function armarInforme({ comidas, usuarioId, meta, metaProteina, metasMacros = null, agua = [], perfiles = {}, hoy = fechaLocal() }) {
+// Las estrellas de la semana (SQL 068): las de cada uno y el resultado del grupo. Sin tabla o sin votos, no hay.
+export function estrellasDelInforme({ comidas, puntajes, perfiles, usuarioId, desde, hasta }) {
+  if (!puntajes?.length) return null;
+  const r = rankingSemana({ comidas, puntajes, perfiles, fecha: desde });
+  if (!r.votosTotales) return null;
+  const ids = new Set(comidas.filter((c) => puntuable(c) && c.fecha >= desde && c.fecha <= hasta).map((c) => c.id));
+  const votos = puntajes.filter((p) => ids.has(p.comida_id));
+  const suma = votos.reduce((t, p) => t + p.estrellas, 0);
+  const diste = votos.filter((p) => p.usuario_id === usuarioId);
+  const mias = r.personas.find((p) => p.perfil.id === usuarioId) || null;
+  return {
+    personas: r.personas,
+    chefs: r.chefs,
+    plato: r.plato,
+    mias,
+    puesto: mias ? r.personas.indexOf(mias) + 1 : 0,
+    yoId: usuarioId,
+    soyChef: r.chefs.some((c) => c.perfil.id === usuarioId),
+    diste: diste.length,
+    promedioDiste: diste.length ? diste.reduce((t, p) => t + p.estrellas, 0) / diste.length : 0,
+    grupo: {
+      votos: votos.length,
+      estrellas: suma,
+      promedio: votos.length ? suma / votos.length : 0,
+      platos: new Set(votos.map((p) => p.comida_id)).size,
+      votantes: new Set(votos.map((p) => p.usuario_id)).size,
+      perfectos: r.personas.reduce((t, p) => t + p.cincos, 0),
+    },
+  };
+}
+
+export function armarInforme({ comidas, usuarioId, meta, metaProteina, metasMacros = null, agua = [], perfiles = {}, puntajes = null, hoy = fechaLocal() }) {
   const { desde, hasta } = semanaDelInforme(hoy);
   const fechas = dias(desde);
   const anteriores = dias(mover(desde, -7));
@@ -136,5 +168,6 @@ export function armarInforme({ comidas, usuarioId, meta, metaProteina, metasMacr
     reparto,
     bien,
     mejorar,
+    estrellas: estrellasDelInforme({ comidas, puntajes, perfiles, usuarioId, desde, hasta }),
   };
 }
