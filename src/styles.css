@@ -2494,20 +2494,13 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .actualizacion strong { display: block; font-size: 0.98rem; line-height: 1.25; }
 .actualizacion p { margin-top: 3px; color: var(--tinta-2); font-size: 0.86rem; line-height: 1.4; }
 
-/* Deslizar hacia abajo para actualizar: baja el logo y el plato gira entre los cubiertos */
+/* Deslizar hacia abajo para actualizar: baja el logo y el plato gira entre los cubiertos (quietos, en su lugar) */
 .tirar-actualizar { position: fixed; top: calc(env(safe-area-inset-top) + 10px); left: 50%; z-index: 45; display: flex; align-items: center; justify-content: center; gap: 0; width: 58px; height: 58px; border-radius: 50%; color: var(--tinta); background: var(--superficie); box-shadow: 0 6px 18px rgb(0 0 0 / 18%); opacity: 0; transform: translate(-50%, -64px) scale(0.55); transform-origin: center; pointer-events: none; will-change: transform, opacity; }
 .tirar-actualizar.listo { box-shadow: 0 0 0 3px var(--acento), 0 6px 18px rgb(0 0 0 / 18%); }
-.tirar-actualizar .logo-disco { transform-box: fill-box; transform-origin: center; }
-/* El giro al soltar lo hace TirarParaActualizar (sigue desde el ángulo en que quedó); acá, los cubiertos comen. */
-.tirar-actualizar.girando .logo-tenedor { animation: comer-tenedor 0.7s ease-in-out infinite; }
-.tirar-actualizar.girando .logo-cuchillo { animation: comer-cuchillo 0.7s ease-in-out 0.35s infinite; }
-@keyframes girar-lomada { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .tirar-actualizar.girando .logo-tenedor, .tirar-actualizar.girando .logo-cuchillo { animation: none; } }
+.tirar-actualizar .carga-logo { flex: none; }
+/* El giro lo hace TirarParaActualizar (con el dedo y al soltar, desde el ángulo en que quedó), no la animación de carga. */
+.tirar-actualizar .carga-disco { animation: none; }
 
-/* Cubiertos que "comen": suben y bajan alternados, como cortando. */
-.logo-tenedor, .logo-cuchillo { transform-box: fill-box; transform-origin: 50% 100%; }
-@keyframes comer-tenedor { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-28px) rotate(-7deg); } }
-@keyframes comer-cuchillo { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-28px) rotate(7deg); } }
 
 /* Ajustes: sonidos */
 .ajuste-sonidos { display: grid; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--borde); }
@@ -2791,7 +2784,7 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 .etiqueta-resumen { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--superficie-2); font-size: 0.86rem; line-height: 1.45; }
 .etiqueta-resumen small { display: block; color: var(--tinta-2); }
 .etiqueta-enlace.ocupado { opacity: 0.7; }
-.girando { animation: girar-marco 0.9s linear infinite; }
+svg.girando { animation: girar-marco 0.9s linear infinite; }
 
 /* Informe: cada macro contra su meta (cuánto faltó o cuánto te pasaste) */
 .hp-macro-estado, .informe-macro-estado { font-weight: 800; }

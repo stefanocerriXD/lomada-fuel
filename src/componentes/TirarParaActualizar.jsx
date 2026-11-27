@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { vibrar } from "./Base.jsx";
-import Logo from "./Logo.jsx";
+import { LogoCarga } from "./Logo.jsx";
 import { clic } from "../lib/sonidos.js";
 
 const UMBRAL = 70; // Cuánto hay que bajar (ya amortiguado) para que actualice.
@@ -10,7 +10,8 @@ const VUELTA_MS = 850; // Una vuelta del plato mientras carga.
 const GRADOS_POR_PX = 3;
 
 // Deslizar hacia abajo estando arriba de todo: baja el logo y el plato gira con el dedo. Al soltar sigue girando
-// desde donde quedó (sin saltos) mientras los cubiertos "comen", y al terminar frena suave y se va achicando.
+// desde donde quedó (sin saltos), siempre en el mismo lugar, y al terminar frena suave y se va achicando.
+// El plato es un elemento aparte (el de LogoCarga): lo gira la placa de video, así no se traba mientras carga.
 export default function TirarParaActualizar({ activo = true, onActualizar }) {
   const indicador = useRef(null);
   const estado = useRef({ desde: null, distancia: 0, actualizando: false, avisado: false });
@@ -20,7 +21,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
   useEffect(() => {
     if (!activo) return undefined;
     const el = indicador.current;
-    const disco = () => el?.querySelector(".logo-disco");
+    const disco = () => el?.querySelector(".carga-disco");
     let giro = null;
     let angulo = 0;
     const rotar = (grados) => {
@@ -34,7 +35,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
       // Baja, aparece y crece con el dedo.
       el.style.transform = `translate(-50%, ${distancia - 64}px) scale(${0.55 + 0.45 * avance})`;
       el.style.opacity = String(distancia > 4 ? Math.min(1, avance * 1.4) : 0);
-      el.classList.toggle("girando", girando);
+      el.classList.toggle("actualizando", girando);
       el.classList.toggle("listo", !girando && avance >= 1);
       if (!girando && !giro) rotar(distancia * GRADOS_POR_PX);
     };
@@ -107,7 +108,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
         // Si algo no llegó, se vuelve a intentar solo al rato.
       }
       await new Promise((listo) => setTimeout(listo, Math.max(0, MINIMO_MS - (Date.now() - desde))));
-      el?.classList.remove("girando");
+      el?.classList.remove("actualizando");
       await frenarGiro();
       s.actualizando = false;
       s.distancia = 0;
@@ -130,7 +131,7 @@ export default function TirarParaActualizar({ activo = true, onActualizar }) {
   if (!activo) return null;
   return (
     <div ref={indicador} className="tirar-actualizar" aria-hidden="true">
-      <Logo tam={40} />
+      <LogoCarga tam={40} />
     </div>
   );
 }
