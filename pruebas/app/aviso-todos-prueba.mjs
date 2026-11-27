@@ -36,14 +36,19 @@ if (await p.getByRole("button", { name: "Volver a ajustes" }).count()) await p.g
 await p.locator(".menu-ajustes button", { hasText: "Panel del dueño" }).click();
 const aviso = p.locator(".aviso-todos");
 await aviso.waitFor();
-assert.match(await aviso.locator(".noti-previa").innerText(), /Lomada Fuel[\s\S]*¿Qué le mejorarías a Lomada Fuel\?[\s\S]*equipo de IT/i);
+// Viene elegida la novedad del momento; la de mejoras queda como plantilla.
+assert.match(await aviso.locator(".noti-previa").innerText(), /Lomada Fuel[\s\S]*historias del día[\s\S]*chef de la semana/i);
+await aviso.getByRole("button", { name: "Mejoras", exact: true }).click();
+assert.match(await aviso.locator(".noti-previa").innerText(), /¿Qué le mejorarías a Lomada Fuel\?[\s\S]*equipo de IT/i);
+await aviso.getByRole("button", { name: "Historias y estrellas" }).click();
 await aviso.screenshot({ path: "capturas/aviso-todos.png" });
 await aviso.getByRole("button", { name: /Mandar a todos/ }).click();
 assert.equal(pedidos.filter((x) => x.cuerpo.tipo === "anuncio").length, 0, "el primer toque solo pide confirmar");
 await aviso.getByRole("button", { name: /Tocá de nuevo/ }).click();
 await aviso.locator(".aviso-todos-ok").waitFor();
 const anuncio = pedidos.find((x) => x.cuerpo.tipo === "anuncio").cuerpo;
-assert.equal(anuncio.vista, "mejoras");
+assert.equal(anuncio.vista, "resumen", "viene elegida la novedad del momento");
+assert.match(anuncio.titulo, /historias del día/);
 assert.match(await aviso.locator(".aviso-todos-ok").innerText(), /Mandado a 7 celulares/);
 await ctx.close();
 

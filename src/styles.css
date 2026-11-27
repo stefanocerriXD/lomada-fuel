@@ -3037,3 +3037,6 @@ button.planeada-datos { padding: 0; background: none; color: inherit; text-align
 .pedido-grupo.rechazada, .pedido-grupo.cancelada { opacity: 0.7; }
 .chat-se-unio { display: flex; justify-content: center; margin: 6px 0; }
 .chat-se-unio span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--superficie); color: var(--tinta-2); font-size: 0.8rem; font-weight: 650; box-shadow: 0 1px 2px rgb(0 0 0 / 8%); }
+
+/* Aviso a todos: plantillas listas (la novedad del momento y la de mejoras). */
+.aviso-todos-plantillas { display: flex; flex-wrap: wrap; gap: 6px; }

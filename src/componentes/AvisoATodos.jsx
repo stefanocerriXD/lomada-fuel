@@ -9,12 +9,26 @@ export const ANUNCIO_MEJORAS = {
   cuerpo: "No te olvides de mandar tus pedidos de mejora en Ajustes › Mejoras. Los implementamos con el equipo de IT.",
   vista: "mejoras",
 };
+// La novedad del momento: viene elegida para mandarla con un toque.
+export const ANUNCIO_HISTORIAS = {
+  titulo: "📸 Nuevo: historias del día con estrellas ⭐",
+  cuerpo: "Mirá lo que comió cada uno, comida por comida, como en Instagram. Puntuá los platos de 1 a 5 y peleá por ser el chef de la semana. Hay logros nuevos.",
+  vista: "resumen",
+};
+const PLANTILLAS = [["Historias y estrellas", ANUNCIO_HISTORIAS], ["Mejoras", ANUNCIO_MEJORAS]];
 const DESTINOS = [["mejoras", "Ajustes › Mejoras"], ["resumen", "Resumen"], ["chat", "Chat del grupo"]];
 
 export default function AvisoATodos() {
-  const [titulo, setTitulo] = useState(ANUNCIO_MEJORAS.titulo);
-  const [cuerpo, setCuerpo] = useState(ANUNCIO_MEJORAS.cuerpo);
-  const [vista, setVista] = useState(ANUNCIO_MEJORAS.vista);
+  const [titulo, setTitulo] = useState(ANUNCIO_HISTORIAS.titulo);
+  const [cuerpo, setCuerpo] = useState(ANUNCIO_HISTORIAS.cuerpo);
+  const [vista, setVista] = useState(ANUNCIO_HISTORIAS.vista);
+  function usar(plantilla) {
+    setTitulo(plantilla.titulo);
+    setCuerpo(plantilla.cuerpo);
+    setVista(plantilla.vista);
+    setSeguro(false);
+    setEstado(null);
+  }
   const [seguro, setSeguro] = useState(false);
   const [estado, setEstado] = useState(null);
   const listo = titulo.trim().length >= 3 && cuerpo.trim().length >= 3;
@@ -31,6 +45,11 @@ export default function AvisoATodos() {
   return (
     <section className="tarjeta ajuste aviso-todos">
       <h3 className="perfil-subtitulo"><Megaphone size={16} /> Aviso a todos</h3>
+      <div className="aviso-todos-plantillas" role="group" aria-label="Plantillas">
+        {PLANTILLAS.map(([nombre, plantilla]) => (
+          <button key={nombre} type="button" className={titulo === plantilla.titulo ? "ficha activa" : "ficha"} aria-pressed={titulo === plantilla.titulo} onClick={() => usar(plantilla)}>{nombre}</button>
+        ))}
+      </div>
       <label><span>Título</span><input value={titulo} maxLength={70} onChange={(e) => { setTitulo(e.target.value); setSeguro(false); }} /></label>
       <label><span>Texto</span><textarea rows={3} value={cuerpo} maxLength={200} onChange={(e) => { setCuerpo(e.target.value); setSeguro(false); }} /></label>
       <label><span>Al tocarla abre</span>
