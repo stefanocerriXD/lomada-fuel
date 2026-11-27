@@ -35,6 +35,8 @@ await p.screenshot({ path: "capturas/gr-resumen.png" });
 
 await ir(p, "Grupo");
 await p.waitForTimeout(700);
+// El chat se baja al abrirlo: se espera a que esté (con un tiempo fijo a veces no llegaba).
+await p.getByLabel("Mandar foto o GIF").first().waitFor({ timeout: 8000 });
 assert.ok(await p.getByLabel("Mandar foto o GIF").count() >= 1, "el chat sigue igual");
 assert.equal(await p.locator(".castigo-nota.chat").count(), 0);
 assert.ok((await p.evaluate(() => window.__canalChat().nombre)).endsWith("g2"), "canal del chat propio del grupo");
