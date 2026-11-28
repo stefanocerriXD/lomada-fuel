@@ -297,6 +297,20 @@ export const supabase = {
     // Grupos con admin (SQL 046). __admin: administro el grupo que estoy viendo. __pedidos: los que esperan.
     if (nombre === "grupos_que_administro") return window.__sin046 ? { data: null, error: { message: "Could not find the function" } } : { data: window.__admin ? [db.perfiles.find((pf) => pf.id === "u1").grupo_id, ...(window.__creados || [])] : (window.__creados || []), error: null };
     if (nombre === "pedidos_pendientes") return { data: (window.__pedidos || []).filter((x) => !x.estado).length, error: null };
+    // SQL 072: el Bocha de cada grupo.
+    if (nombre === "imagenes_bocha") {
+      if (!window.__con072) return { data: null, error: { message: "Could not find the function" } };
+      window.__bochaGrupo = window.__bochaGrupo || { dia: null, evo: null, puede: !window.__noAdminBocha };
+      return { data: { ...window.__bochaGrupo }, error: null };
+    }
+    if (nombre === "guardar_bocha_grupo") {
+      window.__bochaGrupo[p.p_clave === "bocha" ? "dia" : "evo"] = p.p_ruta;
+      return { data: null, error: null };
+    }
+    if (nombre === "producto_por_codigo") {
+      if (!window.__con071) return { data: null, error: { message: "Could not find the function" } };
+      return { data: (db.productos || []).filter((r) => r.codigo === p.p_codigo), error: null };
+    }
     if (nombre === "denuncias_para_revisar") {
       if (!db.denuncias) return { data: null, error: { message: "Could not find the function" } };
       const nombreDe = (id) => db.perfiles.find((pf) => pf.id === id)?.nombre || null;

@@ -39,8 +39,11 @@ const desglose = await yo.locator(".amigo-detalle-interno li").allInnerTexts();
 assert.ok(!desglose.some((t) => /Apple/.test(t)), desglose.join(" | "));
 assert.ok((await yo.locator(".amigo-datos").innerText()).includes("3 comidas"), "cuenta solo las comidas");
 
-// Importar el día de MyFitnessPal: completa lo que ya está.
-await p.getByRole("button", { name: /Importar el día/ }).click();
+// Importar el día de MyFitnessPal (desde el +, Más opciones): completa lo que ya está.
+await p.locator("[aria-label='Subir comida']").last().click();
+await p.waitForTimeout(600);
+await p.getByText("Más opciones").click();
+await p.getByRole("button", { name: "Importar el día entero" }).click();
 const hoja = p.getByRole("dialog").last();
 await hoja.getByLabel("Texto del resumen").fill([
   "Almuerzo 820 cal", "Pechuga de pollo 350", "200 g", "Arroz blanco 470", "1 taza",

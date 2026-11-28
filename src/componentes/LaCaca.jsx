@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ImageUp } from "lucide-react";
+import { ImageUp, Undo2 } from "lucide-react";
+import { DIBUJOS_BOCHA } from "./Bocha.jsx";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { vibrar } from "./Base.jsx";
@@ -14,6 +15,17 @@ const IMAGENES = [
 export default function LaCaca({ avisar }) {
   const { usuario, fotos, extras, imagenesBocha, cargarExtras, grupo } = useDatos();
   const [subiendo, setSubiendo] = useState(null);
+  const porGrupo = Boolean(imagenesBocha.porGrupo);
+
+  async function usarDibujo(clave) {
+    setSubiendo(clave);
+    const { error } = await supabase.rpc("guardar_bocha_grupo", { p_clave: clave, p_ruta: null });
+    setSubiendo(null);
+    if (error) return avisar("No se pudo cambiar");
+    vibrar(10);
+    avisar("Listo: vuelve el dibujo");
+    await cargarExtras();
+  }
 
   async function subir(clave, archivo) {
     if (!archivo) return;
@@ -28,7 +40,7 @@ export default function LaCaca({ avisar }) {
     const extension = { "image/webp": "webp", "image/png": "png", "image/gif": "gif" }[imagen.type] || "jpg";
     const ruta = `${usuario.id}/bocha/${clave}-${Date.now()}.${extension}`;
     const { error } = await supabase.storage.from("fotos").upload(ruta, imagen, { contentType: imagen.type || "image/png" });
-    const { error: errGuardar } = error ? { error } : await supabase.rpc("guardar_imagen_bocha", { p_clave: clave, p_ruta: ruta });
+    const { error: errGuardar } = error ? { error } : await supabase.rpc(porGrupo ? "guardar_bocha_grupo" : "guardar_imagen_bocha", { p_clave: clave, p_ruta: ruta });
     setSubiendo(null);
     if (error || errGuardar) return avisar("No se pudo subir la imagen");
     vibrar(15);
@@ -64,23 +76,32 @@ export default function LaCaca({ avisar }) {
         <li>A las 22 te llega un aviso si todavía no subiste ninguna foto.</li>
       </ul>
 
-      {extras.admin && (!imagenesBocha.dia || !imagenesBocha.evo) && (
+      {extras.puedeBocha && (porGrupo || !imagenesBocha.dia || !imagenesBocha.evo) && (
         <div className="la-caca-imagenes">
-          <h3 className="perfil-subtitulo">Imágenes</h3>
-          <small className="nota">Se cargan una sola vez. Después ya no se pueden cambiar desde la app.</small>
-          {IMAGENES.filter(([, tipo]) => !imagenesBocha[tipo]).map(([clave, tipo, nombre, texto]) => (
-            <div key={clave} className="la-caca-imagen">
-              {fotos[imagenesBocha[tipo]] ? <img src={fotos[imagenesBocha[tipo]]} alt={nombre} /> : <span className="la-caca-vacia" aria-hidden="true">?</span>}
-              <span>
-                <strong>{nombre}</strong>
-                <small>{texto}</small>
-              </span>
-              <label className={subiendo === clave ? "boton-chico ocupado" : "boton-chico"}>
-                <ImageUp size={15} /> {subiendo === clave ? "Subiendo…" : "Subir"}
-                <input className="oculto" type="file" accept="image/png,image/webp,image/jpeg" onChange={(e) => subir(clave, e.target.files[0])} disabled={Boolean(subiendo)} aria-label={`Imagen del ${nombre}`} />
-              </label>
-            </div>
-          ))}
+          <h3 className="perfil-subtitulo">Imágenes del Bocha</h3>
+          <small className="nota">{porGrupo ? "Son las de este grupo y las cambiás cuando quieras. Si no subís ninguna, sale el dibujo." : "Se cargan una sola vez. Después ya no se pueden cambiar desde la app."}</small>
+          {IMAGENES.filter(([, tipo]) => porGrupo || !imagenesBocha[tipo]).map(([clave, tipo, nombre, texto]) => {
+            const ruta = imagenesBocha[tipo];
+            const src = ruta ? fotos[ruta] : DIBUJOS_BOCHA[tipo];
+            return (
+              <div key={clave} className="la-caca-imagen">
+                {src ? <img src={src} alt={nombre} /> : <span className="la-caca-vacia" aria-hidden="true">?</span>}
+                <span>
+                  <strong>{nombre}</strong>
+                  <small>{texto}{porGrupo && !ruta ? " Ahora sale el dibujo." : ""}</small>
+                </span>
+                <span className="la-caca-botones">
+                  <label className={subiendo === clave ? "boton-chico ocupado" : "boton-chico"}>
+                    <ImageUp size={15} /> {subiendo === clave ? "Subiendo…" : ruta ? "Cambiar" : "Subir"}
+                    <input className="oculto" type="file" accept="image/png,image/webp,image/jpeg,image/gif" onChange={(e) => subir(clave, e.target.files[0])} disabled={Boolean(subiendo)} aria-label={`Imagen del ${nombre}`} />
+                  </label>
+                  {porGrupo && ruta && (
+                    <button type="button" className="boton-chico" onClick={() => usarDibujo(clave)} disabled={Boolean(subiendo)}><Undo2 size={14} /> Dibujo</button>
+                  )}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

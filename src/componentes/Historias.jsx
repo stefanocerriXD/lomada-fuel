@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useTransform } from "motion/react";
-import { ChevronUp, Lock, Reply, Star, X } from "lucide-react";
+import { ChevronUp, Lock, Pencil, Reply, Star, X } from "lucide-react";
+import { useFavorita } from "./Favorita.jsx";
 import { useDatos } from "../lib/datos.jsx";
 import { fechaLocal, haceCuanto, hora } from "../lib/fechas.js";
 import { sumarComidas } from "../lib/macros.js";
@@ -47,7 +48,7 @@ function useVistas() {
   return [vistas, marcar];
 }
 
-export default function HistoriasComidas({ delDia }) {
+export default function HistoriasComidas({ delDia, onEditar }) {
   const { fotos, usuario, castigo } = useDatos();
   const grupos = useMemo(() => historiasDelDia(delDia), [delDia]);
   const [vistas, marcarVista] = useVistas();
@@ -89,7 +90,7 @@ export default function HistoriasComidas({ delDia }) {
         })}
       </ul>
       <AnimatePresence>
-        {abierta && <VisorHistorias key="visor" grupos={abierta.grupos} inicio={abierta.inicio} vistas={vistas} onVista={marcarVista} onCerrar={() => setAbierta(null)} />}
+        {abierta && <VisorHistorias key="visor" grupos={abierta.grupos} inicio={abierta.inicio} vistas={vistas} onVista={marcarVista} onCerrar={() => setAbierta(null)} onEditar={onEditar} />}
       </AnimatePresence>
     </section>
   );
@@ -101,7 +102,7 @@ const pasoTipo = {
   sale: (dir) => ({ x: dir > 0 ? "-35%" : dir < 0 ? "35%" : 0, opacity: 0, scale: 0.9 }),
 };
 
-function VisorHistorias({ grupos, inicio, vistas, onVista, onCerrar }) {
+function VisorHistorias({ grupos, inicio, vistas, onVista, onCerrar, onEditar }) {
   const { fotos, usuario, perfiles, castigo, puntajes, puntuar, abrirPerfil, responder } = useDatos();
   const conItems = useMemo(() => grupos.map((g, i) => (g.items.length ? i : -1)).filter((i) => i >= 0), [grupos]);
   // Arranca en la primera que no viste de esa comida (si ya viste todas, desde el principio).
@@ -126,6 +127,7 @@ function VisorHistorias({ grupos, inicio, vistas, onVista, onCerrar }) {
   const cargada = !item.ruta || sinFotos || cargadaClave === item.clave;
   const pausado = sostenido || detalle || oculta || !cargada;
 
+  const { favorita, alternar: alternarFavorita, disponible: favoritaDisponible } = useFavorita(comida, setAviso);
   const porComida = useMemo(() => puntajesPorComida(puntajes || [], usuario.id), [puntajes, usuario.id]);
   const puntaje = porComida.get(comida.id) || { votos: 0, promedio: 0, mio: 0, quienes: [] };
 
@@ -338,11 +340,23 @@ function VisorHistorias({ grupos, inicio, vistas, onVista, onCerrar }) {
                 </div>
               )}
               {aviso && <p className="hdia-aviso" role="status">{aviso}</p>}
-              {!propia && (
-                <button type="button" className="hdia-responder" onClick={() => { responder(comida); onCerrar(); }}>
-                  <Reply size={17} /> Responder en el chat
-                </button>
-              )}
+              <div className="hdia-acciones">
+                {propia && onEditar && (
+                  <button type="button" className="hdia-responder" onClick={() => { onCerrar(); onEditar(comida); }}>
+                    <Pencil size={16} /> Editar
+                  </button>
+                )}
+                {favoritaDisponible && (
+                  <button type="button" className={favorita ? "hdia-responder hdia-favorita activa" : "hdia-responder hdia-favorita"} onClick={() => { vibrar(6); alternarFavorita(); }} aria-pressed={Boolean(favorita)} aria-label={favorita ? "Sacar de favoritas" : "Guardar en favoritas"}>
+                    <Star size={17} fill={favorita ? "currentColor" : "none"} />
+                  </button>
+                )}
+                {!propia && (
+                  <button type="button" className="hdia-responder" onClick={() => { responder(comida); onCerrar(); }}>
+                    <Reply size={17} /> Responder en el chat
+                  </button>
+                )}
+              </div>
             </footer>
           </motion.div>
         </AnimatePresence>

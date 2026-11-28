@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Flag, Lock, Maximize2, PenLine, Pencil, Reply, Share2, SmilePlus, Star, Trash2, Users } from "lucide-react";
 import { denunciar } from "./Denunciar.jsx";
+import { useFavorita } from "./Favorita.jsx";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
@@ -130,23 +131,8 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
   const soloFoto = alimentos[0]?.fuente === "foto" && !comida.calorias;
   const conDetalle = alimentosVisibles(alimentos).length > 0;
 
-  const nombreFavorita = texto.slice(0, 200);
-  const favorita = extras.favoritas.find((f) => f.nombre === nombreFavorita);
-
-  async function alternarFavorita() {
-    if (favorita) {
-      await supabase.from("favoritas").delete().eq("id", favorita.id);
-    } else {
-      const items = alimentos.length
-        ? alimentos
-        : [{ nombre: texto, fuente: "manual", kcal: comida.calorias, p: comida.proteinas, c: comida.carbohidratos, g: comida.grasas }];
-      const { error } = await supabase.from("favoritas").insert({ usuario_id: usuario.id, nombre: nombreFavorita, alimentos: items });
-      if (error) return avisar("No se pudo guardar");
-      vibrar(12);
-      avisar("Guardada en favoritas");
-    }
-    await cargarExtras();
-  }
+  // Cualquier comida se puede guardar en favoritas: la tuya o la de otro.
+  const { favorita, alternar: alternarFavorita, disponible: favoritaDisponible } = useFavorita(comida, avisar);
 
   async function borrar() {
     const { data, error } = await supabase.from("comidas").delete().eq("id", comida.id).select("id");
@@ -254,6 +240,11 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           <div className="comida-interacciones">
             <Reacciones comidaId={comida.id} avisar={avisar} />
             <button className="boton-texto" onClick={() => responder(comida)} aria-label="Responder en el chat"><Reply size={15} /> Responder</button>
+            {!propia && favoritaDisponible && (
+              <button className={favorita ? "boton-texto favorita favorita-ajena" : "boton-texto favorita-ajena"} onClick={alternarFavorita} aria-pressed={Boolean(favorita)} aria-label={favorita ? "Sacar de favoritas" : "Guardar en favoritas"}>
+                <Star size={15} fill={favorita ? "currentColor" : "none"} />
+              </button>
+            )}
             {!propia && bloqueados !== null && (
               <button className="boton-texto denunciar-comida" aria-label="Denunciar comida" onClick={() => denunciar({ tipo: "comida", objetoId: comida.id, usuarioId: comida.usuario_id, contenido: [tipoInfo(comida.tipo).texto, comida.descripcion].filter(Boolean).join(": "), fotoPath: comida.foto_path || null })}>
                 <Flag size={15} />
@@ -267,7 +258,7 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
             {((!soloFoto && comida.tipo !== "resumen") || esFiesta) && (
               <button className="boton-texto" onClick={() => setInstagram(true)}><Share2 size={15} /> Instagram</button>
             )}
-            {extras.disponible && !soloFoto && (
+            {favoritaDisponible && (
               <button className={favorita ? "boton-texto favorita" : "boton-texto"} onClick={alternarFavorita} aria-pressed={!!favorita}>
                 <Star size={15} fill={favorita ? "currentColor" : "none"} /> Favorita
               </button>

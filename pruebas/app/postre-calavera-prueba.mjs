@@ -24,9 +24,8 @@ const irAImagenes = async (p) => {
   await p.waitForTimeout(500);
 };
 
-// 1) En el + ya no está "Todo el día"; en el Resumen sí.
+// 1) En el + ya no está "Todo el día" (importar el día entero está en Más opciones).
 let { ctx, p } = await abrir({ __columnasPostre: "ninguna" });
-assert.equal(await p.getByText("Importar el día").count(), 1, "en el resumen");
 await p.locator(".boton-subir").click();
 await p.getByRole("heading", { name: "Subir comida" }).waitFor();
 await p.waitForTimeout(500);

@@ -114,6 +114,28 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     return visibles;
   }, [firmarFotos, usuario.id]);
 
+  // Una comida que llega por el canal (de la base, o directo de quien la publica) entra al instante, sin volver a
+  // bajar todas: se firma su foto y se suma (o se actualiza) en la lista. Las planeadas de otros no se ven.
+  const ponerComida = useCallback(async (fila) => {
+    if (!fila?.id || !fila.usuario_id) return;
+    if ((fila.planeada || fila.privada) && fila.usuario_id !== usuario.id) {
+      setComidas((prev) => prev.filter((c) => c.id !== fila.id));
+      return;
+    }
+    if (fila.fecha && fila.fecha < haceDias(VENTANA_DIAS)) return;
+    await firmarFotos([fila]).catch(() => {});
+    setComidas((prev) => {
+      const i = prev.findIndex((c) => c.id === fila.id);
+      if (i >= 0) {
+        const copia = [...prev];
+        copia[i] = { ...prev[i], ...fila };
+        return copia;
+      }
+      return [fila, ...prev].sort((a, b) => (a.creado_en < b.creado_en ? 1 : -1));
+    });
+  }, [firmarFotos, usuario.id]);
+  const quitarComida = useCallback((id) => setComidas((prev) => prev.filter((c) => c.id !== id)), []);
+
   const traerComidasDe = useCallback(
     (id) => traerTodo(() => supabase.from("comidas").select("*").eq("usuario_id", id).order("fecha", { ascending: false }).order("id")),
     [],
@@ -398,6 +420,12 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       supabase.from("ajustes_grupo").select("*"),
       supabase.from("administradores").select("usuario_id").eq("usuario_id", usuario.id).maybeSingle(),
     ]);
+    // SQL 072: el Bocha de cada grupo (sin imagen, el dibujo). Sin ese SQL, las imágenes de antes.
+    const bochaGrupo = await supabase.rpc("imagenes_bocha").then((r) => r, () => ({ error: true }));
+    const porGrupo = !bochaGrupo.error && Boolean(bochaGrupo.data);
+    const imagenesBocha = porGrupo
+      ? { dia: bochaGrupo.data.dia || null, evo: bochaGrupo.data.evo || null, porGrupo: true }
+      : { dia: valorDe(ajustes, "bocha"), evo: valorDe(ajustes, "bocha_evo") };
     if (desafios.error) return; // Las tablas todavía no existen.
     setExtras({
       disponible: true,
@@ -412,10 +440,12 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       multasActivas: !multas.error && !bochaEvo.error,
       multas: multas.error ? [] : multas.data || [],
       bochaEvo: bochaEvo.error ? [] : bochaEvo.data || [],
-      imagenesBocha: { dia: valorDe(ajustes, "bocha"), evo: valorDe(ajustes, "bocha_evo") },
+      imagenesBocha,
       admin: !admin.error && Boolean(admin.data),
+      // Quién cambia las imágenes del Bocha: quien administra el grupo (antes, los admins de la app).
+      puedeBocha: porGrupo ? Boolean(bochaGrupo.data.puede) : !admin.error && Boolean(admin.data),
     });
-    firmarRutas([valorDe(ajustes, "bocha"), valorDe(ajustes, "bocha_evo"), ...(recetas.data || []).flatMap((r) => r.fotos || [])]).catch(() => {});
+    firmarRutas([imagenesBocha.dia, imagenesBocha.evo, ...(recetas.data || []).flatMap((r) => r.fotos || [])]).catch(() => {});
   }, [usuario.id, firmarRutas]);
 
   const cambiarAgua = useCallback(
@@ -511,14 +541,19 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     if (anterior) supabase.removeChannel(anterior);
 
     const tandas = tiempos.current;
-    const enTanda = (clave, tarea) => {
+    const enTanda = (clave, tarea, espera = 250) => {
       clearTimeout(tandas[clave]);
-      tandas[clave] = setTimeout(() => tarea().catch(() => {}), 250);
+      tandas[clave] = setTimeout(() => tarea().catch(() => {}), espera);
     };
     const tabla = (canal, nombre, alCambiar) => canal.on("postgres_changes", { event: "*", schema: "public", table: nombre }, alCambiar);
 
     let canal = supabase.channel(`grupo-${Date.now()}`);
-    canal = tabla(canal, "comidas", () => enTanda("comidas", cargarComidas));
+    // La comida entra apenas llega; un rato después se baja la lista entera para que quede todo igual que en la base.
+    canal = tabla(canal, "comidas", ({ eventType, new: nueva, old: vieja }) => {
+      if (eventType === "DELETE" && vieja?.id) quitarComida(vieja.id);
+      else if (nueva?.id) ponerComida(nueva);
+      enTanda("comidas", cargarComidas, nueva?.id || vieja?.id ? 4000 : 250);
+    });
     canal = tabla(canal, "reacciones", () => enTanda("reacciones", cargarReacciones));
     // Las estrellas llegan de a una (no se vuelve a bajar toda la lista por cada estrella: menos tráfico).
     canal = tabla(canal, "puntajes_comida", ({ eventType, new: nueva, old: vieja }) => {
@@ -552,6 +587,12 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       agregarMensaje(payload);
     });
     chat.on("broadcast", { event: "reaccion" }, ({ payload }) => payload && ponerReaccion(payload));
+    // Quien publica una comida la manda también directo al grupo: aparece antes de que avise la base.
+    chat.on("broadcast", { event: "comida" }, ({ payload }) => {
+      if (!payload?.id || (Array.isArray(payload.grupos) && grupo.id && !payload.grupos.includes(grupo.id))) return;
+      ponerComida(payload);
+    });
+    chat.on("broadcast", { event: "comida_quitada" }, ({ payload }) => payload?.id && quitarComida(payload.id));
     chat.on("broadcast", { event: "eliminado" }, ({ payload }) => payload?.id && marcarEliminado(payload.id));
     chat.on("broadcast", { event: "leido" }, ({ payload }) => payload && ponerLectura(payload));
     chat.on("broadcast", { event: "actividad" }, ({ payload }) => payload?.usuario_id && marcarActividad(payload.usuario_id, payload.que));
@@ -571,7 +612,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
         reintento.current = setTimeout(conectar, REINTENTO_MS);
       }
     });
-  }, [agregarMensaje, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarPuntajes, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura, marcarEliminado, grupo.id]);
+  }, [agregarMensaje, ponerComida, quitarComida, cargarComidas, cargarExtras, cargarInvitaciones, cargarMensajes, cargarPerfiles, cargarReacciones, cargarPuntajes, cargarSocial, firmarRutas, refrescar, ponerReaccion, ponerLectura, marcarEliminado, grupo.id]);
 
   useEffect(() => {
     cargarMensajes().catch(() => setMensajesListos(true));

@@ -49,10 +49,14 @@ const aAlimento = (r) => ({
   ...(r.codigo ? { codigo: r.codigo } : {}),
   usuarios: r.usuarios || 1,
   veces: r.veces || 1,
+  // SQL 071: el nombre si es de tu grupo, "otro" si no; null si es tuyo o de Open Food Facts.
+  cargadoPor: r.cargado_por || null,
 });
 
 export async function buscarEnCatalogo(codigo) {
   try {
+    const conQuien = await supabase.rpc("producto_por_codigo", { p_codigo: codigo });
+    if (!conQuien.error) return conQuien.data?.[0] ? aAlimento(conQuien.data[0]) : null;
     const { data, error } = await supabase.from("productos").select(CAMPOS).eq("codigo", codigo).maybeSingle();
     return !error && data ? aAlimento(data) : null;
   } catch {
@@ -81,4 +85,10 @@ export function sumarAlCatalogo(alimento) {
   supabase
     .rpc("guardar_producto", { p_codigo: valido, p_nombre: alimento.nombre, p_marca: alimento.marca || "", p_por100: alimento.por100, p_porcion: alimento.porcion || null, p_fuente: fuente })
     .then(() => {}, () => {});
+}
+
+// Un alimento cargado a mano entra al buscador de todos (los demás lo ven "importado por" quien lo cargó).
+export async function guardarAMano({ nombre, marca, por100 }) {
+  const { error } = await supabase.rpc("guardar_producto", { p_codigo: null, p_nombre: nombre, p_marca: marca || "", p_por100: por100, p_porcion: null, p_fuente: "usuario" });
+  return !error;
 }

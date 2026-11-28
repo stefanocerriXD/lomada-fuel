@@ -56,7 +56,8 @@ await p.getByRole("button", { name: "Cerrar" }).last().click(); await p.waitForT
 await p.locator(".comida .comida-foto, .comida img").first().click(); await p.waitForTimeout(700);
 await p.getByRole("button", { name: "Compartir en Instagram" }).click();
 await p.locator(".compartir-ig-vista img").waitFor({ timeout: 8000 });
-const arriba = await p.evaluate(() => { const r = document.querySelector(".compartir-ig .boton").getBoundingClientRect(); return document.elementFromPoint(r.x + 20, r.y + 10)?.closest(".compartir-ig") != null; });
+// Se espera a que la hoja termine de subir (mientras se anima, el botón puede estar todavía abajo de la pantalla).
+const arriba = await p.waitForFunction(() => { const r = document.querySelector(".compartir-ig .boton")?.getBoundingClientRect(); return r && document.elementFromPoint(r.x + 20, r.y + 10)?.closest(".compartir-ig") != null; }, null, { timeout: 4000 }).then(() => true, () => false);
 assert.ok(arriba, "la hoja queda arriba del visor");
 await p.screenshot({ path: "capturas/ig-visor.png" });
 await ctx.close();

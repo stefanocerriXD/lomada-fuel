@@ -35,9 +35,16 @@ await p.goto("http://localhost:5199", { timeout: 60000 });
 await p.waitForTimeout(1000);
 await p.screenshot({ path: "capturas/s-inicio.png" });
 
+// Importar el día entero está en el +, en Más opciones.
+const importarDia = async () => {
+  await p.locator("[aria-label='Subir comida']").last().click();
+  await p.waitForTimeout(500);
+  await p.getByText("Más opciones").click();
+  await p.getByRole("button", { name: "Importar el día entero" }).click();
+};
 const filas = async () => p.locator(".fila-importada").evaluateAll((els) => els.map((e) => [e.querySelector("select").value, ...[...e.querySelectorAll("input")].map((i) => Number(i.value))].join(" ")));
 for (const [n] of ejemplos) {
-  await p.getByRole("button", { name: /Importar/ }).click();
+  await importarDia();
   await p.waitForTimeout(400);
   const t0 = Date.now();
   await p.getByLabel("Subir captura o archivo").setInputFiles(`capturas/ej-${n}.png`);
@@ -53,7 +60,7 @@ for (const [n] of ejemplos) {
 }
 
 // Texto pegado y guardado
-await p.getByRole("button", { name: /Importar/ }).click();
+await importarDia();
 await p.waitForTimeout(400);
 await p.screenshot({ path: "capturas/s-importar.png" });
 await p.getByLabel("Texto del resumen").fill("Calorías 1.850 kcal\nProteínas 142 g\nCarbohidratos 180 g\nGrasas 62 g");
@@ -76,7 +83,7 @@ console.log("no aparece en el chat:", (await p.locator(".comida", { hasText: "Re
 // Reimportar reemplaza
 await p.getByRole("button", { name: "Resumen", exact: true }).locator("visible=true").first().click();
 await p.waitForTimeout(500);
-await p.getByRole("button", { name: /Importar/ }).click();
+await importarDia();
 await p.waitForTimeout(400);
 await p.getByLabel("Texto del resumen").fill("Calorías 2.000\nProteínas 150 g");
 await p.getByRole("button", { name: "Leer texto" }).click();

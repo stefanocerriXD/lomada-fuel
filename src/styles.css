@@ -3155,3 +3155,20 @@ button.planeada-datos { padding: 0; background: none; color: inherit; text-align
 .denuncia-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .denuncia-acciones .boton-chico { display: inline-flex; align-items: center; gap: 5px; }
 .denuncia-acciones .boton-chico.peligro { color: var(--peligro, #c0392b); }
+
+/* Historias: editar la tuya, favorita y responder, en una fila. */
+.hdia-acciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.hdia-favorita { width: 44px; padding: 0; justify-content: center; }
+.hdia-favorita.activa { border-color: #ffc83a; color: #ffc83a; }
+.favorita-ajena { margin-left: auto; }
+.favorita-ajena + .denunciar-comida { margin-left: 0; }
+.mas-opciones-cuerpo .importar-dia { display: inline-flex; align-items: center; gap: 6px; justify-self: start; }
+
+/* Cargar a mano: marca y peso en una fila. */
+.carga-manual-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.carga-manual-fila input { min-width: 0; }
+.carga-manual .interruptor small { display: block; color: var(--tinta-2); font-size: 0.78rem; font-weight: 400; }
+
+/* La cacona: cambiar la imagen del Bocha o volver al dibujo. */
+.la-caca-botones { display: flex; flex: none !important; flex-direction: column; align-items: stretch; gap: 6px; }
+.la-caca-botones .boton-chico { justify-content: center; }

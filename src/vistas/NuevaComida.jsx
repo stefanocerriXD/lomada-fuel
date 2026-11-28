@@ -10,7 +10,7 @@ import { comprimirImagen } from "../lib/imagen.js";
 import { filaDeComida, itemImportado } from "../lib/importar.js";
 import { alimentosUsados, buscarCombos, buscarEnHistorial, claveAlimento, combosDe, haceTanto, vecesPorAlimento } from "../lib/historial.js";
 import { buscarRecetas, recetaComoAlimento } from "../lib/recetasPropias.js";
-import { buscarCatalogo, sumarAlCatalogo } from "../lib/productosPropios.js";
+import { buscarCatalogo, guardarAMano, sumarAlCatalogo } from "../lib/productosPropios.js";
 import { aFecha, fechaLocal, nombreDia, tipoSegunHora } from "../lib/fechas.js";
 
 // "Ayer", "Mañana" o "Lun 16": para el título cuando la carga no es de hoy.
@@ -51,7 +51,7 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
   // Lo que se está cargando se puede guardar como receta propia (un budín, el desayuno de siempre).
   const [recetaNueva, setRecetaNueva] = useState(null);
   const [instagram, setInstagram] = useState(false);
-  const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones, grupo, misGrupos } = useDatos();
+  const { usuario, yo, perfiles, comidas, comidasLogros, fotos, cargarComidas, extras, avisarEstado, invitaciones, cargarInvitaciones, grupo, misGrupos, emitirChat } = useDatos();
   // En varios grupos: dónde se publica según el ajuste de cada uno, o eligiendo acá.
   const variosGrupos = misGrupos.length > 1;
   const eligeGrupos = variosGrupos && yo.publicar_en === "elegir";
@@ -538,6 +538,17 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
         ({ error: errFila } = await escribir(sinPlaneada));
       }
       if (errFila) throw errFila;
+      // Al grupo que tiene la app abierta le llega al instante, directo (sin esperar a la base).
+      if (privada || (planeadaNueva && !original)) {
+        if (original) emitirChat("comida_quitada", { id });
+      } else {
+        emitirChat("comida", {
+          ...(original ? {} : { fecha: carga.fecha || fechaLocal(), creado_en: new Date().toISOString() }),
+          ...fila,
+          id,
+          usuario_id: usuario.id,
+        });
+      }
       // El aviso al grupo sale apenas se guarda (antes de limpiar fotos viejas o recargar la lista): llega al momento.
       // Al grupo le llega cuando se come: al subirla (aunque sea sin foto) o al tocar "Ya la comí" en una planeada.
       if (!privada && ((!original && !planeadaNueva) || (comi && yaPlaneada))) avisarGrupo("comida", id);
@@ -957,6 +968,12 @@ function Formulario({ carga, onGuardar, onImportarDia, onFiesta, onPostre, avisa
           <details className="mas-opciones">
             <summary>Más opciones</summary>
             <div className="mas-opciones-cuerpo">
+              {/* Importar el día entero (antes estaba en el Resumen): captura o texto de MyFitnessPal con todas las comidas. */}
+              {!original && !carga.postre && onImportarDia && (
+                <button type="button" className="boton-chico importar-dia" onClick={() => onImportarDia(carga.fecha || fechaLocal())}>
+                  <ClipboardPaste size={15} /> Importar el día entero
+                </button>
+              )}
               {/* Ya pesada pero todavía sin comer: se guarda planeada (SQL 062). */}
               {columnaPlaneada && !original && !futura && !carga.postre && !vistaFoto && tipo !== "resumen" && (
                 <label className="interruptor planear-comida">
@@ -1127,12 +1144,13 @@ function FilaResultado({ alimento, onElegir, uso }) {
         <span className="resultado-datos">
           <strong>{alimento.nombre}</strong>
           <span>{etiquetaEstado(alimento) && <EtiquetaEstado texto={etiquetaEstado(alimento)} />}{alimento.marca ? `${alimento.marca} · ` : ""}{medida} · {kcal} kcal</span>
-          {(alimento.verificado || uso || alimento.usuarios >= 2) && (
+          {(alimento.verificado || uso || alimento.usuarios >= 2 || alimento.cargadoPor) && (
             <span className="resultado-usos">
               {alimento.verificado && <span className="verificado"><BadgeCheck size={13} aria-hidden="true" /> Verificado</span>}
               {[
                 alimento.verificado ? "" : null,
                 uso ? `Lo cargaste ${uso.veces === 1 ? "1 vez" : `${uso.veces} veces`}` : null,
+                alimento.cargadoPor ? `Importado por ${alimento.cargadoPor === "otro" ? "otro usuario" : alimento.cargadoPor}` : null,
                 alimento.usuarios >= 2 ? `${alimento.usuarios} personas lo usan` : null,
               ].filter((x) => x !== null).join(" · ")}
             </span>
@@ -1362,25 +1380,37 @@ function PanelVoz({ propios, onListo, onBuscar }) {
   );
 }
 
-function CargaManual({ inicial, onAgregar }) {
-  const [v, setV] = useState({ nombre: inicial?.nombre || "", kcal: inicial?.kcal ?? "", p: inicial?.p ?? "", c: inicial?.c ?? "", g: inicial?.g ?? "" });
+export function CargaManual({ inicial, onAgregar }) {
+  const [v, setV] = useState({ nombre: inicial?.nombre || "", marca: "", peso: "", kcal: inicial?.kcal ?? "", p: inicial?.p ?? "", c: inicial?.c ?? "", g: inicial?.g ?? "" });
+  const [guardar, setGuardar] = useState(true);
+  const peso = leerCantidad(v.peso) || 0;
+  // Con nombre y peso se puede sumar al buscador (no lo que viene importado de otra app).
+  const guardable = !inicial?.fuente && peso > 0 && v.nombre.trim().length >= 2;
 
   function agregar(e) {
     e.preventDefault();
-    onAgregar({
-      nombre: v.nombre.trim() || "Comida",
-      fuente: inicial?.fuente || "manual",
-      kcal: Number(v.kcal) || 0,
-      p: Number(v.p) || 0,
-      c: Number(v.c) || 0,
-      g: Number(v.g) || 0,
-    });
+    const totales = { kcal: Number(v.kcal) || 0, p: Number(v.p) || 0, c: Number(v.c) || 0, g: Number(v.g) || 0 };
+    const nombre = v.nombre.trim() || "Comida";
+    if (peso > 0) {
+      // Con el peso: valores por 100 g, así la cantidad se ajusta en gramos.
+      const por100 = Object.fromEntries(Object.entries(totales).map(([k, x]) => [k, Math.round(((x * 100) / peso) * 10) / 10]));
+      if (guardable && guardar) guardarAMano({ nombre, marca: v.marca.trim(), por100 });
+      return onAgregar({ nombre, ...(v.marca.trim() ? { marca: v.marca.trim() } : {}), fuente: "manual", por100, gramos: peso });
+    }
+    onAgregar({ nombre, fuente: inicial?.fuente || "manual", ...totales });
   }
 
   return (
-    <form className="tarjeta-interna" onSubmit={agregar}>
+    <form className="tarjeta-interna carga-manual" onSubmit={agregar}>
       {inicial?.aviso && <p className="nota">{inicial.aviso}</p>}
       <input value={v.nombre} onChange={(e) => setV({ ...v, nombre: e.target.value })} placeholder="Nombre (opcional)" aria-label="Nombre" />
+      {!inicial?.fuente && (
+        <div className="carga-manual-fila">
+          <input value={v.marca} onChange={(e) => setV({ ...v, marca: e.target.value })} placeholder="Marca (opcional)" aria-label="Marca" maxLength={60} />
+          <input value={v.peso} onChange={(e) => setV({ ...v, peso: e.target.value })} placeholder="Peso en g (opcional)" aria-label="Peso en gramos" inputMode="decimal" />
+        </div>
+      )}
+      {peso > 0 && <small className="nota">Los valores de abajo son para {mostrarCantidad(peso)} g.</small>}
       <div className="ajuste-macros">
         {CAMPOS.map(([k, nombre]) => (
           <label key={k}>
@@ -1389,6 +1419,12 @@ function CargaManual({ inicial, onAgregar }) {
           </label>
         ))}
       </div>
+      {guardable && (
+        <label className="interruptor">
+          <input type="checkbox" checked={guardar} onChange={(e) => setGuardar(e.target.checked)} />
+          <span>Guardarlo en el buscador<small>Lo encontrás después y le sirve a los demás: les aparece importado por vos.</small></span>
+        </label>
+      )}
       <button className="boton" type="submit">Agregar</button>
     </form>
   );

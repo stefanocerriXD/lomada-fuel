@@ -121,7 +121,7 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
       <CartelMejoras />
       <TiraDias fecha={fecha} onElegir={setFecha} conComidas={propias} />
       {/* Las historias del día que estás mirando: lo que comió cada uno, comida por comida. */}
-      <HistoriasComidas delDia={delDia} />
+      <HistoriasComidas delDia={delDia} onEditar={(comida) => onCargar({ comida })} />
 
       <section className="tarjeta tarjeta-heroe">
         {racha > 1 && (
@@ -256,10 +256,6 @@ function ResumenDia({ onCargar, onImportar, onFiesta, onDia, avisar }) {
             )}
           </div>
         )}
-        <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => onImportar(fecha)}>
-          <ClipboardPaste size={22} />
-          <span><strong>Importar el día</strong><small>Captura o texto</small></span>
-        </motion.button>
         {mias.some((c) => !esDeAppleSalud(c)) && (
           <motion.button className="tarjeta accion" whileTap={{ scale: 0.97 }} onClick={() => { vibrar(8); setCompartirDia(true); }}>
             <Share2 size={22} />

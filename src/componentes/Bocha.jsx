@@ -10,6 +10,8 @@ const MODOS = {
   dia: { iniciales: 1, maximo: 3, cada: [90000, 150000], tamano: [60, 100], tiros: 1 },
   evo: { iniciales: 4, maximo: 7, cada: [45000, 80000], tamano: [80, 140], tiros: 1 },
 };
+// Sin imagen propia del grupo, el Bocha es un dibujo que viene con la app.
+export const DIBUJOS_BOCHA = { dia: "/bocha-dibujo.svg", evo: "/bocha-evo-dibujo.svg" };
 const AUSENCIA_PARA_VOLVER = 5 * 60 * 1000;
 // Cuántos píxeles hay que frotar para sacar una mancha entera. Las del Bocha Evo cuestan el doble.
 const FROTAR = { dia: 120, evo: 200 };
@@ -70,7 +72,8 @@ export default function Bocha() {
   const { castigo, fotos, imagenesBocha } = useDatos();
   const modo = castigo?.evo ? "evo" : castigo?.diario ? "dia" : null;
   const config = modo ? MODOS[modo] : null;
-  const imagen = modo ? fotos[modo === "evo" ? imagenesBocha.evo : imagenesBocha.dia] || fotos[imagenesBocha.dia] : null;
+  const ruta = modo === "evo" ? imagenesBocha.evo || imagenesBocha.dia : imagenesBocha.dia;
+  const imagen = modo ? (ruta ? fotos[ruta] : DIBUJOS_BOCHA[modo]) : null;
   const [manchas, setManchas] = useState([]);
   const [cartel, setCartel] = useState(false);
   const [asomado, setAsomado] = useState(null);

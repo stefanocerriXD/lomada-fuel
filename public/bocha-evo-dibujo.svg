@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="El Bocha Evo">
+  <defs>
+    <linearGradient id="cuerpo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a4f1c"/>
+      <stop offset="1" stop-color="#3f2007"/>
+    </linearGradient>
+    <radialGradient id="brillo" cx="0.35" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="oro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe07a"/>
+      <stop offset="1" stop-color="#e9a800"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="224" rx="90" ry="10" fill="#000" opacity="0.22"/>
+  <!-- Olor -->
+  <path d="M40 70q-10-14 0-26t0-26" fill="none" stroke="#8bc34a" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+  <path d="M200 70q10-14 0-26t0-26" fill="none" stroke="#8bc34a" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+  <!-- Cuerpo -->
+  <ellipse cx="120" cy="192" rx="96" ry="34" fill="url(#cuerpo)"/>
+  <ellipse cx="120" cy="142" rx="76" ry="33" fill="url(#cuerpo)"/>
+  <ellipse cx="120" cy="96" rx="54" ry="28" fill="url(#cuerpo)"/>
+  <ellipse cx="120" cy="192" rx="96" ry="34" fill="url(#brillo)"/>
+  <ellipse cx="120" cy="142" rx="76" ry="33" fill="url(#brillo)"/>
+  <ellipse cx="120" cy="96" rx="54" ry="28" fill="url(#brillo)"/>
+  <!-- Corona -->
+  <path d="M82 74l8-38 18 22 12-30 12 30 18-22 8 38z" fill="url(#oro)" stroke="#b07d00" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="120" cy="62" r="5" fill="#e53935"/>
+  <!-- Cejas de malo y ojos que brillan -->
+  <path d="M80 118l28 10" stroke="#1d0c02" stroke-width="8" stroke-linecap="round"/>
+  <path d="M160 118l-28 10" stroke="#1d0c02" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="96" cy="136" rx="10" ry="9" fill="#fff"/>
+  <ellipse cx="144" cy="136" rx="10" ry="9" fill="#fff"/>
+  <circle cx="98" cy="138" r="5" fill="#d50000"/>
+  <circle cx="142" cy="138" r="5" fill="#d50000"/>
+  <!-- Sonrisa con dientes -->
+  <path d="M84 160q36 34 72 0z" fill="#2a0e02"/>
+  <path d="M90 161h60l-4 8H94z" fill="#fff"/>
+  <path d="M104 161v8M116 161v9M128 161v9M140 161v8" stroke="#2a0e02" stroke-width="2"/>
+</svg>
