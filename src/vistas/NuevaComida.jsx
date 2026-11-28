@@ -1095,7 +1095,7 @@ function resumenAlimento(alimento) {
   return { medida, kcal: Math.round(m.kcal) };
 }
 
-function FilaHistorial({ uso, onElegir, delGrupo }) {
+export function FilaHistorial({ uso, onElegir, delGrupo }) {
   const { alimento, veces, ultima } = uso;
   const { medida: medidaBase, kcal } = resumenAlimento(alimento);
   const sinPeso = !alimento.por100 || alimento.porPorcion;

@@ -1439,6 +1439,12 @@ a.accion { color: var(--sobre-acento-suave); text-decoration: none; }
 
 /* Búsqueda y medidas */
 .fila-busqueda { display: flex; align-items: center; gap: 7px; }
+.fila-busqueda > .buscador-campo { flex: 1; min-width: 0; }
+/* Editor de recetas: los recientes se pliegan cuando ya hay ingredientes. */
+.recientes-receta > summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; }
+.recientes-receta > summary::-webkit-details-marker { display: none; }
+.recientes-receta > summary::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s; }
+.recientes-receta[open] > summary::after { transform: rotate(225deg) translateY(-1px); }
 .fila-busqueda .buscador-campo { flex: 1; min-width: 0; }
 .fila-busqueda .boton-icono { width: 48px; height: 48px; background: var(--superficie); }
 .fila-busqueda .boton-icono.activo { background: var(--acento-suave); color: var(--sobre-acento-suave); }

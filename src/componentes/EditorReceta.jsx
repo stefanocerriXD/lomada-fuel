@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence } from "motion/react";
-import { Camera, Images, ImageUp, MessageCircle, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { Camera, Images, ImageUp, MessageCircle, Minus, Plus, ScanBarcode, Search, Trash2, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { comprimirImagen } from "../lib/imagen.js";
 import { nombreDia } from "../lib/fechas.js";
@@ -10,7 +10,11 @@ import { useDatos } from "../lib/datos.jsx";
 import { prepararItem } from "../lib/unidades.js";
 import { macrosDeItem } from "../lib/macros.js";
 import { compartirEnChat, pesoDeReceta, totalesDeReceta } from "../lib/recetasPropias.js";
-import { FilaItem, Resultados } from "../vistas/NuevaComida.jsx";
+import { FilaHistorial, FilaItem, Resultados } from "../vistas/NuevaComida.jsx";
+import Escaner from "../vistas/Escaner.jsx";
+import { buscarCodigo } from "../lib/api.js";
+import { alimentosUsados } from "../lib/historial.js";
+import { sumarAlCatalogo } from "../lib/productosPropios.js";
 import { leerIngredientes } from "../lib/ingredientes.js";
 import { limpiarPasos, MAX_PASOS } from "../lib/pasosReceta.js";
 import Lector from "./Lector.jsx";
@@ -105,6 +109,9 @@ function Formulario({ receta, onListo, avisar }) {
   }
   const [items, setItems] = useState(() => (receta.ingredientes || []).map((i) => ({ ...(i.por100 ? prepararItem(i) : i), id: crypto.randomUUID() })));
   const [texto, setTexto] = useState("");
+  const [escaneando, setEscaneando] = useState(false);
+  // Lo que ya cargaste en tus comidas: sale al buscar (como en el +) y, con el buscador vacío, los recientes.
+  const historial = useMemo(() => alimentosUsados(comidasLogros || comidas, usuario.id), [comidasLogros, comidas, usuario.id]);
   const [pasos, setPasos] = useState(receta.pasos || "");
   const [guardando, setGuardando] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
@@ -115,6 +122,8 @@ function Formulario({ receta, onListo, avisar }) {
   const porcion = (k) => total[k] / Math.max(1, porciones);
 
   function agregar(alimento) {
+    sumarAlCatalogo(alimento);
+    setEscaneando(false);
     setItems((prev) => [...prev, { ...(alimento.por100 ? prepararItem(alimento) : alimento), id: crypto.randomUUID() }]);
     setTexto("");
     vibrar(8);
@@ -280,12 +289,25 @@ function Formulario({ receta, onListo, avisar }) {
           {leido.sinReconocer.length > 0 && ` No reconocí: ${leido.sinReconocer.join(", ")}. Buscalos abajo.`}
         </p>
       )}
-      <div className="buscador-campo">
-        <Search size={19} />
-        <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Agregar ingrediente" aria-label="Buscar ingrediente" autoComplete="off" />
-        {texto && <button className="limpiar" onClick={() => setTexto("")} aria-label="Borrar búsqueda"><X size={17} /></button>}
+      <div className="fila-busqueda">
+        <div className="buscador-campo">
+          <Search size={19} />
+          <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Agregar ingrediente" aria-label="Buscar ingrediente" autoComplete="off" />
+          {texto && <button className="limpiar" onClick={() => setTexto("")} aria-label="Borrar búsqueda"><X size={17} /></button>}
+        </div>
+        <button type="button" className={escaneando ? "boton-icono activo" : "boton-icono"} onClick={() => { setEscaneando(!escaneando); vibrar(5); }} aria-label="Escanear código" aria-pressed={escaneando}><ScanBarcode size={20} /></button>
       </div>
-      {texto.trim() && <Resultados texto={texto} onElegir={agregar} propios={[]} />}
+      {escaneando && <Escaner onAlimento={agregar} buscar={buscarCodigo} />}
+      {texto.trim() ? (
+        <Resultados texto={texto} onElegir={agregar} propios={historial.todos} />
+      ) : !escaneando && historial.recientes.length > 0 && (
+        <details className="recientes-receta" open={items.length === 0}>
+          <summary className="titulo-lista">Recientes</summary>
+          <ul className="resultados">
+            {historial.recientes.map((h) => <FilaHistorial key={h.alimento.nombre} uso={h} onElegir={agregar} />)}
+          </ul>
+        </details>
+      )}
 
       <AnimatePresence initial={false}>
         {items.map((i) => (
