@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { IconoCorona, IconoGol, IconoResaca, IconoTrago } from "../componentes/IconosFiesta.jsx";
 import { abrirFestejo } from "../lib/fiestaEstado.js";
 import { AnimatePresence } from "motion/react";
-import { Award, Camera, Pencil, Pin, UtensilsCrossed } from "lucide-react";
+import { Award, Camera, Flag, Pencil, Pin, UtensilsCrossed } from "lucide-react";
+import { BotonBloquear, denunciar } from "../componentes/Denunciar.jsx";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { esDeAppleSalud } from "../lib/importar.js";
@@ -40,9 +41,11 @@ export default function Perfil({ onEditar, onEditarComida, avisar }) {
 const MAX_FIJADAS = 3;
 
 function Contenido({ perfil, onEditar, onEditarComida, avisar }) {
-  const { usuario, comidas, fotos, extras, cargarHistorial, perfiles, progreso, reacciones, castigo } = useDatos();
+  const { usuario, comidas, fotos, extras, cargarHistorial, perfiles, progreso, reacciones, castigo, bloqueados } = useDatos();
   const [abierto, setAbierto] = useState(null);
-  const [lista, setLista] = useState(null);
+  const [listaCargada, setLista] = useState(null);
+  const bloqueado = (bloqueados || []).includes(perfil.id);
+  const lista = bloqueado && listaCargada ? [] : listaCargada;
   const [error, setError] = useState(false);
   const [seccion, setSeccion] = useState("dias");
   const [visor, setVisor] = useState(null);
@@ -143,6 +146,15 @@ function Contenido({ perfil, onEditar, onEditarComida, avisar }) {
           {cacasSemana > 0 && <span className="sello-multas">{"💩".repeat(Math.min(cacasSemana, 7))} esta semana</span>}
         </div>
         {propio && <button className="boton boton-secundario perfil-editar" onClick={onEditar}><Pencil size={15} /> Editar perfil</button>}
+        {!propio && bloqueados !== null && (
+          <div className="perfil-moderacion">
+            {bloqueado && <p className="nota">Bloqueaste a {perfil.nombre}: no ves sus comidas ni sus mensajes.</p>}
+            <BotonBloquear perfil={perfil} avisar={avisar} className="boton-chico" />
+            <button type="button" className="boton-chico" onClick={() => denunciar({ tipo: "perfil", usuarioId: perfil.id, contenido: [perfil.nombre, perfil.bio].filter(Boolean).join(" · "), fotoPath: perfil.foto_path || null })}>
+              <Flag size={14} /> Denunciar
+            </button>
+          </div>
+        )}
       </div>
 
       <Destacadas perfil={perfil} propio={propio} fotosComidas={propio ? conFoto : []} avisar={avisar} />

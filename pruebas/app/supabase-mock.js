@@ -198,6 +198,11 @@ if (window.__con063) {
 }
 // SQL 069: los pedidos que esperan aparecen en el chat.
 if (window.__con069) (window.__pedidos || []).filter((x) => !x.estado).forEach((x, n) => db.mensajes.push({ id: `mp-${x.id}`, usuario_id: null, texto: `${x.nombre} quiere unirse al grupo.`, aviso_grupo: "pedido", solicitud_id: x.id, solicitud_estado: "pendiente", creado_en: ts(0, 14 + n) }));
+// SQL 070: denunciar y bloquear.
+if (window.__con070) {
+  db.denuncias = window.__denuncias || [];
+  db.bloqueos = (window.__bloqueos || []).map((id) => ({ usuario_id: "u1", bloqueado_id: id }));
+}
 // SQL 068: estrellas a los platos.
 if (window.__con068) db.puntajes_comida = window.__puntajes || [];
 // SQL 066: foto de perfil (Nahuel ya tiene una).
@@ -292,6 +297,18 @@ export const supabase = {
     // Grupos con admin (SQL 046). __admin: administro el grupo que estoy viendo. __pedidos: los que esperan.
     if (nombre === "grupos_que_administro") return window.__sin046 ? { data: null, error: { message: "Could not find the function" } } : { data: window.__admin ? [db.perfiles.find((pf) => pf.id === "u1").grupo_id, ...(window.__creados || [])] : (window.__creados || []), error: null };
     if (nombre === "pedidos_pendientes") return { data: (window.__pedidos || []).filter((x) => !x.estado).length, error: null };
+    if (nombre === "denuncias_para_revisar") {
+      if (!db.denuncias) return { data: null, error: { message: "Could not find the function" } };
+      const nombreDe = (id) => db.perfiles.find((pf) => pf.id === id)?.nombre || null;
+      return { data: db.denuncias.map((d) => ({ estado: "pendiente", ...d, denunciante: nombreDe(d.denunciante_id || "u1"), denunciado: nombreDe(d.denunciado_id), sigue_estando: d.tipo === "mensaje" ? db.mensajes.some((m) => m.id === d.objeto_id) : d.tipo === "comida" ? db.comidas.some((c) => c.id === d.objeto_id) : true, denuncias_al_mismo: db.denuncias.filter((x) => x.denunciado_id === d.denunciado_id).length })), error: null };
+    }
+    if (nombre === "resolver_denuncia") {
+      const d = db.denuncias.find((x) => x.id === p.p_id);
+      if (p.p_borrar && d.tipo === "mensaje") db.mensajes = db.mensajes.filter((m) => m.id !== d.objeto_id);
+      if (p.p_borrar && d.tipo === "comida") db.comidas = db.comidas.filter((c) => c.id !== d.objeto_id);
+      d.estado = p.p_borrar ? "borrado" : "descartada";
+      return { data: d.estado, error: null };
+    }
     if (nombre === "codigo_de_grupo") return { data: "lomada-1234", error: null };
     if (nombre === "solicitudes_de_grupo") return { data: (window.__pedidos || []).filter((x) => !x.estado), error: null };
     if (nombre === "responder_solicitud") {

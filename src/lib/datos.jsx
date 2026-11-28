@@ -58,6 +58,8 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
   const [reacciones, setReacciones] = useState([]);
   // Estrellas a los platos (SQL 068). Sin la tabla, null: no se muestra para puntuar.
   const [puntajes, setPuntajes] = useState(null);
+  // A quién bloqueé (SQL 070): no veo sus comidas ni sus mensajes. null: la base todavía no tiene la tabla.
+  const [bloqueados, setBloqueados] = useState(null);
   const [perfilId, abrirPerfil] = useState(null);
   const [respuesta, responder] = useState(null);
   const [mensajes, setMensajes] = useState([]);
@@ -317,6 +319,21 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     if (!error) setReacciones(data);
   }, []);
 
+  const cargarBloqueos = useCallback(async () => {
+    const { data, error } = await supabase.from("bloqueos").select("bloqueado_id");
+    setBloqueados(error ? null : data.map((b) => b.bloqueado_id));
+  }, []);
+  const bloquear = useCallback(async (id) => {
+    const { error } = await supabase.from("bloqueos").insert({ usuario_id: usuario.id, bloqueado_id: id });
+    if (error && !/duplicate|23505/.test(`${error.code} ${error.message}`)) throw error;
+    setBloqueados((prev) => [...new Set([...(prev || []), id])]);
+  }, [usuario.id]);
+  const desbloquear = useCallback(async (id) => {
+    const { error } = await supabase.from("bloqueos").delete().eq("usuario_id", usuario.id).eq("bloqueado_id", id);
+    if (error) throw error;
+    setBloqueados((prev) => (prev || []).filter((x) => x !== id));
+  }, [usuario.id]);
+
   const cargarPuntajes = useCallback(async () => {
     const { data, error } = await supabase.from("puntajes_comida").select("comida_id, usuario_id, estrellas, creado_en").limit(8000);
     setPuntajes(error ? null : data);
@@ -438,6 +455,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     cargarSalud().catch(() => {});
     cargarReacciones().catch(() => {});
     cargarPuntajes().catch(() => {});
+    cargarBloqueos().catch(() => {});
     cargarExtras().catch(() => {});
     // El bot publica una sola vez por semana, sin importar cuántas veces se llame.
     supabase.rpc("publicar_resumen_semanal").then(() => {}, () => {});
@@ -699,6 +717,10 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
     return { ...base, marca: base.marca && "dia", evo: false, activo: base.diario, soloTexto: false };
   }, [extras, comidas, usuario.id, grupo.conBocha]);
 
+  // Lo de quien bloqueaste no se ve: ni sus comidas ni sus mensajes.
+  const comidasVisibles = useMemo(() => (bloqueados?.length ? comidas.filter((c) => !bloqueados.includes(c.usuario_id)) : comidas), [comidas, bloqueados]);
+  const mensajesVisibles = useMemo(() => (bloqueados?.length ? mensajes.filter((m) => !bloqueados.includes(m.usuario_id)) : mensajes), [mensajes, bloqueados]);
+
   const valor = useMemo(
     () => ({
       usuario,
@@ -710,7 +732,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       perfiles: perfilesConFoto,
       castigo,
       imagenesBocha: extras.imagenesBocha || {},
-      comidas,
+      comidas: comidasVisibles,
       fotos,
       estado,
       cargarComidas,
@@ -721,7 +743,7 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       recetaAlChat,
       mandarRecetaAlChat,
       eliminarMensaje,
-      mensajes,
+      mensajes: mensajesVisibles,
       mensajesListos,
       presentes,
       avisarEstado,
@@ -757,11 +779,14 @@ export function DatosProvider({ usuario, grupo = GRUPO_BASE, misGrupos = SIN_GRU
       alternarReaccion,
       puntajes,
       puntuar,
+      bloqueados,
+      bloquear,
+      desbloquear,
       extras,
       cargarExtras,
       cambiarAgua,
     }),
-    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConFoto, castigo, comidas, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajes, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, actualizarTodo, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, puntajes, puntuar, extras, cargarExtras, cambiarAgua],
+    [usuario, grupo, misGrupos, cambiarGrupo, recargarGrupos, perfilesConFoto, castigo, comidasVisibles, fotos, estado, cargarComidas, cargarHistorial, cargarComida, respuesta, recetaAlChat, eliminarMensaje, cargarDia, perfilId, mensajesVisibles, mensajesListos, presentes, avisarEstado, reaccionesMensajes, alternarReaccionMensaje, lecturas, lecturasListas, sinLeer, marcarLeido, invitaciones, comidasInvitadas, cargarInvitaciones, firmarRutas, agregarMensaje, quitarMensaje, emitirChat, avisarActividad, comidasLogros, aguaLogros, registrosLogros, progreso, actualizarTodo, cargarPerfiles, whoop, cargarWhoop, salud, pesos, cargarSalud, reacciones, alternarReaccion, puntajes, puntuar, bloqueados, bloquear, desbloquear, extras, cargarExtras, cambiarAgua],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

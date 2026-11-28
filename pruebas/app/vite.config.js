@@ -11,7 +11,9 @@ export default (entorno) => {
     ...config,
     root: path.resolve(aqui, "../.."),
     cacheDir: path.join(aqui, ".cache-vite"),
-    server: { port: 5199, strictPort: true, fs: { strict: false } },
+    // Sin el cartel de error de Vite: si una prueba cierra la ventana mientras baja un archivo, Vite lo toma como
+    // error y lo muestra en todas las ventanas abiertas, tapando botones. Los errores reales los atrapa cada prueba.
+    server: { port: 5199, strictPort: true, fs: { strict: false }, hmr: { overlay: false } },
     plugins: [
       {
         name: "dobles-de-prueba",

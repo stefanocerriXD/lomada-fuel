@@ -24,6 +24,8 @@ export default async function handler(req, res) {
     const pedido = {
       medalla: () => rpc("aviso_medalla", { p_codigo: id, p_nombre: nombre || null }),
       mejora: () => rpc("aviso_mejora", { p_id: id }),
+      // Una denuncia nueva (SQL 070): le llega solo al dueño.
+      denuncia: () => rpc("aviso_denuncia", { p_id: id }),
       // El dueño a todos (SQL 058): la base revisa que sea el dueño y el texto.
       anuncio: () => rpc("aviso_anuncio", { p_titulo: titulo, p_cuerpo: cuerpo, p_vista: vista || null }),
       mejora_hecha: () => rpc("aviso_mejora_hecha", { p_id: id }),
@@ -43,7 +45,7 @@ export default async function handler(req, res) {
     const aviso = await resp.json();
     if (!aviso?.destinos?.length) return res.status(200).json({ enviadas: 0 });
     // Cada grupo se entera solo de lo suyo. Las mejoras van a quien administra, sea del grupo que sea.
-    if (!["mejora", "mejora_hecha", "mejora_respuesta", "anuncio"].includes(tipo)) {
+    if (!["mejora", "mejora_hecha", "mejora_respuesta", "anuncio", "denuncia"].includes(tipo)) {
       const filtro = await rpc("solo_mi_grupo", { p_endpoints: aviso.destinos.map((d) => d.endpoint) });
       if (filtro.ok) {
         const permitidos = new Set(await filtro.json());

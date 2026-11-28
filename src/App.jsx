@@ -14,6 +14,7 @@ import { Aviso, Avatar, datosMarco, Festejo, Hoja, Insignia, marcoDe, resorte, v
 import { FormularioContrasena } from "./componentes/Contrasena.jsx";
 import NuevoLogro from "./componentes/NuevoLogro.jsx";
 import GuiaNovedades from "./componentes/GuiaNovedades.jsx";
+import Denunciar from "./componentes/Denunciar.jsx";
 
 // La guía de lo nuevo (historias y estrellas): sale una vez, en el Resumen, cuando ya andan las estrellas (SQL 068).
 const conTexto = (selector, texto) => () => [...document.querySelectorAll(selector)].find((el) => el.textContent.trim().includes(texto) && el.getClientRects().length);
@@ -571,6 +572,7 @@ function Principal({ recuperando, onRecuperado }) {
       <GuiaNovedades id="historias-estrellas" pasos={GUIA_HISTORIAS} lista={vista === "resumen" && estado.listo && puntajes !== null && !logroNuevo} />
       <SubidaNivel ocupado={Boolean(logroNuevo)} />
       {grupo.conBocha && <Bocha />}
+      <Denunciar avisar={avisar} />
       <Aviso texto={aviso} />
     </div>
   );

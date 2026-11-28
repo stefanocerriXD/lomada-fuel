@@ -2,7 +2,8 @@ import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import { marcaDelNombre } from "../lib/multas.js";
 import { MarcaFiesta } from "../componentes/MarcaFiesta.jsx";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Ban, Bell, Bot, Check, ChefHat, Clock3, Copy, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, UserCheck, UserPlus, X } from "lucide-react";
+import { Ban, Bell, Bot, Check, ChefHat, Clock3, Copy, Flag, ImagePlus, MessageCircle, Reply, SendHorizontal, Smile, Trash2, UserCheck, UserPlus, X } from "lucide-react";
+import { BotonBloquear, denunciar } from "../componentes/Denunciar.jsx";
 import { EVENTO_PEDIDOS, gruposQueAdministro, textoError } from "../lib/grupos.js";
 import { supabase } from "../lib/supabase.js";
 import { avisarGrupo } from "../lib/api.js";
@@ -394,7 +395,7 @@ const Mensaje = memo(function Mensaje({ m, propio, inicio, fin, dia, visto, perf
 });
 
 function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
-  const { usuario, perfiles, reaccionesMensajes, alternarReaccionMensaje, eliminarMensaje } = useDatos();
+  const { usuario, perfiles, reaccionesMensajes, alternarReaccionMensaje, eliminarMensaje, bloqueados } = useDatos();
   const [confirmar, setConfirmar] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   useEffect(() => setConfirmar(false), [mensaje?.id]);
@@ -438,6 +439,14 @@ function AccionesMensaje({ mensaje, onCerrar, onResponder, avisar }) {
         </div>
         <button className="accion-mensaje" onClick={() => { onResponder(mensaje); onCerrar(); }}><Reply size={19} /> Responder</button>
         {mensaje.texto && <button className="accion-mensaje" onClick={copiar}><Copy size={18} /> Copiar texto</button>}
+        {mensaje.usuario_id && mensaje.usuario_id !== usuario.id && bloqueados !== null && (
+          <>
+            <button className="accion-mensaje" onClick={() => { denunciar({ tipo: "mensaje", objetoId: mensaje.id, usuarioId: mensaje.usuario_id, contenido: mensaje.texto || (mensaje.adjunto_path ? "[foto o archivo]" : mensaje.sticker ? "[sticker]" : ""), fotoPath: mensaje.adjunto_path || null }); onCerrar(); }}>
+              <Flag size={18} /> Denunciar mensaje
+            </button>
+            <BotonBloquear perfil={perfiles[mensaje.usuario_id]} avisar={avisar} className="accion-mensaje" alListo={onCerrar} />
+          </>
+        )}
         {puedeEliminar && (
           <button className={confirmar ? "accion-mensaje peligro" : "accion-mensaje"} onClick={eliminar} disabled={eliminando}>
             <Trash2 size={18} /> {eliminando ? "Eliminando…" : confirmar ? "¿Seguro? Tocá de nuevo para eliminarlo para todos" : "Eliminar para todos"}

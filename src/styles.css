@@ -3128,3 +3128,30 @@ button.planeada-datos { padding: 0; background: none; color: inherit; text-align
 
 /* Aviso a todos: plantillas listas (la novedad del momento y la de mejoras). */
 .aviso-todos-plantillas { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Denunciar y bloquear (SQL 070). */
+.denunciar { display: grid; gap: 14px; }
+.denunciar-motivos { display: grid; gap: 6px; }
+.denunciar-motivos label { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 10px 14px; border-radius: 14px; background: var(--superficie-2); font-weight: 600; cursor: pointer; }
+.denunciar-motivos label.activo { background: var(--acento-suave); color: var(--sobre-acento-suave); box-shadow: inset 0 0 0 1.5px var(--acento); }
+.denunciar-motivos input { width: 18px; height: 18px; margin: 0; accent-color: var(--acento); }
+.denunciar .boton svg { margin-right: 4px; }
+.denunciar-comida { margin-left: auto; color: var(--tinta-2); }
+.perfil-moderacion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.perfil-moderacion .nota { flex-basis: 100%; margin: 0; }
+.perfil-moderacion .boton-chico { display: inline-flex; align-items: center; gap: 6px; }
+.perfil-moderacion .boton-chico.peligro, .accion-mensaje.peligro { color: var(--peligro, #c0392b); }
+.lista-bloqueados { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.lista-bloqueados li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--borde); }
+.lista-bloqueados li:first-child { border-top: 0; }
+.denuncias-dueno .perfil-subtitulo { display: flex; align-items: center; gap: 6px; }
+.lista-denuncias { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.lista-denuncias li { display: grid; gap: 6px; padding: 12px; border-radius: 14px; background: var(--superficie-2); }
+.lista-denuncias li.pendiente { box-shadow: inset 3px 0 0 #e9a800; }
+.lista-denuncias li:not(.pendiente) { opacity: 0.7; }
+.denuncia-cabecera { display: grid; gap: 2px; margin: 0; }
+.denuncia-cabecera small, .denuncia-meta, .denuncia-estado { color: var(--tinta-2); font-size: 0.8rem; }
+.lista-denuncias blockquote { margin: 0; padding: 8px 10px; border-left: 3px solid var(--borde); border-radius: 6px; background: var(--superficie); font-size: 0.88rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.denuncia-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.denuncia-acciones .boton-chico { display: inline-flex; align-items: center; gap: 5px; }
+.denuncia-acciones .boton-chico.peligro { color: var(--peligro, #c0392b); }

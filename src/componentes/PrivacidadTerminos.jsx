@@ -44,6 +44,7 @@ export default function PrivacidadTerminos() {
         <li><strong>No es consejo médico.</strong> Las calorías, los macros y las metas son estimaciones. Para una dieta o un tratamiento, consultá a un profesional de la salud.</li>
         <li><strong>Edad:</strong> para usar la app tenés que tener 16 años o más.</li>
         <li><strong>Lo que subís es tuyo,</strong> pero sos responsable: nada ofensivo, ilegal ni fotos de otros sin su permiso. El admin del grupo puede sacar a alguien, y podemos borrar contenido o cuentas que no respeten esto.</li>
+        <li><strong>Tolerancia cero</strong> con el contenido ofensivo, el acoso, lo sexual o violento y el spam. Cualquiera puede denunciar un mensaje, una comida o un perfil (mantené apretado el mensaje, la bandera de la comida o el botón del perfil) y bloquear a quien quiera. Revisamos cada denuncia en menos de 24 horas: borramos lo que no corresponde y, si se repite, la cuenta.</li>
         <li><strong>La cacona y el Bocha son un juego</strong> entre amigos para motivarse. Si a alguien le molesta, puede salir del grupo o crear uno sin Bocha.</li>
         <li><strong>La app es gratis</strong> y puede cambiar, sumar o quitar funciones. Hacemos lo posible para que ande siempre, pero no podemos garantizar que no falle ni que nunca se pierda información.</li>
         <li>Si cambian estos términos, te avisamos en Ajustes › Actualizaciones.</li>

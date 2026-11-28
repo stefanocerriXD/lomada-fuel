@@ -1599,3 +1599,122 @@ console.log("backup: pruebas pasadas");
   await db.query("delete from grupos where id = $1", [g.id]);
   console.log("069: pruebas pasadas");
 }
+
+// ===== 070: denunciar y bloquear =====
+{
+  const s070 = fs.readFileSync(raiz + "070_denunciar_y_bloquear.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s070), "070 en ASCII");
+  console.log((await db.exec(s070)).at(-1).rows[0].resultado);
+  await db.exec(s070);
+  const dueno = (await uno("select usuario_id from dueno_app")).usuario_id;
+  const [a, b2] = (await filas("select usuario_id from suscripciones_push where usuario_id <> $1 order by endpoint", [dueno])).map((r) => r.usuario_id);
+  assert.ok(a && b2 && a !== b2, "dos personas con avisos que no son el duenio");
+  const msj = await rol(b2, () => uno("insert into mensajes (usuario_id, texto) values ($1, 'Algo feo') returning id", [b2]));
+
+  // Denunciar: a nombre propio, no a uno mismo.
+  const den = await rol(a, () => uno("insert into denuncias (denunciado_id, tipo, objeto_id, motivo, contenido) values ($1, 'mensaje', $2, 'ofensivo', 'Algo feo') returning id", [b2, msj.id]));
+  await assert.rejects(rol(a, () => db.query("insert into denuncias (denunciado_id, tipo, motivo) values ($1, 'perfil', 'spam')", [a])), /row-level security/);
+  await assert.rejects(rol(a, () => db.query("insert into denuncias (denunciante_id, denunciado_id, tipo, motivo) values ($1, $2, 'perfil', 'spam')", [b2, a])), /row-level security/);
+  await assert.rejects(rol(a, () => db.query("update denuncias set estado = 'descartada' where id = $1", [den.id])), /permission denied/);
+  assert.equal((await rol(b2, () => filas("select id from denuncias"))).length, 0, "el denunciado no ve la denuncia");
+  assert.equal((await rol(a, () => filas("select id from denuncias"))).length, 1, "quien denuncia ve la suya");
+
+  // El aviso le llega solo al duenio.
+  const aviso = await rol(a, () => uno("select public.aviso_denuncia($1) as r", [den.id]));
+  assert.equal(aviso.r.titulo, "Nueva denuncia");
+  const duenos = new Set((await filas("select endpoint from suscripciones_push where usuario_id = $1", [dueno])).map((r) => r.endpoint));
+  assert.ok(aviso.r.destinos.every((d) => duenos.has(d.endpoint)), "solo al duenio");
+
+  // Revisar y resolver: solo el duenio. Borrar saca el mensaje.
+  await assert.rejects(rol(a, () => db.query("select * from public.denuncias_para_revisar()")), /no_sos_dueno/);
+  await assert.rejects(rol(a, () => db.query("select public.resolver_denuncia($1, true)", [den.id])), /no_sos_dueno/);
+  const lista = await rol(dueno, () => filas("select * from public.denuncias_para_revisar()"));
+  const fila = lista.find((x) => x.id === den.id);
+  assert.equal(fila.denunciado_id, b2);
+  assert.equal(fila.sigue_estando, true);
+  assert.equal((await rol(dueno, () => uno("select public.resolver_denuncia($1, true) as r", [den.id]))).r, "borrado");
+  assert.equal((await filas("select id from mensajes where id = $1", [msj.id])).length, 0, "el mensaje se borro");
+  assert.equal((await uno("select estado from denuncias where id = $1", [den.id])).estado, "borrado");
+  // Una denuncia de perfil descartada no toca nada.
+  const den2 = await rol(a, () => uno("insert into denuncias (denunciado_id, tipo, motivo) values ($1, 'perfil', 'otro') returning id", [b2]));
+  assert.equal((await rol(dueno, () => uno("select public.resolver_denuncia($1, false) as r", [den2.id]))).r, "descartada");
+  assert.ok(await uno("select 1 from perfiles where id = $1", [b2]));
+
+  // Bloquear: cada uno los suyos. A quien bloqueaste no le llegan tus avisos... al reves: no te llegan los suyos.
+  await rol(a, () => db.query("insert into bloqueos (bloqueado_id) values ($1)", [b2]));
+  await assert.rejects(rol(a, () => db.query("insert into bloqueos (bloqueado_id) values ($1)", [a])), /check/);
+  await assert.rejects(rol(a, () => db.query("insert into bloqueos (usuario_id, bloqueado_id) values ($1, $2)", [b2, a])), /row-level security/);
+  assert.equal((await rol(b2, () => filas("select * from bloqueos"))).length, 0, "el bloqueado no se entera");
+  const endA = (await filas("select endpoint from suscripciones_push where usuario_id = $1", [a])).map((r) => r.endpoint);
+  assert.deepEqual(await rol(b2, () => uno("select public.filtrar_preferencias('reaccion', $1) as r", [endA])).then((x) => x.r), [], "no le llegan avisos del bloqueado");
+  assert.deepEqual(await rol(dueno, () => uno("select public.filtrar_preferencias('reaccion', $1) as r", [endA])).then((x) => x.r), endA, "de los demas, si");
+  await rol(a, () => db.query("delete from bloqueos where bloqueado_id = $1", [b2]));
+  assert.deepEqual(await rol(b2, () => uno("select public.filtrar_preferencias('reaccion', $1) as r", [endA])).then((x) => x.r), endA, "desbloqueado, vuelven");
+  await db.query("delete from denuncias");
+  console.log("070: pruebas pasadas");
+}
+
+// ===== 071: el buscador dice quien cargo cada alimento =====
+{
+  const s071 = fs.readFileSync(raiz + "071_quien_cargo_cada_alimento.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s071), "071 en ASCII");
+  console.log((await db.exec(s071)).at(-1).rows[0].resultado);
+  await db.exec(s071);
+  // Dos que comparten grupo y uno de afuera (un grupo aparte, solo).
+  const [a, b2, c] = (await filas("select id from perfiles order by id limit 3")).map((r) => r.id);
+  const g = await uno("insert into grupos (nombre, codigo, con_bocha, creado_por) values ('Buscador 71', 'buscador71-1111', false, $1) returning id", [a]);
+  await db.query("insert into miembros_grupo (usuario_id, grupo_id) values ($1, $3), ($2, $3) on conflict do nothing", [a, b2, g.id]);
+  const comparten = async (x, y) => Boolean(await uno("select 1 from miembros_grupo m1 join miembros_grupo m2 on m2.grupo_id = m1.grupo_id where m1.usuario_id = $1 and m2.usuario_id = $2", [x, y]));
+  assert.ok(await comparten(a, b2));
+  // c no comparte grupo con b2: se lo saca de los grupos de b2 que tenga.
+  await db.query("delete from miembros_grupo where usuario_id = $1 and grupo_id in (select grupo_id from miembros_grupo where usuario_id = $2)", [c, b2]);
+  assert.ok(!(await comparten(c, b2)));
+  await rol(b2, () => db.query("select * from public.guardar_producto(null, 'Budin casero de limon', '', '{\"kcal\": 380, \"p\": 6, \"c\": 55, \"g\": 15}'::jsonb, null, 'usuario')"));
+  await rol(b2, () => db.query("select * from public.guardar_producto('7790000000711', 'Galletitas de arroz 71', 'Marca71', '{\"kcal\": 390, \"p\": 8, \"c\": 80, \"g\": 3}'::jsonb, null, 'off')"));
+  const nombreB = (await uno("select nombre from perfiles where id = $1", [b2])).nombre;
+  const budin = async (u) => (await rol(u, () => filas("select * from public.buscar_productos('budin limon')"))).find((r) => r.nombre === "Budin casero de limon");
+  assert.equal((await budin(a)).cargado_por, nombreB, "del grupo: con nombre");
+  assert.equal((await budin(c)).cargado_por, "otro", "de otro grupo: otro usuario");
+  assert.equal((await budin(b2)).cargado_por, null, "lo propio no dice nada");
+  const galle = (await rol(a, () => filas("select * from public.buscar_productos('galletitas arroz 71')")))[0];
+  assert.equal(galle.cargado_por, null, "lo de Open Food Facts no dice nada");
+  const porCodigo = await rol(c, () => uno("select * from public.producto_por_codigo('7790000000711')"));
+  assert.equal(porCodigo.nombre, "Galletitas de arroz 71");
+  await assert.rejects(rol(a, () => db.query("select public.cargado_por($1, 'usuario')", [b2])), /permission denied/, "no se llama directo");
+  await db.query("delete from productos where nombre in ('Budin casero de limon', 'Galletitas de arroz 71')");
+  await db.query("delete from grupos where id = $1", [g.id]);
+  console.log("071: pruebas pasadas");
+}
+
+// ===== 072: cada grupo con su Bocha =====
+{
+  await db.query("insert into ajustes_grupo (clave, valor) values ('bocha', 'x/bocha/viejo.png'), ('bocha_evo', 'x/bocha/evo.png') on conflict (clave) do update set valor = excluded.valor");
+  const s072 = fs.readFileSync(raiz + "072_bocha_de_cada_grupo.sql", "utf8");
+  assert.ok(/^[\x01-\x7f]*$/.test(s072), "072 en ASCII");
+  console.log((await db.exec(s072)).at(-1).rows[0].resultado);
+  await db.exec(s072);
+  const lomada = await uno("select bocha_path, bocha_evo_path from grupos where id = $1", [LOMADA]);
+  assert.deepEqual(lomada, { bocha_path: "x/bocha/viejo.png", bocha_evo_path: "x/bocha/evo.png" }, "la Lomada se queda con las suyas");
+  // Un grupo nuevo: arranca con el dibujo; lo cambia solo quien lo creo.
+  const [admin, otro] = (await filas("select id from perfiles order by id limit 2")).map((r) => r.id);
+  const g = await uno("insert into grupos (nombre, codigo, con_bocha, creado_por) values ('Bocha 72', 'bocha72-2222', true, $1) returning id", [admin]);
+  await db.query("insert into miembros_grupo (usuario_id, grupo_id) values ($1, $3), ($2, $3) on conflict do nothing", [admin, otro, g.id]);
+  const mirar = async (u, grupo) => { await db.exec("set lomada.cambiar_grupo = 'si'"); await db.query("update perfiles set grupo_id = $2 where id = $1", [u, grupo]); await db.exec("reset lomada.cambiar_grupo"); };
+  const antes = await filas("select id, grupo_id from perfiles where id = any($1)", [[admin, otro]]);
+  await mirar(admin, g.id);
+  await mirar(otro, g.id);
+  const deAdmin = await rol(admin, () => uno("select public.imagenes_bocha() as r"));
+  assert.deepEqual(deAdmin.r, { dia: null, evo: null, puede: true }, "grupo nuevo: el dibujo");
+  assert.equal((await rol(otro, () => uno("select public.imagenes_bocha() as r"))).r.puede, false);
+  await assert.rejects(rol(otro, () => db.query("select public.guardar_bocha_grupo('bocha', $1)", [`${otro}/bocha/a.png`])), /solo_admin/);
+  await assert.rejects(rol(admin, () => db.query("select public.guardar_bocha_grupo('bocha', $1)", [`${otro}/bocha/a.png`])), /ruta_invalida/);
+  await assert.rejects(rol(admin, () => db.query("select public.guardar_bocha_grupo('otra', null)")), /clave_invalida/);
+  await rol(admin, () => db.query("select public.guardar_bocha_grupo('bocha', $1)", [`${admin}/bocha/nuevo.png`]));
+  assert.equal((await rol(otro, () => uno("select public.imagenes_bocha() as r"))).r.dia, `${admin}/bocha/nuevo.png`, "el grupo ve la nueva");
+  assert.equal((await uno("select bocha_path from grupos where id = $1", [LOMADA])).bocha_path, "x/bocha/viejo.png", "la de la Lomada no cambia");
+  await rol(admin, () => db.query("select public.guardar_bocha_grupo('bocha', null)"));
+  assert.equal((await rol(otro, () => uno("select public.imagenes_bocha() as r"))).r.dia, null, "vuelve al dibujo");
+  for (const x of antes) await mirar(x.id, x.grupo_id);
+  await db.query("delete from grupos where id = $1", [g.id]);
+  console.log("072: pruebas pasadas");
+}

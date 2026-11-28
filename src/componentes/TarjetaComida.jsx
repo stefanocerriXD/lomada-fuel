@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import { borrado, reaccion } from "../lib/sonidos.js";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, Lock, Maximize2, PenLine, Pencil, Reply, Share2, SmilePlus, Star, Trash2, Users } from "lucide-react";
+import { ChevronDown, Flag, Lock, Maximize2, PenLine, Pencil, Reply, Share2, SmilePlus, Star, Trash2, Users } from "lucide-react";
+import { denunciar } from "./Denunciar.jsx";
 import { supabase } from "../lib/supabase.js";
 import { useDatos } from "../lib/datos.jsx";
 import { haceCuanto } from "../lib/fechas.js";
@@ -88,7 +89,7 @@ const alimentosDe = (c) => (Array.isArray(c.alimentos) ? c.alimentos : []);
 const listaNombres = (n) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0]);
 
 export default function TarjetaComida({ comida, perfil, foto, propia, indice, onZoom, onEditar, avisar }) {
-  const { castigo, usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder, fotos } = useDatos();
+  const { castigo, usuario, perfiles, comidas, invitaciones, cargarComidas, extras, cargarExtras, abrirPerfil, responder, fotos, bloqueados } = useDatos();
   const fotosExtra = (comida.fotos_extra || []).map((r) => fotos[r]);
   // El postre va como una foto más, al final, marcada.
   const fotoPostre = comida.postre_foto ? fotos[comida.postre_foto] : null;
@@ -253,6 +254,11 @@ export default function TarjetaComida({ comida, perfil, foto, propia, indice, on
           <div className="comida-interacciones">
             <Reacciones comidaId={comida.id} avisar={avisar} />
             <button className="boton-texto" onClick={() => responder(comida)} aria-label="Responder en el chat"><Reply size={15} /> Responder</button>
+            {!propia && bloqueados !== null && (
+              <button className="boton-texto denunciar-comida" aria-label="Denunciar comida" onClick={() => denunciar({ tipo: "comida", objetoId: comida.id, usuarioId: comida.usuario_id, contenido: [tipoInfo(comida.tipo).texto, comida.descripcion].filter(Boolean).join(": "), fotoPath: comida.foto_path || null })}>
+                <Flag size={15} />
+              </button>
+            )}
           </div>
         )}
         {propia && (

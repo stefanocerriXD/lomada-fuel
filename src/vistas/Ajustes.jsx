@@ -28,6 +28,7 @@ import { EVENTO_PEDIDOS, pedidosPendientes } from "../lib/grupos.js";
 const PanelDueno = perezosa(() => import("../componentes/PanelDueno.jsx"));
 import PreferenciasAvisos from "../componentes/PreferenciasAvisos.jsx";
 import BorrarCuenta from "../componentes/BorrarCuenta.jsx";
+import { Bloqueados } from "../componentes/Denunciar.jsx";
 import PrivacidadTerminos from "../componentes/PrivacidadTerminos.jsx";
 import { LoQueLlego, MandarASalud } from "../componentes/SaludDetalle.jsx";
 import { descargarMisDatos } from "../lib/misDatos.js";
@@ -163,7 +164,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
     { grupo: "La app", id: "apariencia", titulo: "Apariencia y sonidos", detalle: "Tema y efectos de sonido", icono: Palette },
     { grupo: "La app", id: "tutorial", titulo: "Tutorial", detalle: "Cómo se usa cada cosa", icono: BookOpen },
     { grupo: "La app", id: "mejoras", titulo: "Mejoras", detalle: "Pedí cambios para la app", icono: MessageSquarePlus },
-    { grupo: "Cuenta", id: "cuenta", titulo: "Cuenta", detalle: "Contraseña, tus datos, cerrar sesión y borrar cuenta", icono: KeyRound },
+    { grupo: "Cuenta", id: "cuenta", titulo: "Cuenta", detalle: "Contraseña, tus datos, bloqueados y borrar cuenta", icono: KeyRound },
     { grupo: "Cuenta", id: "legal", titulo: "Privacidad y términos", detalle: "Qué datos guardamos y para qué", icono: FileText },
     ...(esDueno ? [{ grupo: "Solo vos", id: "dueno", titulo: "Panel del dueño", detalle: "Usuarios, números y espacio", icono: Crown }] : []),
   ];
@@ -322,6 +323,7 @@ export default function Ajustes({ avisar, onEditarCuerpo, pedido }) {
               Los productos vienen de Open Food Facts, una base colaborativa; los alimentos genéricos, de USDA FoodData Central. Las comidas típicas son valores aproximados. Revisá siempre el envase si necesitás precisión.
             </p>
           </section>
+          <Bloqueados avisar={avisar} />
           <BorrarCuenta usuarioId={usuario.id} />
         </>
       )}
